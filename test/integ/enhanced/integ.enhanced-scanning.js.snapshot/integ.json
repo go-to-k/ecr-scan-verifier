@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "EnhancedScanningTest/DefaultTest": {
+      "stacks": [
+        "EnhancedScanningStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "EnhancedScanningTest/DefaultTest/DeployAssert",
+      "assertionStackName": "EnhancedScanningTestDefaultTestDeployAssert0599D481"
+    }
+  }
+}

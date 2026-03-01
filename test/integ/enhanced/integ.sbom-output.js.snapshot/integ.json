@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "SbomOutputTest/DefaultTest": {
+      "stacks": [
+        "SbomOutputStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "SbomOutputTest/DefaultTest/DeployAssert",
+      "assertionStackName": "SbomOutputTestDefaultTestDeployAssertA7A10E6D"
+    }
+  }
+}

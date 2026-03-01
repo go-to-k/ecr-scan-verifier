@@ -168,7 +168,38 @@ describe('ecr-scan', () => {
       ).rejects.toThrow('Image is not supported for scanning');
     });
 
-    test('should throw immediately on ScanNotFoundException', async () => {
+    test('should retry on ScanNotFoundException and eventually succeed', async () => {
+      const scanNotFoundError = new Error('Scan not found');
+      scanNotFoundError.name = 'ScanNotFoundException';
+
+      ecrMock
+        .on(DescribeImageScanFindingsCommand)
+        .rejectsOnce(scanNotFoundError)
+        .rejectsOnce(scanNotFoundError)
+        .resolves({
+          imageScanStatus: { status: 'ACTIVE' },
+          imageScanFindings: {
+            enhancedFindings: [
+              {
+                severity: 'HIGH',
+                findingArn: 'arn:aws:inspector2:us-east-1:123456789012:finding/abc',
+                packageVulnerabilityDetails: {
+                  vulnerabilityId: 'CVE-2023-1234',
+                },
+              },
+            ],
+            findingSeverityCounts: { HIGH: 1 },
+          },
+        });
+
+      const result = await waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 5);
+
+      expect(result.status).toBe('ACTIVE');
+      expect(result.enhancedFindings).toHaveLength(1);
+      expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(3);
+    });
+
+    test('should throw after all retries on ScanNotFoundException', async () => {
       const scanNotFoundError = new Error('Scan not found');
       scanNotFoundError.name = 'ScanNotFoundException';
 
@@ -176,7 +207,7 @@ describe('ecr-scan', () => {
 
       await expect(
         waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3),
-      ).rejects.toThrow('No scan results found for the image.');
+      ).rejects.toThrow('No scan results found for the image after');
     });
 
     test('should poll until scan completes', async () => {

@@ -160,7 +160,7 @@ const basicScanConfigOptions: BasicScanConfigOptions = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.BasicScanConfigOptions.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start a manual image scan via StartImageScan API. |
+| <code><a href="#ecr-scan-verifier.BasicScanConfigOptions.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start an image scan via StartImageScan API. |
 
 ---
 
@@ -173,14 +173,14 @@ public readonly startScan: boolean;
 - *Type:* boolean
 - *Default:* true
 
-Whether to start a manual image scan via StartImageScan API.
+Whether to start an image scan via StartImageScan API.
 
 If false, the construct will poll for existing scan results
 (useful when scan-on-push is configured).
 
 **Note**: If `startScan` is false and no scan has been performed
-(e.g., scan-on-push is not configured), the construct will time out
-waiting for scan results.
+(e.g., scan-on-push is not configured), the deployment will fail
+after polling times out.
 
 **Note**: If scan-on-push is configured and `startScan` is true,
 the `StartImageScan` API may return a `LimitExceededException`
@@ -751,7 +751,7 @@ const scanConfigBindOutput: ScanConfigBindOutput = { ... }
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.scanType">scanType</a></code> | <code>string</code> | The scan type ('BASIC' or 'ENHANCED'). |
-| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start a manual image scan. |
+| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start an image scan via StartImageScan API. |
 
 ---
 
@@ -775,7 +775,7 @@ public readonly startScan: boolean;
 
 - *Type:* boolean
 
-Whether to start a manual image scan.
+Whether to start an image scan via StartImageScan API.
 
 ---
 

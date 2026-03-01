@@ -44,9 +44,10 @@ const test = new IntegTest(app, 'ScanLogsOutputCWTest', {
 test.assertions
   .awsApiCall('CloudWatchLogs', 'filterLogEvents', {
     logGroupName: scanLogsOutputLogGroup.logGroupName,
+    filterPattern: 'Severity Summary',
     limit: 1,
   })
-  // Don't assert on the message content because it can be too long
+  .assertAtPath('events.0.message', ExpectedResult.stringLikeRegexp('.+'))
   .waitForAssertions();
 
 // Assert that two log streams (findings and summary) exist

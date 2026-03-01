@@ -101,45 +101,5 @@ export const formatScanSummary = (
     lines.push('No vulnerabilities found.');
   }
 
-  lines.push('');
-
-  if (scanFindings.scanType === 'BASIC' || scanFindings.scanType === 'ENHANCED') {
-    const findings =
-      scanFindings.scanType === 'ENHANCED'
-        ? scanFindings.enhancedFindings
-        : scanFindings.basicFindings;
-
-    if (findings.length > 0) {
-      lines.push(`--- Findings (${findings.length} total) ---`);
-
-      const severityOrder = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL', 'UNDEFINED'];
-      for (const severity of severityOrder) {
-        const sevFindings =
-          scanFindings.scanType === 'ENHANCED'
-            ? scanFindings.enhancedFindings.filter((f) => f.severity === severity)
-            : scanFindings.basicFindings.filter((f) => f.severity === severity);
-
-        if (sevFindings.length > 0) {
-          lines.push(`\n[${severity}] (${sevFindings.length})`);
-          for (const f of sevFindings.slice(0, 20)) {
-            if (scanFindings.scanType === 'ENHANCED') {
-              const ef = f as any;
-              const vulnId = ef.packageVulnerabilityDetails?.vulnerabilityId || 'N/A';
-              const pkg = ef.packageVulnerabilityDetails?.vulnerablePackages?.[0];
-              const pkgInfo = pkg ? `${pkg.name}@${pkg.version}` : 'N/A';
-              lines.push(`  ${vulnId} | Package: ${pkgInfo}`);
-            } else {
-              const bf = f as any;
-              lines.push(`  ${bf.name || 'N/A'} | ${bf.description?.substring(0, 100) || 'N/A'}`);
-            }
-          }
-          if (sevFindings.length > 20) {
-            lines.push(`  ... and ${sevFindings.length - 20} more`);
-          }
-        }
-      }
-    }
-  }
-
   return lines.join('\n');
 };

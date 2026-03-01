@@ -19,10 +19,12 @@ import { EcrScanVerifier, SbomOutput, ScanConfig } from '../../../src';
  */
 
 const IGNORE_FOR_PASSING_TESTS = [
-  'CVE-2023-37920',
-  'CVE-2025-7783',
+  'GMS-2020-2',
+  'CVE-2025-22871',
   'CVE-2025-68121',
-  'CVE-2026-25896',
+  'CVE-2025-7783',
+  'CVE-2023-42282',
+  'CVE-2023-26136',
 ];
 
 const app = new App();

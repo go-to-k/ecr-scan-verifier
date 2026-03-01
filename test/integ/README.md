@@ -4,6 +4,10 @@ Integration tests are split into two directories based on the required AWS accou
 
 Tests deploy stacks across multiple regions (e.g. `us-east-1`, `us-east-2`, `us-west-2`), so the scanning configuration must be changed in **all regions**.
 
+## Important Note
+
+Changing the ECR scanning configuration via `aws inspector2 enable/disable` may take a few minutes to propagate. After enabling or disabling Enhanced scanning, **verify the status has changed in all regions before running tests**.
+
 ## Check Current Environment
 
 Before running tests, check whether Enhanced scanning (Amazon Inspector) is currently enabled or disabled in all regions:
@@ -31,6 +35,7 @@ Requires Enhanced scanning to be **DISABLED** in all regions.
 for region in us-east-1 us-east-2 us-west-2; do
   aws inspector2 disable --resource-types ECR --region "$region"
 done
+
 # Wait until status becomes DISABLED in all regions
 for region in us-east-1 us-east-2 us-west-2; do
   echo "$region: $(aws inspector2 batch-get-account-status \
@@ -48,6 +53,7 @@ pnpm integ:basic:update
 for region in us-east-1 us-east-2 us-west-2; do
   aws inspector2 enable --resource-types ECR --region "$region"
 done
+
 for region in us-east-1 us-east-2 us-west-2; do
   echo "$region: $(aws inspector2 batch-get-account-status \
     --region "$region" \
@@ -65,6 +71,7 @@ Requires Enhanced scanning to be **ENABLED** in all regions.
 for region in us-east-1 us-east-2 us-west-2; do
   aws inspector2 enable --resource-types ECR --region "$region"
 done
+
 # Wait until status becomes ENABLED in all regions
 for region in us-east-1 us-east-2 us-west-2; do
   echo "$region: $(aws inspector2 batch-get-account-status \
@@ -82,6 +89,7 @@ pnpm integ:enhanced:update
 for region in us-east-1 us-east-2 us-west-2; do
   aws inspector2 disable --resource-types ECR --region "$region"
 done
+
 for region in us-east-1 us-east-2 us-west-2; do
   echo "$region: $(aws inspector2 batch-get-account-status \
     --region "$region" \

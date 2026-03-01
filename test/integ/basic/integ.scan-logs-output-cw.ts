@@ -16,13 +16,6 @@ import { EcrScanVerifier, ScanConfig, ScanLogsOutput } from '../../../src';
  *     aws inspector2 batch-get-account-status --query 'accounts[0].resourceState.ecr.status'
  */
 
-const IGNORE_FOR_PASSING_TESTS = [
-  'CVE-2023-37920',
-  'CVE-2025-7783',
-  'CVE-2025-68121',
-  'CVE-2026-25896',
-];
-
 const app = new App();
 const stack = new Stack(app, 'ScanLogsOutputCWStack');
 
@@ -38,8 +31,7 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.basic(),
-  ignoreFindings: IGNORE_FOR_PASSING_TESTS,
+  scanConfig: ScanConfig.basic(), // start scan by default for basic scanning
   scanLogsOutput: ScanLogsOutput.cloudWatchLogs({ logGroup: scanLogsOutputLogGroup }),
 });
 
@@ -52,7 +44,7 @@ const test = new IntegTest(app, 'ScanLogsOutputCWTest', {
 test.assertions
   .awsApiCall('CloudWatchLogs', 'filterLogEvents', {
     logGroupName: scanLogsOutputLogGroup.logGroupName,
-    filterPattern: 'ECR Image Scan Results',
+    filterPattern: 'Severity Summary',
     limit: 1,
   })
   .assertAtPath('events.0.message', ExpectedResult.stringLikeRegexp('.+'))

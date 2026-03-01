@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "MinimalOptionsTest/DefaultTest": {
+      "stacks": [
+        "MinimalOptionsStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "MinimalOptionsTest/DefaultTest/DeployAssert",
+      "assertionStackName": "MinimalOptionsTestDefaultTestDeployAssert97158ACF"
+    }
+  }
+}

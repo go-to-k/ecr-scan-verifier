@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "NotificationTopicTest/DefaultTest": {
+      "stacks": [
+        "NotificationTopicStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "NotificationTopicTest/DefaultTest/DeployAssert",
+      "assertionStackName": "NotificationTopicTestDefaultTestDeployAssertDC7CC3EB"
+    }
+  }
+}

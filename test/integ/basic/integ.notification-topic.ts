@@ -47,8 +47,8 @@ const defaultTest = new NotificationTestSetup(stack, 'DefaultTest');
 new EcrScanVerifier(stack, 'ImageScannerDefault', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.basic(),
-  severity: [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM],
+  scanConfig: ScanConfig.basic(), // start scan by default for basic scanning
+  severity: [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM], // to ensure we detect some vulnerabilities for testing notifications
   failOnVulnerability: false, // Intentionally detect vulnerabilities to test SNS topic notifications
   vulnsNotificationTopic: defaultTest.topic,
 });

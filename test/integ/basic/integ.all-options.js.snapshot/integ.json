@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "AllOptionsTest/DefaultTest": {
+      "stacks": [
+        "AllOptionsStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "AllOptionsTest/DefaultTest/DeployAssert",
+      "assertionStackName": "AllOptionsTestDefaultTestDeployAssert84768452"
+    }
+  }
+}

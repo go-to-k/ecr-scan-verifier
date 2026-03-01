@@ -4,7 +4,7 @@ import {
   GetSbomExportCommand,
   SbomReportFormat,
 } from '@aws-sdk/client-inspector2';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 const inspectorClient = new Inspector2Client();
 const s3Client = new S3Client();
@@ -75,8 +75,16 @@ export const exportSbom = async (
         throw new Error('SBOM export succeeded but S3 destination is missing.');
       }
 
+      // Find the actual S3 key under the prefix
+      const actualKey = await findS3Object(bucketName, s3Key);
+      if (!actualKey) {
+        throw new Error(
+          `SBOM export succeeded but no file found in S3 under prefix: ${s3Key}`,
+        );
+      }
+
       // Download SBOM from S3
-      const sbomContent = await downloadFromS3(bucketName, s3Key);
+      const sbomContent = await downloadFromS3(bucketName, actualKey);
       return {
         sbomContent,
         format: sbomFormat,
@@ -100,6 +108,21 @@ export const exportSbom = async (
   throw new Error(
     `SBOM export timed out after ${maxRetries * intervalSeconds} seconds.`,
   );
+};
+
+const findS3Object = async (
+  bucketName: string,
+  prefix: string,
+): Promise<string | undefined> => {
+  const response = await s3Client.send(
+    new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: prefix,
+      MaxKeys: 1,
+    }),
+  );
+
+  return response.Contents?.[0]?.Key;
 };
 
 const downloadFromS3 = async (

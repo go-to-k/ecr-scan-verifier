@@ -259,23 +259,7 @@ describe('findings-evaluator', () => {
 
       expect(result).toContain('Scan Type: ENHANCED');
       expect(result).toContain('HIGH: 1');
-    });
-
-    test('should truncate findings list when more than 20', () => {
-      const findings = Array.from({ length: 25 }, (_, i) => ({
-        name: `CVE-2023-${String(i).padStart(4, '0')}`,
-        severity: 'HIGH',
-      }));
-      const scanFindings = createBasicScanFindings(findings);
-      const evaluation = {
-        hasVulnerabilities: true,
-        summary: 'HIGH: 25',
-        filteredSeverityCounts: { HIGH: 25 },
-      };
-
-      const result = formatScanSummary(scanFindings, evaluation, 'my-repo', 'v1.0');
-
-      expect(result).toContain('and 5 more');
+      expect(result).not.toContain('Findings');
     });
   });
 });

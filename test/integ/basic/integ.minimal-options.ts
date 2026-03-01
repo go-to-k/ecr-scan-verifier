@@ -26,8 +26,7 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.basic(),
-  ignoreFindings: ['CVE-2023-37920', 'CVE-2025-7783', 'CVE-2025-68121', 'CVE-2026-25896'],
+  scanConfig: ScanConfig.basic(), // start scan by default for basic scanning
 });
 
 new IntegTest(app, 'MinimalOptionsTest', {

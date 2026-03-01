@@ -33,6 +33,11 @@
       "type": "build"
     },
     {
+      "name": "cdk-ecr-deployment",
+      "version": "^4.1.1",
+      "type": "build"
+    },
+    {
       "name": "commit-and-tag-version",
       "version": "^12",
       "type": "build"

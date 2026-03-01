@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "ScanOnPushTest/DefaultTest": {
+      "stacks": [
+        "ScanOnPushStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "ScanOnPushTest/DefaultTest/DeployAssert",
+      "assertionStackName": "ScanOnPushTestDefaultTestDeployAssertE706ED63"
+    }
+  }
+}

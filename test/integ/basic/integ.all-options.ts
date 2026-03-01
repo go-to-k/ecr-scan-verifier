@@ -18,13 +18,6 @@ import { EcrScanVerifier, ScanConfig, Severity } from '../../../src';
  *     aws inspector2 batch-get-account-status --query 'accounts[0].resourceState.ecr.status'
  */
 
-const IGNORE_FOR_PASSING_TESTS = [
-  'CVE-2023-37920',
-  'CVE-2025-7783',
-  'CVE-2025-68121',
-  'CVE-2026-25896',
-];
-
 const app = new App();
 const stack = new Stack(app, 'AllOptionsStack');
 
@@ -42,7 +35,6 @@ new EcrScanVerifier(stack, 'Scanner', {
   scanConfig: ScanConfig.basic({ startScan: true }),
   severity: [Severity.CRITICAL],
   failOnVulnerability: true,
-  ignoreFindings: IGNORE_FOR_PASSING_TESTS,
   defaultLogGroup: new LogGroup(stack, 'DefaultLogGroup', {
     removalPolicy: RemovalPolicy.DESTROY,
     retention: RetentionDays.ONE_DAY,

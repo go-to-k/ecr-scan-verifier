@@ -12,6 +12,14 @@ If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and 
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
 - **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
+Basic scanning supports both starting a scan via API and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+
+| Feature | Basic Scanning | Enhanced Scanning |
+|---|---|---|
+| Start scan via API | ✅ (`startScan: true`) | — |
+| Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
+| SBOM generation | — | ✅ |
+
 ## Usage
 
 ### Install
@@ -74,7 +82,7 @@ Use `ScanConfig` to choose between Basic and Enhanced scanning:
 ```ts
 import { ScanConfig } from 'ecr-scan-verifier';
 
-// Basic scanning (default) — starts a manual scan via StartImageScan API
+// Basic scanning (default) — starts a scan via StartImageScan API
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.basic({ startScan: true }),
@@ -86,15 +94,17 @@ new EcrScanVerifier(this, 'Scanner', {
   scanConfig: ScanConfig.basic({ startScan: false }),
 });
 
-// Enhanced scanning — uses Amazon Inspector (scan-on-push, no manual start)
+// Enhanced scanning — uses Amazon Inspector (scan-on-push only)
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.enhanced(),
 });
 ```
 
-When using `startScan: false`, the construct polls for existing scan results instead of starting a new scan. This is useful when scan-on-push is configured on your ECR repository. If scan-on-push is not configured and no scan has been previously performed, the construct will time out waiting for scan results.
+When using `startScan: false`, the construct polls for existing scan results instead of starting a new scan. This is useful when scan-on-push is configured on your ECR repository.
 
+> **Important**: When `startScan: false` is used, scan-on-push must be enabled on the ECR repository (or a scan must have been previously performed). If no scan results exist for the image, the deployment will immediately fail with a `ScanNotFoundException` error.
+>
 > **Note**: If scan-on-push is already configured and `startScan: true` is used, the `StartImageScan` API may return a `LimitExceededException` because the image has already been scanned. The construct handles this gracefully by falling back to polling for the existing scan results.
 >
 > **Important**: If Enhanced scanning (Amazon Inspector) is enabled on your account, you must use `ScanConfig.enhanced()`. Using `ScanConfig.basic()` with an Enhanced scanning account will result in a deployment error.

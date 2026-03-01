@@ -110,8 +110,16 @@ export const waitForScanResults = async (
       console.log(`Scan status: ${status}, waiting ${pollingIntervalSeconds}s...`);
     } catch (error: any) {
       if (error.name === 'ScanNotFoundException') {
+        if (attempt < pollingMaxRetries - 1) {
+          console.log(
+            `Scan not found yet (attempt ${attempt + 1}/${pollingMaxRetries}), ` +
+              `waiting ${pollingIntervalSeconds}s before retrying...`,
+          );
+          await sleep(pollingIntervalSeconds * 1000);
+          continue;
+        }
         throw new Error(
-          `No scan results found for the image. ` +
+          `No scan results found for the image after ${pollingMaxRetries * pollingIntervalSeconds} seconds. ` +
             `Ensure that image scanning is enabled for this repository. ` +
             `If using Enhanced scanning (Amazon Inspector), verify that the repository is included in Inspector's coverage.`,
         );

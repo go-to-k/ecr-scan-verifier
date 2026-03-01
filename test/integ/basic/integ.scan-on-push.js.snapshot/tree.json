@@ -465,29 +465,37 @@
                                     "ecr:DescribeImages"
                                   ],
                                   "Effect": "Allow",
-                                  "Resource": {
-                                    "Fn::Join": [
-                                      "",
-                                      [
-                                        "arn:",
-                                        {
-                                          "Ref": "AWS::Partition"
-                                        },
-                                        ":ecr:",
-                                        {
-                                          "Ref": "AWS::Region"
-                                        },
-                                        ":",
-                                        {
-                                          "Ref": "AWS::AccountId"
-                                        },
-                                        ":repository/",
-                                        {
-                                          "Fn::Sub": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}"
-                                        }
+                                  "Resource": [
+                                    {
+                                      "Fn::GetAtt": [
+                                        "ScanOnPushRepositoryC9D531D3",
+                                        "Arn"
                                       ]
-                                    ]
-                                  }
+                                    },
+                                    {
+                                      "Fn::Join": [
+                                        "",
+                                        [
+                                          "arn:",
+                                          {
+                                            "Ref": "AWS::Partition"
+                                          },
+                                          ":ecr:",
+                                          {
+                                            "Ref": "AWS::Region"
+                                          },
+                                          ":",
+                                          {
+                                            "Ref": "AWS::AccountId"
+                                          },
+                                          ":repository/",
+                                          {
+                                            "Fn::Sub": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}"
+                                          }
+                                        ]
+                                      ]
+                                    }
+                                  ]
                                 },
                                 {
                                   "Action": "cloudformation:DescribeStacks",
@@ -503,6 +511,410 @@
                             "roles": [
                               {
                                 "Ref": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB"
+                              }
+                            ]
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                          "version": "2.178.1"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.Policy",
+                      "version": "2.178.1",
+                      "metadata": [
+                        "*",
+                        {
+                          "attachToRole": [
+                            "*"
+                          ]
+                        },
+                        {
+                          "attachToRole": [
+                            "*"
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.Role",
+                  "version": "2.178.1",
+                  "metadata": [
+                    {
+                      "assumedBy": {
+                        "principalAccount": "*",
+                        "assumeRoleAction": "*"
+                      },
+                      "managedPolicies": [
+                        {
+                          "managedPolicyArn": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
+                    },
+                    {
+                      "attachInlinePolicy": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "attachInlinePolicy": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
+                    }
+                  ]
+                }
+              },
+              "Code": {
+                "id": "Code",
+                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code",
+                "children": {
+                  "Stage": {
+                    "id": "Stage",
+                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/Stage",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.AssetStaging",
+                      "version": "2.178.1"
+                    }
+                  },
+                  "AssetBucket": {
+                    "id": "AssetBucket",
+                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/AssetBucket",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+                      "version": "2.178.1",
+                      "metadata": []
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_s3_assets.Asset",
+                  "version": "2.178.1"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
+                  "aws:cdk:cloudformation:props": {
+                    "architectures": [
+                      "arm64"
+                    ],
+                    "code": {
+                      "s3Bucket": {
+                        "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+                      },
+                      "s3Key": "6f3c65fb926791f9bd8504e53a7344d74d3647244a1a9f80778ab2fcbb2d2b37.zip"
+                    },
+                    "handler": "index.handler",
+                    "role": {
+                      "Fn::GetAtt": [
+                        "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
+                        "Arn"
+                      ]
+                    },
+                    "runtime": "nodejs22.x",
+                    "timeout": 900
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.CfnFunction",
+                  "version": "2.178.1"
+                }
+              },
+              "EventInvokeConfig": {
+                "id": "EventInvokeConfig",
+                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::Lambda::EventInvokeConfig",
+                      "aws:cdk:cloudformation:props": {
+                        "functionName": {
+                          "Ref": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D"
+                        },
+                        "maximumRetryAttempts": 0,
+                        "qualifier": "$LATEST"
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_lambda.CfnEventInvokeConfig",
+                      "version": "2.178.1"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.EventInvokeConfig",
+                  "version": "2.178.1",
+                  "metadata": [
+                    {
+                      "function": "*",
+                      "onFailure": "*",
+                      "onSuccess": "*",
+                      "maxEventAge": "*",
+                      "retryAttempts": "*"
+                    }
+                  ]
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_lambda.Function",
+              "version": "2.178.1",
+              "metadata": [
+                {
+                  "runtime": "*",
+                  "handler": "*",
+                  "code": "*",
+                  "architecture": "*",
+                  "timeout": "*",
+                  "retryAttempts": "*",
+                  "logGroup": "*"
+                }
+              ]
+            }
+          },
+          "LatestNodeRuntimeMap": {
+            "id": "LatestNodeRuntimeMap",
+            "path": "ScanOnPushStack/LatestNodeRuntimeMap",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnMapping",
+              "version": "2.178.1"
+            }
+          },
+          "ScanOnPushRepository": {
+            "id": "ScanOnPushRepository",
+            "path": "ScanOnPushStack/ScanOnPushRepository",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "ScanOnPushStack/ScanOnPushRepository/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ECR::Repository",
+                  "aws:cdk:cloudformation:props": {
+                    "emptyOnDelete": true,
+                    "imageScanningConfiguration": {
+                      "scanOnPush": true
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_ecr.CfnRepository",
+                  "version": "2.178.1"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_ecr.Repository",
+              "version": "2.178.1",
+              "metadata": [
+                {
+                  "imageScanOnPush": true,
+                  "emptyOnDelete": true,
+                  "removalPolicy": "destroy"
+                }
+              ]
+            }
+          },
+          "DeployImage": {
+            "id": "DeployImage",
+            "path": "ScanOnPushStack/DeployImage",
+            "children": {
+              "CustomResourceHandler": {
+                "id": "CustomResourceHandler",
+                "path": "ScanOnPushStack/DeployImage/CustomResourceHandler",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.SingletonFunction",
+                  "version": "2.178.1",
+                  "metadata": [
+                    {
+                      "uuid": "*",
+                      "code": "*",
+                      "runtime": "*",
+                      "handler": "*",
+                      "lambdaPurpose": "*",
+                      "description": "*",
+                      "timeout": "*",
+                      "role": "*",
+                      "memorySize": "*",
+                      "vpc": "*",
+                      "vpcSubnets": "*",
+                      "securityGroups": "*"
+                    }
+                  ]
+                }
+              },
+              "CustomResource": {
+                "id": "CustomResource",
+                "path": "ScanOnPushStack/DeployImage/CustomResource",
+                "children": {
+                  "Default": {
+                    "id": "Default",
+                    "path": "ScanOnPushStack/DeployImage/CustomResource/Default",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.CfnResource",
+                      "version": "2.178.1"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.CustomResource",
+                  "version": "2.178.1",
+                  "metadata": [
+                    "*"
+                  ]
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "cdk-ecr-deployment.ECRDeployment",
+              "version": "4.1.2"
+            }
+          },
+          "Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB": {
+            "id": "Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB",
+            "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB",
+            "children": {
+              "ServiceRole": {
+                "id": "ServiceRole",
+                "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/ServiceRole",
+                "children": {
+                  "ImportServiceRole": {
+                    "id": "ImportServiceRole",
+                    "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/ServiceRole/ImportServiceRole",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.Resource",
+                      "version": "2.178.1",
+                      "metadata": [
+                        "*"
+                      ]
+                    }
+                  },
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/ServiceRole/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                      "aws:cdk:cloudformation:props": {
+                        "assumeRolePolicyDocument": {
+                          "Statement": [
+                            {
+                              "Action": "sts:AssumeRole",
+                              "Effect": "Allow",
+                              "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                              }
+                            }
+                          ],
+                          "Version": "2012-10-17"
+                        },
+                        "managedPolicyArns": [
+                          {
+                            "Fn::Join": [
+                              "",
+                              [
+                                "arn:",
+                                {
+                                  "Ref": "AWS::Partition"
+                                },
+                                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                      "version": "2.178.1"
+                    }
+                  },
+                  "DefaultPolicy": {
+                    "id": "DefaultPolicy",
+                    "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/ServiceRole/DefaultPolicy",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/ServiceRole/DefaultPolicy/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                          "aws:cdk:cloudformation:props": {
+                            "policyDocument": {
+                              "Statement": [
+                                {
+                                  "Action": [
+                                    "ecr:BatchCheckLayerAvailability",
+                                    "ecr:BatchGetImage",
+                                    "ecr:CompleteLayerUpload",
+                                    "ecr:DescribeImageScanFindings",
+                                    "ecr:DescribeImages",
+                                    "ecr:DescribeRepositories",
+                                    "ecr:GetAuthorizationToken",
+                                    "ecr:GetDownloadUrlForLayer",
+                                    "ecr:GetRepositoryPolicy",
+                                    "ecr:InitiateLayerUpload",
+                                    "ecr:ListImages",
+                                    "ecr:ListTagsForResource",
+                                    "ecr:PutImage",
+                                    "ecr:UploadLayerPart",
+                                    "s3:GetObject"
+                                  ],
+                                  "Effect": "Allow",
+                                  "Resource": "*"
+                                }
+                              ],
+                              "Version": "2012-10-17"
+                            },
+                            "policyName": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8",
+                            "roles": [
+                              {
+                                "Ref": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491"
                               }
                             ]
                           }
@@ -582,11 +994,11 @@
               },
               "Code": {
                 "id": "Code",
-                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code",
+                "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/Code",
                 "children": {
                   "Stage": {
                     "id": "Stage",
-                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/Stage",
+                    "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/Code/Stage",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.AssetStaging",
                       "version": "2.178.1"
@@ -594,7 +1006,7 @@
                   },
                   "AssetBucket": {
                     "id": "AssetBucket",
-                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/AssetBucket",
+                    "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/Code/AssetBucket",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.aws_s3.BucketBase",
                       "version": "2.178.1",
@@ -609,70 +1021,32 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
+                "path": "ScanOnPushStack/Custom::CDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                   "aws:cdk:cloudformation:props": {
-                    "architectures": [
-                      "arm64"
-                    ],
                     "code": {
                       "s3Bucket": {
                         "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
                       },
-                      "s3Key": "2057af218c4c2a5d1d12bdb5a1a8e485f53f83a42ebe41e1a0539a86336337db.zip"
+                      "s3Key": "0fb8ef6540da7cbcb702ca4be8bbd47a45d1f93d5d178fa270dc065bb75353cc.zip"
                     },
-                    "handler": "index.handler",
+                    "description": "Custom resource handler for copying Docker images between docker registries.",
+                    "handler": "bootstrap",
+                    "memorySize": 512,
                     "role": {
                       "Fn::GetAtt": [
-                        "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
+                        "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
                         "Arn"
                       ]
                     },
-                    "runtime": "nodejs22.x",
+                    "runtime": "provided.al2023",
                     "timeout": 900
                   }
                 },
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.aws_lambda.CfnFunction",
                   "version": "2.178.1"
-                }
-              },
-              "EventInvokeConfig": {
-                "id": "EventInvokeConfig",
-                "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
-                "children": {
-                  "Resource": {
-                    "id": "Resource",
-                    "path": "ScanOnPushStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
-                    "attributes": {
-                      "aws:cdk:cloudformation:type": "AWS::Lambda::EventInvokeConfig",
-                      "aws:cdk:cloudformation:props": {
-                        "functionName": {
-                          "Ref": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D"
-                        },
-                        "maximumRetryAttempts": 0,
-                        "qualifier": "$LATEST"
-                      }
-                    },
-                    "constructInfo": {
-                      "fqn": "aws-cdk-lib.aws_lambda.CfnEventInvokeConfig",
-                      "version": "2.178.1"
-                    }
-                  }
-                },
-                "constructInfo": {
-                  "fqn": "aws-cdk-lib.aws_lambda.EventInvokeConfig",
-                  "version": "2.178.1",
-                  "metadata": [
-                    {
-                      "function": "*",
-                      "onFailure": "*",
-                      "onSuccess": "*",
-                      "maxEventAge": "*",
-                      "retryAttempts": "*"
-                    }
-                  ]
                 }
               }
             },
@@ -681,23 +1055,372 @@
               "version": "2.178.1",
               "metadata": [
                 {
+                  "code": "*",
                   "runtime": "*",
                   "handler": "*",
-                  "code": "*",
-                  "architecture": "*",
+                  "description": "*",
                   "timeout": "*",
-                  "retryAttempts": "*",
-                  "logGroup": "*"
+                  "role": "*",
+                  "memorySize": "*",
+                  "vpc": "*",
+                  "vpcSubnets": "*",
+                  "securityGroups": "*"
                 }
               ]
             }
           },
-          "LatestNodeRuntimeMap": {
-            "id": "LatestNodeRuntimeMap",
-            "path": "ScanOnPushStack/LatestNodeRuntimeMap",
+          "ScannerOnPush": {
+            "id": "ScannerOnPush",
+            "path": "ScanOnPushStack/ScannerOnPush",
+            "children": {
+              "CustomResourceLambda": {
+                "id": "CustomResourceLambda",
+                "path": "ScanOnPushStack/ScannerOnPush/CustomResourceLambda",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.SingletonFunction",
+                  "version": "2.178.1",
+                  "metadata": [
+                    {
+                      "uuid": "*",
+                      "lambdaPurpose": "*",
+                      "runtime": "*",
+                      "handler": "*",
+                      "code": "*",
+                      "architecture": "*",
+                      "timeout": "*",
+                      "retryAttempts": "*",
+                      "logGroup": "*"
+                    }
+                  ]
+                }
+              },
+              "Provider": {
+                "id": "Provider",
+                "path": "ScanOnPushStack/ScannerOnPush/Provider",
+                "children": {
+                  "framework-onEvent": {
+                    "id": "framework-onEvent",
+                    "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent",
+                    "children": {
+                      "ServiceRole": {
+                        "id": "ServiceRole",
+                        "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/ServiceRole",
+                        "children": {
+                          "ImportServiceRole": {
+                            "id": "ImportServiceRole",
+                            "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/ServiceRole/ImportServiceRole",
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.Resource",
+                              "version": "2.178.1",
+                              "metadata": [
+                                "*"
+                              ]
+                            }
+                          },
+                          "Resource": {
+                            "id": "Resource",
+                            "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/ServiceRole/Resource",
+                            "attributes": {
+                              "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                              "aws:cdk:cloudformation:props": {
+                                "assumeRolePolicyDocument": {
+                                  "Statement": [
+                                    {
+                                      "Action": "sts:AssumeRole",
+                                      "Effect": "Allow",
+                                      "Principal": {
+                                        "Service": "lambda.amazonaws.com"
+                                      }
+                                    }
+                                  ],
+                                  "Version": "2012-10-17"
+                                },
+                                "managedPolicyArns": [
+                                  {
+                                    "Fn::Join": [
+                                      "",
+                                      [
+                                        "arn:",
+                                        {
+                                          "Ref": "AWS::Partition"
+                                        },
+                                        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                              "version": "2.178.1"
+                            }
+                          },
+                          "DefaultPolicy": {
+                            "id": "DefaultPolicy",
+                            "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/ServiceRole/DefaultPolicy",
+                            "children": {
+                              "Resource": {
+                                "id": "Resource",
+                                "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource",
+                                "attributes": {
+                                  "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                                  "aws:cdk:cloudformation:props": {
+                                    "policyDocument": {
+                                      "Statement": [
+                                        {
+                                          "Action": "lambda:InvokeFunction",
+                                          "Effect": "Allow",
+                                          "Resource": [
+                                            {
+                                              "Fn::GetAtt": [
+                                                "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D",
+                                                "Arn"
+                                              ]
+                                            },
+                                            {
+                                              "Fn::Join": [
+                                                "",
+                                                [
+                                                  {
+                                                    "Fn::GetAtt": [
+                                                      "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D",
+                                                      "Arn"
+                                                    ]
+                                                  },
+                                                  ":*"
+                                                ]
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "Action": "lambda:GetFunction",
+                                          "Effect": "Allow",
+                                          "Resource": {
+                                            "Fn::GetAtt": [
+                                              "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D",
+                                              "Arn"
+                                            ]
+                                          }
+                                        }
+                                      ],
+                                      "Version": "2012-10-17"
+                                    },
+                                    "policyName": "ScannerOnPushProviderframeworkonEventServiceRoleDefaultPolicyBA387AA1",
+                                    "roles": [
+                                      {
+                                        "Ref": "ScannerOnPushProviderframeworkonEventServiceRole35A07A00"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                                  "version": "2.178.1"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_iam.Policy",
+                              "version": "2.178.1",
+                              "metadata": [
+                                "*",
+                                {
+                                  "attachToRole": [
+                                    "*"
+                                  ]
+                                },
+                                {
+                                  "attachToRole": [
+                                    "*"
+                                  ]
+                                },
+                                {
+                                  "addStatements": [
+                                    {}
+                                  ]
+                                },
+                                {
+                                  "addStatements": [
+                                    {}
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_iam.Role",
+                          "version": "2.178.1",
+                          "metadata": [
+                            {
+                              "assumedBy": {
+                                "principalAccount": "*",
+                                "assumeRoleAction": "*"
+                              },
+                              "managedPolicies": [
+                                {
+                                  "managedPolicyArn": "*"
+                                }
+                              ]
+                            },
+                            {
+                              "addToPrincipalPolicy": [
+                                {}
+                              ]
+                            },
+                            {
+                              "attachInlinePolicy": [
+                                "*"
+                              ]
+                            },
+                            {
+                              "attachInlinePolicy": [
+                                "*"
+                              ]
+                            },
+                            {
+                              "addToPrincipalPolicy": [
+                                {}
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "Code": {
+                        "id": "Code",
+                        "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/Code",
+                        "children": {
+                          "Stage": {
+                            "id": "Stage",
+                            "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/Code/Stage",
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.AssetStaging",
+                              "version": "2.178.1"
+                            }
+                          },
+                          "AssetBucket": {
+                            "id": "AssetBucket",
+                            "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/Code/AssetBucket",
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+                              "version": "2.178.1",
+                              "metadata": []
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_s3_assets.Asset",
+                          "version": "2.178.1"
+                        }
+                      },
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "ScanOnPushStack/ScannerOnPush/Provider/framework-onEvent/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
+                          "aws:cdk:cloudformation:props": {
+                            "code": {
+                              "s3Bucket": {
+                                "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+                              },
+                              "s3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
+                            },
+                            "description": "AWS CDK resource provider framework - onEvent (ScanOnPushStack/ScannerOnPush/Provider)",
+                            "environment": {
+                              "variables": {
+                                "USER_ON_EVENT_FUNCTION_ARN": {
+                                  "Fn::GetAtt": [
+                                    "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D",
+                                    "Arn"
+                                  ]
+                                }
+                              }
+                            },
+                            "handler": "framework.onEvent",
+                            "role": {
+                              "Fn::GetAtt": [
+                                "ScannerOnPushProviderframeworkonEventServiceRole35A07A00",
+                                "Arn"
+                              ]
+                            },
+                            "runtime": {
+                              "Fn::FindInMap": [
+                                "LatestNodeRuntimeMap",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                "value"
+                              ]
+                            },
+                            "timeout": 900
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_lambda.CfnFunction",
+                          "version": "2.178.1"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_lambda.Function",
+                      "version": "2.178.1",
+                      "metadata": [
+                        {
+                          "code": "*",
+                          "description": "*",
+                          "runtime": "*",
+                          "handler": "*",
+                          "timeout": "*",
+                          "logGroup": "*",
+                          "vpc": "*",
+                          "vpcSubnets": "*",
+                          "securityGroups": "*",
+                          "role": "*",
+                          "functionName": "*",
+                          "environmentEncryption": "*"
+                        },
+                        {
+                          "addEnvironment": [
+                            "*",
+                            "*"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.custom_resources.Provider",
+                  "version": "2.178.1"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "ScanOnPushStack/ScannerOnPush/Resource",
+                "children": {
+                  "Default": {
+                    "id": "Default",
+                    "path": "ScanOnPushStack/ScannerOnPush/Resource/Default",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.CfnResource",
+                      "version": "2.178.1"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.CustomResource",
+                  "version": "2.178.1",
+                  "metadata": [
+                    "*"
+                  ]
+                }
+              }
+            },
             "constructInfo": {
-              "fqn": "aws-cdk-lib.CfnMapping",
-              "version": "2.178.1"
+              "fqn": "constructs.Construct",
+              "version": "10.5.1"
             }
           },
           "BootstrapVersion": {

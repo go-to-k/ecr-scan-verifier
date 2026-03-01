@@ -1,154 +1,23 @@
 {
  "Resources": {
-  "ScanLogsOutputS3Bucket967BEFAF": {
-   "Type": "AWS::S3::Bucket",
-   "Properties": {
-    "Tags": [
-     {
-      "Key": "aws-cdk:auto-delete-objects",
-      "Value": "true"
-     }
-    ]
-   },
-   "UpdateReplacePolicy": "Delete",
-   "DeletionPolicy": "Delete"
-  },
-  "ScanLogsOutputS3BucketPolicy793FC942": {
-   "Type": "AWS::S3::BucketPolicy",
-   "Properties": {
-    "Bucket": {
-     "Ref": "ScanLogsOutputS3Bucket967BEFAF"
-    },
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": [
-        "s3:DeleteObject*",
-        "s3:GetBucket*",
-        "s3:List*",
-        "s3:PutBucketPolicy"
-       ],
-       "Effect": "Allow",
-       "Principal": {
-        "AWS": {
-         "Fn::GetAtt": [
-          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
-          "Arn"
-         ]
-        }
-       },
-       "Resource": [
-        {
-         "Fn::GetAtt": [
-          "ScanLogsOutputS3Bucket967BEFAF",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::Join": [
-          "",
-          [
-           {
-            "Fn::GetAtt": [
-             "ScanLogsOutputS3Bucket967BEFAF",
-             "Arn"
-            ]
-           },
-           "/*"
-          ]
-         ]
-        }
-       ]
-      }
-     ],
-     "Version": "2012-10-17"
-    }
-   }
-  },
-  "ScanLogsOutputS3BucketAutoDeleteObjectsCustomResource902064E1": {
-   "Type": "Custom::S3AutoDeleteObjects",
-   "Properties": {
-    "ServiceToken": {
-     "Fn::GetAtt": [
-      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
-      "Arn"
-     ]
-    },
-    "BucketName": {
-     "Ref": "ScanLogsOutputS3Bucket967BEFAF"
-    }
-   },
+  "BlockedConstructBlockedQueueCFDDC5AD": {
+   "Type": "AWS::SQS::Queue",
    "DependsOn": [
-    "ScanLogsOutputS3BucketPolicy793FC942"
+    "ScannerProviderframeworkonEvent93283B50",
+    "ScannerProviderframeworkonEventServiceRoleDefaultPolicy3BF43B7A",
+    "ScannerProviderframeworkonEventServiceRole5EA00D06",
+    "Scanner1EAEC57B"
    ],
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete"
   },
-  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
-   "Type": "AWS::IAM::Role",
+  "DefaultLogGroup696834B2": {
+   "Type": "AWS::Logs::LogGroup",
    "Properties": {
-    "AssumeRolePolicyDocument": {
-     "Version": "2012-10-17",
-     "Statement": [
-      {
-       "Action": "sts:AssumeRole",
-       "Effect": "Allow",
-       "Principal": {
-        "Service": "lambda.amazonaws.com"
-       }
-      }
-     ]
-    },
-    "ManagedPolicyArns": [
-     {
-      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-     }
-    ]
-   }
-  },
-  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
-   "Type": "AWS::Lambda::Function",
-   "Properties": {
-    "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
-     "S3Key": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip"
-    },
-    "Timeout": 900,
-    "MemorySize": 128,
-    "Handler": "index.handler",
-    "Role": {
-     "Fn::GetAtt": [
-      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
-      "Arn"
-     ]
-    },
-    "Runtime": {
-     "Fn::FindInMap": [
-      "LatestNodeRuntimeMap",
-      {
-       "Ref": "AWS::Region"
-      },
-      "value"
-     ]
-    },
-    "Description": {
-     "Fn::Join": [
-      "",
-      [
-       "Lambda function for auto-deleting objects in ",
-       {
-        "Ref": "ScanLogsOutputS3Bucket967BEFAF"
-       },
-       " S3 bucket."
-      ]
-     ]
-    }
+    "RetentionInDays": 1
    },
-   "DependsOn": [
-    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
-   ]
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
   },
   "ScannerProviderframeworkonEventServiceRole5EA00D06": {
    "Type": "AWS::IAM::Role",
@@ -242,7 +111,7 @@
      },
      "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
     },
-    "Description": "AWS CDK resource provider framework - onEvent (ScanLogsOutputS3Stack/Scanner/Provider)",
+    "Description": "AWS CDK resource provider framework - onEvent (AllOptionsStack/Scanner/Provider)",
     "Environment": {
      "Variables": {
       "USER_ON_EVENT_FUNCTION_ARN": {
@@ -285,7 +154,7 @@
       "Arn"
      ]
     },
-    "addr": "c8fb10390dda33b749a3d48616ff1e53e93a5edcc4",
+    "addr": "c813c8b590e3bb2ab11b0190895d6405c635d1524e",
     "repositoryName": {
      "Fn::Sub": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}"
     },
@@ -297,23 +166,9 @@
     ],
     "failOnVulnerability": "true",
     "ignoreFindings": [],
-    "output": {
-     "type": "s3",
-     "bucketName": {
-      "Ref": "ScanLogsOutputS3Bucket967BEFAF"
-     }
-    },
     "suppressErrorOnRollback": "true",
     "defaultLogGroupName": {
-     "Fn::Join": [
-      "",
-      [
-       "/aws/lambda/",
-       {
-        "Ref": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D"
-       }
-      ]
-     ]
+     "Ref": "DefaultLogGroup696834B2"
     }
    },
    "UpdateReplacePolicy": "Delete",
@@ -355,43 +210,6 @@
    "Properties": {
     "PolicyDocument": {
      "Statement": [
-      {
-       "Action": [
-        "s3:Abort*",
-        "s3:DeleteObject*",
-        "s3:GetBucket*",
-        "s3:GetObject*",
-        "s3:List*",
-        "s3:PutObject",
-        "s3:PutObjectLegalHold",
-        "s3:PutObjectRetention",
-        "s3:PutObjectTagging",
-        "s3:PutObjectVersionTagging"
-       ],
-       "Effect": "Allow",
-       "Resource": [
-        {
-         "Fn::GetAtt": [
-          "ScanLogsOutputS3Bucket967BEFAF",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::Join": [
-          "",
-          [
-           {
-            "Fn::GetAtt": [
-             "ScanLogsOutputS3Bucket967BEFAF",
-             "Arn"
-            ]
-           },
-           "/*"
-          ]
-         ]
-        }
-       ]
-      },
       {
        "Action": [
         "ecr:DescribeImageScanFindings",
@@ -454,6 +272,11 @@
      "S3Key": "6f3c65fb926791f9bd8504e53a7344d74d3647244a1a9f80778ab2fcbb2d2b37.zip"
     },
     "Handler": "index.handler",
+    "LoggingConfig": {
+     "LogGroup": {
+      "Ref": "DefaultLogGroup696834B2"
+     }
+    },
     "Role": {
      "Fn::GetAtt": [
       "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
@@ -600,16 +423,6 @@
    },
    "us-west-2": {
     "value": "nodejs20.x"
-   }
-  }
- },
- "Outputs": {
-  "ExportsOutputRefScanLogsOutputS3Bucket967BEFAF862E2E8D": {
-   "Value": {
-    "Ref": "ScanLogsOutputS3Bucket967BEFAF"
-   },
-   "Export": {
-    "Name": "ScanLogsOutputS3Stack:ExportsOutputRefScanLogsOutputS3Bucket967BEFAF862E2E8D"
    }
   }
  },

@@ -4,17 +4,17 @@
     "id": "App",
     "path": "",
     "children": {
-      "MinimalOptionsStack": {
-        "id": "MinimalOptionsStack",
-        "path": "MinimalOptionsStack",
+      "AllOptionsStack": {
+        "id": "AllOptionsStack",
+        "path": "AllOptionsStack",
         "children": {
           "DockerImage": {
             "id": "DockerImage",
-            "path": "MinimalOptionsStack/DockerImage",
+            "path": "AllOptionsStack/DockerImage",
             "children": {
               "Staging": {
                 "id": "Staging",
-                "path": "MinimalOptionsStack/DockerImage/Staging",
+                "path": "AllOptionsStack/DockerImage/Staging",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.AssetStaging",
                   "version": "2.178.1"
@@ -22,7 +22,7 @@
               },
               "Repository": {
                 "id": "Repository",
-                "path": "MinimalOptionsStack/DockerImage/Repository",
+                "path": "AllOptionsStack/DockerImage/Repository",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.aws_ecr.RepositoryBase",
                   "version": "2.178.1",
@@ -35,13 +35,78 @@
               "version": "2.178.1"
             }
           },
+          "BlockedConstruct": {
+            "id": "BlockedConstruct",
+            "path": "AllOptionsStack/BlockedConstruct",
+            "children": {
+              "BlockedQueue": {
+                "id": "BlockedQueue",
+                "path": "AllOptionsStack/BlockedConstruct/BlockedQueue",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "AllOptionsStack/BlockedConstruct/BlockedQueue/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::SQS::Queue",
+                      "aws:cdk:cloudformation:props": {}
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_sqs.CfnQueue",
+                      "version": "2.178.1"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_sqs.Queue",
+                  "version": "2.178.1",
+                  "metadata": [
+                    "*"
+                  ]
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "constructs.Construct",
+              "version": "10.5.1"
+            }
+          },
+          "DefaultLogGroup": {
+            "id": "DefaultLogGroup",
+            "path": "AllOptionsStack/DefaultLogGroup",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "AllOptionsStack/DefaultLogGroup/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Logs::LogGroup",
+                  "aws:cdk:cloudformation:props": {
+                    "retentionInDays": 1
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_logs.CfnLogGroup",
+                  "version": "2.178.1"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_logs.LogGroup",
+              "version": "2.178.1",
+              "metadata": [
+                {
+                  "removalPolicy": "destroy",
+                  "retention": 1
+                }
+              ]
+            }
+          },
           "Scanner": {
             "id": "Scanner",
-            "path": "MinimalOptionsStack/Scanner",
+            "path": "AllOptionsStack/Scanner",
             "children": {
               "CustomResourceLambda": {
                 "id": "CustomResourceLambda",
-                "path": "MinimalOptionsStack/Scanner/CustomResourceLambda",
+                "path": "AllOptionsStack/Scanner/CustomResourceLambda",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.aws_lambda.SingletonFunction",
                   "version": "2.178.1",
@@ -62,19 +127,19 @@
               },
               "Provider": {
                 "id": "Provider",
-                "path": "MinimalOptionsStack/Scanner/Provider",
+                "path": "AllOptionsStack/Scanner/Provider",
                 "children": {
                   "framework-onEvent": {
                     "id": "framework-onEvent",
-                    "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent",
+                    "path": "AllOptionsStack/Scanner/Provider/framework-onEvent",
                     "children": {
                       "ServiceRole": {
                         "id": "ServiceRole",
-                        "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole",
+                        "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole",
                         "children": {
                           "ImportServiceRole": {
                             "id": "ImportServiceRole",
-                            "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole",
+                            "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.Resource",
                               "version": "2.178.1",
@@ -85,7 +150,7 @@
                           },
                           "Resource": {
                             "id": "Resource",
-                            "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource",
+                            "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                               "aws:cdk:cloudformation:props": {
@@ -124,11 +189,11 @@
                           },
                           "DefaultPolicy": {
                             "id": "DefaultPolicy",
-                            "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy",
+                            "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource",
+                                "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                                   "aws:cdk:cloudformation:props": {
@@ -256,11 +321,11 @@
                       },
                       "Code": {
                         "id": "Code",
-                        "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/Code",
+                        "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/Code",
                         "children": {
                           "Stage": {
                             "id": "Stage",
-                            "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/Code/Stage",
+                            "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/Code/Stage",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.AssetStaging",
                               "version": "2.178.1"
@@ -268,7 +333,7 @@
                           },
                           "AssetBucket": {
                             "id": "AssetBucket",
-                            "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/Code/AssetBucket",
+                            "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/Code/AssetBucket",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.aws_s3.BucketBase",
                               "version": "2.178.1",
@@ -283,7 +348,7 @@
                       },
                       "Resource": {
                         "id": "Resource",
-                        "path": "MinimalOptionsStack/Scanner/Provider/framework-onEvent/Resource",
+                        "path": "AllOptionsStack/Scanner/Provider/framework-onEvent/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                           "aws:cdk:cloudformation:props": {
@@ -293,7 +358,7 @@
                               },
                               "s3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
                             },
-                            "description": "AWS CDK resource provider framework - onEvent (MinimalOptionsStack/Scanner/Provider)",
+                            "description": "AWS CDK resource provider framework - onEvent (AllOptionsStack/Scanner/Provider)",
                             "environment": {
                               "variables": {
                                 "USER_ON_EVENT_FUNCTION_ARN": {
@@ -364,11 +429,11 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "MinimalOptionsStack/Scanner/Resource",
+                "path": "AllOptionsStack/Scanner/Resource",
                 "children": {
                   "Default": {
                     "id": "Default",
-                    "path": "MinimalOptionsStack/Scanner/Resource/Default",
+                    "path": "AllOptionsStack/Scanner/Resource/Default",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnResource",
                       "version": "2.178.1"
@@ -391,15 +456,15 @@
           },
           "Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": {
             "id": "Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
-            "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
+            "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
             "children": {
               "ServiceRole": {
                 "id": "ServiceRole",
-                "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole",
+                "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole",
                 "children": {
                   "ImportServiceRole": {
                     "id": "ImportServiceRole",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.Resource",
                       "version": "2.178.1",
@@ -410,7 +475,7 @@
                   },
                   "Resource": {
                     "id": "Resource",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                       "aws:cdk:cloudformation:props": {
@@ -449,11 +514,11 @@
                   },
                   "DefaultPolicy": {
                     "id": "DefaultPolicy",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource",
+                        "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                           "aws:cdk:cloudformation:props": {
@@ -593,11 +658,11 @@
               },
               "Code": {
                 "id": "Code",
-                "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code",
+                "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code",
                 "children": {
                   "Stage": {
                     "id": "Stage",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/Stage",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/Stage",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.AssetStaging",
                       "version": "2.178.1"
@@ -605,7 +670,7 @@
                   },
                   "AssetBucket": {
                     "id": "AssetBucket",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/AssetBucket",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/AssetBucket",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.aws_s3.BucketBase",
                       "version": "2.178.1",
@@ -620,7 +685,7 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
+                "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                   "aws:cdk:cloudformation:props": {
@@ -634,6 +699,11 @@
                       "s3Key": "6f3c65fb926791f9bd8504e53a7344d74d3647244a1a9f80778ab2fcbb2d2b37.zip"
                     },
                     "handler": "index.handler",
+                    "loggingConfig": {
+                      "logGroup": {
+                        "Ref": "DefaultLogGroup696834B2"
+                      }
+                    },
                     "role": {
                       "Fn::GetAtt": [
                         "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
@@ -651,11 +721,11 @@
               },
               "EventInvokeConfig": {
                 "id": "EventInvokeConfig",
-                "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
+                "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
                 "children": {
                   "Resource": {
                     "id": "Resource",
-                    "path": "MinimalOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
+                    "path": "AllOptionsStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::Lambda::EventInvokeConfig",
                       "aws:cdk:cloudformation:props": {
@@ -705,7 +775,7 @@
           },
           "LatestNodeRuntimeMap": {
             "id": "LatestNodeRuntimeMap",
-            "path": "MinimalOptionsStack/LatestNodeRuntimeMap",
+            "path": "AllOptionsStack/LatestNodeRuntimeMap",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnMapping",
               "version": "2.178.1"
@@ -713,7 +783,7 @@
           },
           "BootstrapVersion": {
             "id": "BootstrapVersion",
-            "path": "MinimalOptionsStack/BootstrapVersion",
+            "path": "AllOptionsStack/BootstrapVersion",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnParameter",
               "version": "2.178.1"
@@ -721,7 +791,7 @@
           },
           "CheckBootstrapVersion": {
             "id": "CheckBootstrapVersion",
-            "path": "MinimalOptionsStack/CheckBootstrapVersion",
+            "path": "AllOptionsStack/CheckBootstrapVersion",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnRule",
               "version": "2.178.1"
@@ -733,17 +803,17 @@
           "version": "2.178.1"
         }
       },
-      "MinimalOptionsTest": {
-        "id": "MinimalOptionsTest",
-        "path": "MinimalOptionsTest",
+      "AllOptionsTest": {
+        "id": "AllOptionsTest",
+        "path": "AllOptionsTest",
         "children": {
           "DefaultTest": {
             "id": "DefaultTest",
-            "path": "MinimalOptionsTest/DefaultTest",
+            "path": "AllOptionsTest/DefaultTest",
             "children": {
               "Default": {
                 "id": "Default",
-                "path": "MinimalOptionsTest/DefaultTest/Default",
+                "path": "AllOptionsTest/DefaultTest/Default",
                 "constructInfo": {
                   "fqn": "constructs.Construct",
                   "version": "10.5.1"
@@ -751,11 +821,11 @@
               },
               "DeployAssert": {
                 "id": "DeployAssert",
-                "path": "MinimalOptionsTest/DefaultTest/DeployAssert",
+                "path": "AllOptionsTest/DefaultTest/DeployAssert",
                 "children": {
                   "BootstrapVersion": {
                     "id": "BootstrapVersion",
-                    "path": "MinimalOptionsTest/DefaultTest/DeployAssert/BootstrapVersion",
+                    "path": "AllOptionsTest/DefaultTest/DeployAssert/BootstrapVersion",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnParameter",
                       "version": "2.178.1"
@@ -763,7 +833,7 @@
                   },
                   "CheckBootstrapVersion": {
                     "id": "CheckBootstrapVersion",
-                    "path": "MinimalOptionsTest/DefaultTest/DeployAssert/CheckBootstrapVersion",
+                    "path": "AllOptionsTest/DefaultTest/DeployAssert/CheckBootstrapVersion",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnRule",
                       "version": "2.178.1"

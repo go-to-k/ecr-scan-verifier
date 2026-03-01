@@ -146,12 +146,7 @@
      "CRITICAL"
     ],
     "failOnVulnerability": "true",
-    "ignoreFindings": [
-     "CVE-2023-37920",
-     "CVE-2025-7783",
-     "CVE-2025-68121",
-     "CVE-2026-25896"
-    ],
+    "ignoreFindings": [],
     "suppressErrorOnRollback": "true",
     "defaultLogGroupName": {
      "Fn::Join": [
@@ -263,7 +258,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "2057af218c4c2a5d1d12bdb5a1a8e485f53f83a42ebe41e1a0539a86336337db.zip"
+     "S3Key": "6f3c65fb926791f9bd8504e53a7344d74d3647244a1a9f80778ab2fcbb2d2b37.zip"
     },
     "Handler": "index.handler",
     "Role": {

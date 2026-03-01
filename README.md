@@ -12,11 +12,11 @@ If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and 
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
 - **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
-Basic scanning supports both manually starting a scan and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+Basic scanning supports both starting a scan via API and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
 
 | Feature | Basic Scanning | Enhanced Scanning |
 |---|---|---|
-| Start scan manually + check results | ✅ (`startScan: true`) | — |
+| Start scan via API | ✅ (`startScan: true`) | — |
 | Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
 | SBOM generation | — | ✅ |
 
@@ -82,7 +82,7 @@ Use `ScanConfig` to choose between Basic and Enhanced scanning:
 ```ts
 import { ScanConfig } from 'ecr-scan-verifier';
 
-// Basic scanning (default) — starts a manual scan via StartImageScan API
+// Basic scanning (default) — starts a scan via StartImageScan API
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.basic({ startScan: true }),
@@ -94,7 +94,7 @@ new EcrScanVerifier(this, 'Scanner', {
   scanConfig: ScanConfig.basic({ startScan: false }),
 });
 
-// Enhanced scanning — uses Amazon Inspector (scan-on-push, no manual start)
+// Enhanced scanning — uses Amazon Inspector (scan-on-push only)
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.enhanced(),

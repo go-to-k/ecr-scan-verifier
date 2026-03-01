@@ -3,14 +3,14 @@
  */
 export interface BasicScanConfigOptions {
   /**
-   * Whether to start a manual image scan via StartImageScan API.
+   * Whether to start an image scan via StartImageScan API.
    *
    * If false, the construct will poll for existing scan results
    * (useful when scan-on-push is configured).
    *
    * **Note**: If `startScan` is false and no scan has been performed
-   * (e.g., scan-on-push is not configured), the construct will time out
-   * waiting for scan results.
+   * (e.g., scan-on-push is not configured), the deployment will fail
+   * after polling times out.
    *
    * **Note**: If scan-on-push is configured and `startScan` is true,
    * the `StartImageScan` API may return a `LimitExceededException`
@@ -44,7 +44,7 @@ export interface ScanConfigBindOutput {
   readonly scanType: string;
 
   /**
-   * Whether to start a manual image scan.
+   * Whether to start an image scan via StartImageScan API.
    */
   readonly startScan: boolean;
 }

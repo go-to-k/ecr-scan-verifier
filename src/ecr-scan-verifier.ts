@@ -1,0 +1,272 @@
+import { join } from 'path';
+import { Annotations, Aspects, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Architecture, Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
+import { ILogGroup } from 'aws-cdk-lib/aws-logs';
+import { ITopic } from 'aws-cdk-lib/aws-sns';
+import { Provider } from 'aws-cdk-lib/custom-resources';
+import { Construct, IConstruct } from 'constructs';
+import { ScannerCustomResourceProps } from './custom-resource-props';
+import { SbomOutput } from './sbom-output';
+import { ScanConfig } from './scan-config';
+import { ScanLogsOutput } from './scan-logs-output';
+import { Severity } from './types';
+
+/**
+ * Properties for EcrScanVerifier Construct.
+ */
+export interface EcrScanVerifierProps {
+  /**
+   * ECR Repository to scan.
+   */
+  readonly repository: IRepository;
+
+  /**
+   * Image tag or digest to scan.
+   *
+   * You can specify a tag (e.g., 'v1.0', 'latest') or a digest (e.g., 'sha256:abc123...').
+   * If the value starts with 'sha256:', it is treated as a digest.
+   *
+   * @default 'latest'
+   */
+  readonly imageTag?: string;
+
+  /**
+   * Scan configuration: basic (ECR native) or enhanced (Amazon Inspector).
+   *
+   * Use `ScanConfig.basic()` for ECR native basic scanning,
+   * or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+   */
+  readonly scanConfig: ScanConfig;
+
+  /**
+   * Severity threshold for vulnerability detection.
+   *
+   * If vulnerabilities at or above any of the specified severity levels are found,
+   * the scan will be considered as having found vulnerabilities.
+   *
+   * @default [Severity.CRITICAL]
+   */
+  readonly severity?: Severity[];
+
+  /**
+   * Whether to fail the CloudFormation deployment if vulnerabilities are detected
+   * above the severity threshold.
+   *
+   * @default true
+   */
+  readonly failOnVulnerability?: boolean;
+
+  /**
+   * Finding IDs to ignore during vulnerability evaluation.
+   *
+   * For basic scanning: CVE IDs (e.g., 'CVE-2023-37920')
+   * For enhanced scanning: finding ARNs or CVE IDs
+   *
+   * @default - no findings ignored
+   */
+  readonly ignoreFindings?: string[];
+
+  /**
+   * Configuration for scan logs output.
+   *
+   * @default - scan logs output to default log group created by Scanner Lambda.
+   */
+  readonly scanLogsOutput?: ScanLogsOutput;
+
+  /**
+   * SBOM (Software Bill of Materials) output configuration.
+   *
+   * SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
+   * and uploads it to S3.
+   *
+   * **Note**: SBOM export is only available with Enhanced scanning (Amazon Inspector).
+   * Using with Basic scanning will throw an error.
+   *
+   * @default - no SBOM output
+   */
+  readonly sbomOutput?: SbomOutput;
+
+  /**
+   * The Scanner Lambda function's default log group.
+   *
+   * If you use EcrScanVerifier construct multiple times in the same stack,
+   * you must specify the same log group for each construct.
+   *
+   * @default - Scanner Lambda creates the default log group.
+   */
+  readonly defaultLogGroup?: ILogGroup;
+
+  /**
+   * Suppress errors during rollback scanner Lambda execution.
+   *
+   * @default true
+   */
+  readonly suppressErrorOnRollback?: boolean;
+
+  /**
+   * SNS topic for vulnerability notification.
+   *
+   * Supports AWS Chatbot message format.
+   *
+   * @default - no notification
+   */
+  readonly vulnsNotificationTopic?: ITopic;
+
+  /**
+   * Constructs to block if vulnerabilities are detected.
+   *
+   * @default - no constructs to block
+   */
+  readonly blockConstructs?: IConstruct[];
+}
+
+/**
+ * A Construct that verifies container image scan findings with ECR image scanning.
+ * It uses a Lambda function as a Custom Resource provider to call ECR scan APIs
+ * and evaluate scan findings.
+ */
+export class EcrScanVerifier extends Construct {
+  private readonly defaultLogGroup?: ILogGroup;
+
+  constructor(scope: Construct, id: string, props: EcrScanVerifierProps) {
+    super(scope, id);
+
+    this.defaultLogGroup = props.defaultLogGroup;
+    const lambdaPurpose = 'Custom::EcrScanVerifierCustomResourceLambda';
+
+    const customResourceLambda = new SingletonFunction(this, 'CustomResourceLambda', {
+      uuid: 'c56cee6b-6775-541b-d179-c1535d88a0c8',
+      lambdaPurpose,
+      runtime: Runtime.NODEJS_22_X,
+      handler: 'index.handler',
+      code: Code.fromAsset(join(__dirname, '../assets/lambda/dist'), {
+        // exclude node_modules
+        // because the native binary of the installed esbuild changes depending on the cpu architecture
+        // and the hash value of the image asset changes depending on the execution environment.
+        exclude: ['node_modules'],
+      }),
+      architecture: Architecture.ARM_64,
+      timeout: Duration.seconds(900),
+      retryAttempts: 0,
+      logGroup: this.defaultLogGroup,
+    });
+
+    const imageTag = props.imageTag ?? 'latest';
+
+    const scanConfigOutput = props.scanConfig.bind();
+    // Validate: SBOM output requires Enhanced scanning
+    if (props.sbomOutput && scanConfigOutput.scanType === 'BASIC') {
+      throw new Error(
+        'SBOM output is only available with Enhanced scanning (ScanConfig.enhanced()). Basic scanning does not support SBOM generation.',
+      );
+    }
+
+    const outputOptions = props.scanLogsOutput?.bind(customResourceLambda);
+
+    // SBOM output (independent from scan logs)
+    const sbomConfig = props.sbomOutput?.bind(customResourceLambda);
+
+    // ECR scan permissions
+    customResourceLambda.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+        resources: [props.repository.repositoryArn],
+      }),
+    );
+
+    if (scanConfigOutput.scanType === 'ENHANCED') {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
+          resources: ['*'],
+        }),
+      );
+    }
+
+    if (scanConfigOutput.startScan) {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:StartImageScan'],
+          resources: [props.repository.repositoryArn],
+        }),
+      );
+    }
+
+    // SBOM export permissions (Inspector CreateSbomExport)
+    if (sbomConfig) {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['inspector2:CreateSbomExport', 'inspector2:GetSbomExport'],
+          resources: ['*'],
+        }),
+      );
+    }
+
+    if (props.vulnsNotificationTopic) {
+      props.vulnsNotificationTopic.grantPublish(customResourceLambda);
+    }
+
+    const suppressErrorOnRollback = props.suppressErrorOnRollback ?? true;
+    if (suppressErrorOnRollback) {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['cloudformation:DescribeStacks'],
+          resources: [Stack.of(this).stackId],
+        }),
+      );
+    }
+
+    // Check for defaultLogGroup consistency across multiple instances in the same stack
+    Aspects.of(Stack.of(this)).add({
+      visit: (node) => {
+        if (
+          node instanceof EcrScanVerifier &&
+          node._defaultLogGroup?.node.path !== this.defaultLogGroup?.node.path
+        ) {
+          Annotations.of(this).addWarningV2(
+            '@ecr-scan-verifier:duplicateLambdaDefaultLogGroup',
+            "You have to set the same log group for 'defaultLogGroup' for each EcrScanVerifier construct in the same stack.",
+          );
+        }
+      },
+    });
+
+    const verifierProvider = new Provider(this, 'Provider', {
+      onEventHandler: customResourceLambda,
+    });
+
+    const verifierProperties: ScannerCustomResourceProps = {
+      addr: this.node.addr,
+      repositoryName: props.repository.repositoryName,
+      imageTag,
+      scanType: scanConfigOutput.scanType,
+      startScan: String(scanConfigOutput.startScan),
+      severity: props.severity ?? [Severity.CRITICAL],
+      failOnVulnerability: String(props.failOnVulnerability ?? true),
+      ignoreFindings: props.ignoreFindings ?? [],
+      output: outputOptions,
+      sbom: sbomConfig,
+      suppressErrorOnRollback: String(suppressErrorOnRollback),
+      vulnsTopicArn: props.vulnsNotificationTopic?.topicArn,
+      defaultLogGroupName:
+        this.defaultLogGroup?.logGroupName ?? `/aws/lambda/${customResourceLambda.functionName}`,
+    };
+
+    new CustomResource(this, 'Resource', {
+      resourceType: 'Custom::EcrScanVerifier',
+      properties: verifierProperties,
+      serviceToken: verifierProvider.serviceToken,
+    });
+
+    props.blockConstructs?.forEach((construct) => {
+      construct.node.addDependency(this);
+    });
+  }
+
+  /** @internal */
+  get _defaultLogGroup(): ILogGroup | undefined {
+    return this.defaultLogGroup;
+  }
+}

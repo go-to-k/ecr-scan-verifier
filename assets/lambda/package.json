@@ -1,0 +1,26 @@
+{
+  "name": "lambda",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild index.ts --bundle --minify --outdir=./dist --platform=node --external:@aws-sdk/*",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudformation": "^3.848.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.624.0",
+    "@aws-sdk/client-ecr": "^3.997.0",
+    "@aws-sdk/client-inspector2": "^3.997.0",
+    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/client-sns": "^3.997.0",
+    "aws-lambda": "^1.0.7"
+  },
+  "devDependencies": {
+    "@smithy/util-stream": "^4.5.15",
+    "@types/aws-lambda": "^8.10.119",
+    "@types/node": "^18.13.0",
+    "esbuild": "^0.14.39"
+  }
+}

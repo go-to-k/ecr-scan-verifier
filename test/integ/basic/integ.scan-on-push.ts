@@ -1,10 +1,10 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
-import { DockerImageName, ECRDeployment } from "cdk-ecr-deployment";
 import { App, RemovalPolicy, Stack } from 'aws-cdk-lib';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { EcrScanVerifier, ScanConfig } from '../../../src';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { DockerImageName, ECRDeployment } from 'cdk-ecr-deployment';
+import { EcrScanVerifier, ScanConfig } from '../../../src';
 
 /**
  * Integration test for scan-on-push behavior (startScan: false).
@@ -49,7 +49,7 @@ const scanOnPushRepository = new Repository(stack, 'ScanOnPushRepository', {
   emptyOnDelete: true,
   removalPolicy: RemovalPolicy.DESTROY,
 });
-const ecrDeployment = new ECRDeployment(stack, "DeployImage", {
+const ecrDeployment = new ECRDeployment(stack, 'DeployImage', {
   src: new DockerImageName(image.imageUri),
   dest: new DockerImageName(`${scanOnPushRepository.repositoryUri}:${image.assetHash}`),
 });

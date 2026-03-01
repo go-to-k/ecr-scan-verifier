@@ -21,7 +21,7 @@
     "post-compile": "npx projen post-compile",
     "post-upgrade": "npx projen post-upgrade",
     "pre-compile": "npx projen pre-compile",
-    "release:dummy": "npx projen release:dummy",
+    "release": "npx projen release",
     "test": "tsc -p tsconfig.dev.json && npx projen test",
     "test:watch": "tsc -p tsconfig.dev.json && npx projen test:watch",
     "unbump": "npx projen unbump",

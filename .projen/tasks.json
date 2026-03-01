@@ -207,9 +207,9 @@
       "name": "pre-compile",
       "description": "Prepare the project for compilation"
     },
-    "release:dummy": {
-      "name": "release:dummy",
-      "description": "Prepare a release from \"dummy\" branch",
+    "release": {
+      "name": "release",
+      "description": "Prepare a release from \"main\" branch",
       "env": {
         "RELEASE": "true"
       },

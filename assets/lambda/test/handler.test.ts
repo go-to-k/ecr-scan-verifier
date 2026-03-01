@@ -338,13 +338,12 @@ describe('handler', () => {
     expect(sbomExport.exportSbom).not.toHaveBeenCalled();
   });
 
-  test('should not fail when SBOM export fails (non-fatal)', async () => {
+  test('should throw error when SBOM export fails', async () => {
     const mockEnhancedScanFindings: ecrScan.ScanFindings = {
       ...mockScanFindings,
       scanType: 'ENHANCED',
     };
     (ecrScan.startAndWaitForScan as jest.Mock).mockResolvedValue(mockEnhancedScanFindings);
-    jest.spyOn(console, 'error').mockImplementation();
     (sbomExport.exportSbom as jest.Mock).mockRejectedValue(new Error('SBOM export failed'));
 
     const event = {
@@ -359,11 +358,8 @@ describe('handler', () => {
       },
     };
 
-    const result = await handler(event, mockContext, mockCallback);
-
-    expect(result?.PhysicalResourceId).toBe('test-addr');
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('SBOM export failed (non-fatal)'),
+    await expect(handler(event, mockContext, mockCallback)).rejects.toThrow(
+      'SBOM export failed',
     );
   });
 

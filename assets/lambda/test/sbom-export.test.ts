@@ -3,7 +3,7 @@ import {
   CreateSbomExportCommand,
   GetSbomExportCommand,
 } from '@aws-sdk/client-inspector2';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { mockClient } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
 import { sdkStreamMixin } from '@smithy/util-stream';
@@ -45,6 +45,9 @@ describe('sbom-export', () => {
           keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+      });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{"bomFormat": "CycloneDX"}'),
       });
@@ -76,6 +79,9 @@ describe('sbom-export', () => {
           keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+      });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{"spdxVersion": "SPDX-2.3"}'),
       });
@@ -105,6 +111,9 @@ describe('sbom-export', () => {
           keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+      });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
       });
@@ -127,6 +136,9 @@ describe('sbom-export', () => {
           bucketName: 'test-bucket',
           keyPrefix: 'sbom-exports/my-repo/report.json',
         },
+      });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
@@ -188,6 +200,9 @@ describe('sbom-export', () => {
             keyPrefix: 'sbom-exports/my-repo/report.json',
           },
         });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+      });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
       });

@@ -63,21 +63,17 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   let sbomContent: SbomContent | undefined;
   if (props.sbom) {
     if (props.scanType === 'ENHANCED') {
-      try {
-        const sbomResult = await exportSbom(
-          props.repositoryName,
-          props.imageTag,
-          props.sbom.format,
-          props.sbom.bucketName,
-          props.sbom.kmsKeyArn,
-        );
-        sbomContent = {
-          content: sbomResult.sbomContent,
-          format: sbomResult.format,
-        };
-      } catch (error) {
-        console.error(`SBOM export failed (non-fatal): ${error}`);
-      }
+      const sbomResult = await exportSbom(
+        props.repositoryName,
+        props.imageTag,
+        props.sbom.format,
+        props.sbom.bucketName,
+        props.sbom.kmsKeyArn,
+      );
+      sbomContent = {
+        content: sbomResult.sbomContent,
+        format: sbomResult.format,
+      };
     } else {
       console.log('SBOM export is only available with Enhanced scanning. Skipping SBOM generation.');
     }

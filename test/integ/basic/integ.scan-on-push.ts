@@ -25,13 +25,6 @@ import { EcrScanVerifier, ScanConfig } from '../../../src';
  *   aws ecr put-image-scanning-configuration --repository-name $REPO --image-scanning-configuration scanOnPush=false
  */
 
-const IGNORE_FOR_PASSING_TESTS = [
-  'CVE-2023-37920',
-  'CVE-2025-7783',
-  'CVE-2025-68121',
-  'CVE-2026-25896',
-];
-
 const app = new App();
 const stack = new Stack(app, 'ScanOnPushStack');
 
@@ -46,7 +39,6 @@ new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
   scanConfig: ScanConfig.basic({ startScan: false }),
-  ignoreFindings: IGNORE_FOR_PASSING_TESTS,
 });
 
 new IntegTest(app, 'ScanOnPushTest', {

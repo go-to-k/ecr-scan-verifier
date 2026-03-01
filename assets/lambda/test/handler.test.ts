@@ -372,4 +372,75 @@ describe('handler', () => {
 
     expect(sbomExport.exportSbom).not.toHaveBeenCalled();
   });
+
+  test('should log enhanced findings instead of empty basic findings for Enhanced scanning', async () => {
+    const enhancedFinding = {
+      packageVulnerabilityDetails: { vulnerabilityId: 'CVE-2024-0001' },
+      severity: 'HIGH',
+      status: 'ACTIVE',
+      title: 'Test vulnerability',
+    };
+    const mockEnhancedScanFindings: ecrScan.ScanFindings = {
+      scanType: 'ENHANCED',
+      status: 'ACTIVE',
+      basicFindings: [],
+      enhancedFindings: [enhancedFinding],
+      severityCounts: { HIGH: 1 },
+      rawResponse: {
+        $metadata: {},
+        imageScanFindings: {
+          findings: [],
+          findingSeverityCounts: {},
+        },
+      },
+    };
+    (ecrScan.startAndWaitForScan as jest.Mock).mockResolvedValue(mockEnhancedScanFindings);
+
+    const event = {
+      ...baseEvent,
+      ResourceProperties: {
+        ...baseEvent.ResourceProperties,
+        scanType: 'ENHANCED',
+      },
+    };
+
+    await handler(event, mockContext, mockCallback);
+
+    const findingsLog = (console.log as jest.Mock).mock.calls.find(
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+    );
+    expect(findingsLog).toBeDefined();
+    expect(findingsLog![0]).toContain('CVE-2024-0001');
+  });
+
+  test('should log basic findings for Basic scanning', async () => {
+    const basicFinding = {
+      name: 'CVE-2024-0002',
+      severity: 'CRITICAL' as const,
+      uri: 'https://example.com',
+    };
+    const mockBasicScanFindings: ecrScan.ScanFindings = {
+      scanType: 'BASIC',
+      status: 'COMPLETE',
+      basicFindings: [basicFinding],
+      enhancedFindings: [],
+      severityCounts: { CRITICAL: 1 },
+      rawResponse: {
+        $metadata: {},
+        imageScanFindings: {
+          findings: [basicFinding],
+          findingSeverityCounts: { CRITICAL: 1 },
+        },
+      },
+    };
+    (ecrScan.startAndWaitForScan as jest.Mock).mockResolvedValue(mockBasicScanFindings);
+
+    await handler(baseEvent, mockContext, mockCallback);
+
+    const findingsLog = (console.log as jest.Mock).mock.calls.find(
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+    );
+    expect(findingsLog).toBeDefined();
+    expect(findingsLog![0]).toContain('CVE-2024-0002');
+  });
 });

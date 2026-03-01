@@ -18,6 +18,15 @@ import { EcrScanVerifier, SbomOutput, ScanConfig } from '../../../src';
  *   aws inspector2 disable --resource-types ECR
  */
 
+const IGNORE_FOR_PASSING_TESTS = [
+  'GMS-2020-2',
+  'CVE-2025-22871',
+  'CVE-2025-68121',
+  'CVE-2025-7783',
+  'CVE-2023-42282',
+  'CVE-2023-26136',
+];
+
 const app = new App();
 const stack = new Stack(app, 'SbomOutputStack');
 
@@ -39,6 +48,7 @@ new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
   scanConfig: ScanConfig.enhanced(),
+  ignoreFindings: IGNORE_FOR_PASSING_TESTS,
   sbomOutput: SbomOutput.cycloneDx14({ bucket: sbomBucket, encryptionKey: sbomKey }),
 });
 

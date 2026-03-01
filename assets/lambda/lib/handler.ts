@@ -84,7 +84,10 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   }
 
   // 4. Format and output scan logs
-  const findingsJson = JSON.stringify(scanFindings.rawResponse.imageScanFindings, null, 2);
+  const findings = scanFindings.enhancedFindings.length > 0
+    ? scanFindings.enhancedFindings
+    : scanFindings.basicFindings;
+  const findingsJson = JSON.stringify(findings, null, 2);
   const summaryText = formatScanSummary(
     scanFindings,
     evaluation,

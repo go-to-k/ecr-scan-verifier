@@ -80,6 +80,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
     '@aws-cdk/integ-runner@2.178.1-alpha.0',
     '@aws-cdk/integ-tests-alpha@2.178.1-alpha.0',
     'aws-sdk-client-mock',
+    'cdk-ecr-deployment@^4.1.1',
   ],
   packageManager: NodePackageManager.PNPM,
   workflowNodeVersion: '24',

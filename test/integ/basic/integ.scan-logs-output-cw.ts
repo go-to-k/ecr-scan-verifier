@@ -44,7 +44,7 @@ const test = new IntegTest(app, 'ScanLogsOutputCWTest', {
 test.assertions
   .awsApiCall('CloudWatchLogs', 'filterLogEvents', {
     logGroupName: scanLogsOutputLogGroup.logGroupName,
-    filterPattern: 'ECR Image Scan Results',
+    filterPattern: 'Severity Summary',
     limit: 1,
   })
   .assertAtPath('events.0.message', ExpectedResult.stringLikeRegexp('.+'))

@@ -1,8 +1,10 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
-import { App, Stack } from 'aws-cdk-lib';
+import { DockerImageName, ECRDeployment } from "cdk-ecr-deployment";
+import { App, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { EcrScanVerifier, ScanConfig } from '../../../src';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
 
 /**
  * Integration test for scan-on-push behavior (startScan: false).
@@ -40,6 +42,24 @@ new EcrScanVerifier(stack, 'Scanner', {
   imageTag: image.assetHash,
   scanConfig: ScanConfig.basic({ startScan: false }),
 });
+
+// Repository level scan-on-push
+const scanOnPushRepository = new Repository(stack, 'ScanOnPushRepository', {
+  imageScanOnPush: true,
+  emptyOnDelete: true,
+  removalPolicy: RemovalPolicy.DESTROY,
+});
+const ecrDeployment = new ECRDeployment(stack, "DeployImage", {
+  src: new DockerImageName(image.imageUri),
+  dest: new DockerImageName(`${scanOnPushRepository.repositoryUri}:${image.assetHash}`),
+});
+const verifier = new EcrScanVerifier(stack, 'ScannerOnPush', {
+  repository: scanOnPushRepository,
+  imageTag: image.assetHash,
+  scanConfig: ScanConfig.basic({ startScan: false }),
+});
+// Ensure image is deployed before verifier tries to poll for scan results
+verifier.node.addDependency(ecrDeployment);
 
 new IntegTest(app, 'ScanOnPushTest', {
   testCases: [stack],

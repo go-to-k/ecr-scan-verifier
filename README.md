@@ -12,6 +12,14 @@ If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and 
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
 - **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
+Basic scanning supports both manually starting a scan and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+
+| Feature | Basic Scanning | Enhanced Scanning |
+|---|---|---|
+| Start scan manually + check results | ✅ (`startScan: true`) | — |
+| Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
+| SBOM generation | — | ✅ |
+
 ## Usage
 
 ### Install

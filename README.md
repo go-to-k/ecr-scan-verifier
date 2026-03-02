@@ -213,6 +213,7 @@ You can generate SBOM (Software Bill of Materials) using Amazon Inspector's Crea
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';
 
 const sbomBucket = new Bucket(this, 'SbomBucket');
+const sbomEncryptionKey = new Key(this, 'SbomEncryptionKey');
 
 new EcrScanVerifier(this, 'Scanner', {
   repository,
@@ -220,7 +221,7 @@ new EcrScanVerifier(this, 'Scanner', {
   sbomOutput: SbomOutput.cycloneDx14({
     bucket: sbomBucket,
     prefix: 'sbom/', // Optional
-    kmsKeyArn: 'arn:aws:kms:...', // Optional: KMS key for encryption
+    encryptionKey: sbomEncryptionKey,
   }),
 });
 ```

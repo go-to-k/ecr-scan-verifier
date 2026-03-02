@@ -4,21 +4,36 @@
 
 This is an AWS CDK Construct that allows you to **verify container image scan findings using ECR Image Scanning (Basic/Enhanced) in CDK deployment layer**.
 
-If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and other services, or prevent the image from being pushed to the application ECR. You can also choose to receive **notifications without failing the deployment**.
+If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and other services.
 
-- **Block deployments on vulnerability detection** — works with ECS, Lambda, application ECR push, or any construct
+- **Block deployments on vulnerability detection** — works with ECS, Lambda, or any construct
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
 - **Scan logs output** — results go to CloudWatch Logs or S3
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
 - **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
-Basic scanning supports both starting a scan via API and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+## Scanning Modes
+
+This construct supports two scanning modes. With Basic scanning, the construct starts a scan via API during deployment, or checks existing scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
 
 | Feature | Basic Scanning | Enhanced Scanning |
 |---|---|---|
 | Start scan via API | ✅ (`startScan: true`) | — |
 | Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
 | SBOM generation | — | ✅ |
+
+### Prerequisites
+
+When using `ScanConfig.basic({ startScan: true })` (the default), the construct starts a scan via the ECR `StartImageScan` API during deployment — no additional ECR configuration is required.
+
+For all other modes, **scan-on-push must be enabled** on your ECR repository or account before deployment:
+
+- **`ScanConfig.basic({ startScan: false })`** — requires Basic scan-on-push to be enabled on the repository
+- **`ScanConfig.enhanced()`** — requires Enhanced scanning (Amazon Inspector) to be enabled on the account, with the repository included in Inspector's coverage
+
+If scan-on-push is not configured and no prior scan results exist, the deployment will fail with an error.
+
+> **Tip**: `startScan: true` works even when scan-on-push is already enabled. If a scan has already been triggered, the construct simply uses the existing scan results.
 
 ## Usage
 
@@ -101,12 +116,8 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-When using `startScan: false`, the construct polls for existing scan results instead of starting a new scan. This is useful when scan-on-push is configured on your ECR repository.
+See [Prerequisites](#prerequisites) for the scan-on-push requirements of each mode.
 
-> **Important**: When `startScan: false` is used, scan-on-push must be enabled on the ECR repository (or a scan must have been previously performed). If no scan results exist for the image, the deployment will immediately fail with a `ScanNotFoundException` error.
->
-> **Note**: If scan-on-push is already configured and `startScan: true` is used, the `StartImageScan` API may return a `LimitExceededException` because the image has already been scanned. The construct handles this gracefully by falling back to polling for the existing scan results.
->
 > **Important**: If Enhanced scanning (Amazon Inspector) is enabled on your account, you must use `ScanConfig.enhanced()`. Using `ScanConfig.basic()` with an Enhanced scanning account will result in a deployment error.
 
 ### Severity
@@ -215,9 +226,10 @@ Available SBOM formats:
 
 ### SNS Notification for Vulnerabilities
 
-You can configure an SNS topic to receive notifications when vulnerabilities are detected.
+You can configure an SNS topic via `vulnsNotificationTopic` to receive notifications when vulnerabilities are detected.
 
-The notification is sent **regardless of the `failOnVulnerability` setting**. This means you can receive notifications even when you don't want the deployment to fail.
+By default, the construct fails the deployment when vulnerabilities are found.
+You can set `failOnVulnerability: false` to receive SNS notifications without blocking the deployment.
 
 ```ts
 const notificationTopic = new Topic(this, 'VulnerabilityNotificationTopic');

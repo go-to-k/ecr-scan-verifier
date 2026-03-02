@@ -288,7 +288,7 @@ const ecrScanVerifierProps: EcrScanVerifierProps = { ... }
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.repository">repository</a></code> | <code>aws-cdk-lib.aws_ecr.IRepository</code> | ECR Repository to scan. |
-| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanConfig">scanConfig</a></code> | <code><a href="#ecr-scan-verifier.ScanConfig">ScanConfig</a></code> | Scan configuration: basic (ECR native) or enhanced (Amazon Inspector). |
+| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanConfig">scanConfig</a></code> | <code><a href="#ecr-scan-verifier.ScanConfig">ScanConfig</a></code> | Scan configuration — choose based on your ECR repository/account settings:. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.blockConstructs">blockConstructs</a></code> | <code>constructs.IConstruct[]</code> | Constructs to block if vulnerabilities are detected. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.defaultLogGroup">defaultLogGroup</a></code> | <code>aws-cdk-lib.aws_logs.ILogGroup</code> | The Scanner Lambda function's default log group. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.failOnVulnerability">failOnVulnerability</a></code> | <code>boolean</code> | Whether to fail the CloudFormation deployment if vulnerabilities are detected above the severity threshold. |
@@ -322,10 +322,17 @@ public readonly scanConfig: ScanConfig;
 
 - *Type:* <a href="#ecr-scan-verifier.ScanConfig">ScanConfig</a>
 
-Scan configuration: basic (ECR native) or enhanced (Amazon Inspector).
+Scan configuration — choose based on your ECR repository/account settings:.
 
-Use `ScanConfig.basic()` for ECR native basic scanning,
-or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+`ScanConfig.basic()` (default: `startScan: true`) — starts a scan via the ECR API.
+  No additional ECR configuration required.
+- `ScanConfig.basic({ startScan: false })` — polls for existing results.
+  Requires Basic scan-on-push to be enabled on the repository.
+- `ScanConfig.enhanced()` — uses Amazon Inspector enhanced scanning.
+  Requires Enhanced scanning to be enabled on the account.
+
+If the required scanning configuration is not in place and no prior scan results exist,
+the deployment will fail.
 
 ---
 

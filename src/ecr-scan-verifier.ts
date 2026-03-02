@@ -33,10 +33,17 @@ export interface EcrScanVerifierProps {
   readonly imageTag?: string;
 
   /**
-   * Scan configuration: basic (ECR native) or enhanced (Amazon Inspector).
+   * Scan configuration — choose based on your ECR repository/account settings:
    *
-   * Use `ScanConfig.basic()` for ECR native basic scanning,
-   * or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+   * - `ScanConfig.basic()` (default: `startScan: true`) — starts a scan via the ECR API.
+   *   No additional ECR configuration required.
+   * - `ScanConfig.basic({ startScan: false })` — polls for existing results.
+   *   Requires Basic scan-on-push to be enabled on the repository.
+   * - `ScanConfig.enhanced()` — uses Amazon Inspector enhanced scanning.
+   *   Requires Enhanced scanning to be enabled on the account.
+   *
+   * If the required scanning configuration is not in place and no prior scan results exist,
+   * the deployment will fail.
    */
   readonly scanConfig: ScanConfig;
 

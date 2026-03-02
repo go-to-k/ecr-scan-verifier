@@ -340,7 +340,7 @@ describe('EcrScanVerifier', () => {
     });
   });
 
-  test('adds S3 bucket policy for Inspector2 when sbomOutput is specified', () => {
+  test('adds S3 bucket policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
     const bucket = new Bucket(stack, 'SbomBucket');
     const key = new Key(stack, 'SbomKey');
 
@@ -359,6 +359,62 @@ describe('EcrScanVerifier', () => {
             Effect: 'Allow',
             Principal: {
               Service: 'inspector2.amazonaws.com',
+            },
+            Condition: {
+              StringEquals: {
+                'aws:SourceAccount': { Ref: 'AWS::AccountId' },
+              },
+              ArnLike: {
+                'aws:SourceArn': {
+                  'Fn::Join': Match.arrayWith([
+                    Match.arrayWith([
+                      Match.stringLikeRegexp('arn:'),
+                      Match.stringLikeRegexp(':inspector2:'),
+                    ]),
+                  ]),
+                },
+              },
+            },
+          }),
+        ]),
+      },
+    });
+  });
+
+  test('adds KMS key policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
+    const bucket = new Bucket(stack, 'SbomBucket');
+    const key = new Key(stack, 'SbomKey');
+
+    new EcrScanVerifier(stack, 'Scanner', {
+      repository,
+      scanConfig: ScanConfig.enhanced(),
+      sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+    });
+
+    const template = Template.fromStack(stack);
+    template.hasResourceProperties('AWS::KMS::Key', {
+      KeyPolicy: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: ['kms:Decrypt', 'kms:GenerateDataKey*'],
+            Effect: 'Allow',
+            Principal: {
+              Service: 'inspector2.amazonaws.com',
+            },
+            Condition: {
+              StringEquals: {
+                'aws:SourceAccount': { Ref: 'AWS::AccountId' },
+              },
+              ArnLike: {
+                'aws:SourceArn': {
+                  'Fn::Join': Match.arrayWith([
+                    Match.arrayWith([
+                      Match.stringLikeRegexp('arn:'),
+                      Match.stringLikeRegexp(':inspector2:'),
+                    ]),
+                  ]),
+                },
+              },
             },
           }),
         ]),

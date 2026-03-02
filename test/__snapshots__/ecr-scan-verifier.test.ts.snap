@@ -163,6 +163,28 @@ exports[`EcrScanVerifier Snapshot - all options 1`] = `
                 "s3:AbortMultipartUpload",
               ],
               "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition",
+                        },
+                        ":inspector2:",
+                        {
+                          "Ref": "AWS::Region",
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId",
+                        },
+                        ":report/*",
+                      ],
+                    ],
+                  },
+                },
                 "StringEquals": {
                   "aws:SourceAccount": {
                     "Ref": "AWS::AccountId",
@@ -479,6 +501,28 @@ exports[`EcrScanVerifier Snapshot - all options 1`] = `
                 "kms:GenerateDataKey*",
               ],
               "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition",
+                        },
+                        ":inspector2:",
+                        {
+                          "Ref": "AWS::Region",
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId",
+                        },
+                        ":report/*",
+                      ],
+                    ],
+                  },
+                },
                 "StringEquals": {
                   "aws:SourceAccount": {
                     "Ref": "AWS::AccountId",

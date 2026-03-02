@@ -1,4 +1,4 @@
-import { Stack } from 'aws-cdk-lib';
+import { Arn, ArnFormat, Stack } from 'aws-cdk-lib';
 import { IGrantable, PolicyStatement, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { IKey } from 'aws-cdk-lib/aws-kms';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
@@ -106,7 +106,17 @@ class SbomOutputImpl extends SbomOutput {
   public bind(grantee: IGrantable): SbomOutputConfig {
     this.bucket.grantReadWrite(grantee);
 
-    const account = Stack.of(this.bucket).account;
+    const stack = Stack.of(this.bucket);
+    const account = stack.account;
+    const reportArn = Arn.format(
+      {
+        service: 'inspector2',
+        resource: 'report',
+        resourceName: '*',
+        arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+      },
+      stack,
+    );
 
     // Inspector2 CreateSbomExport writes SBOM directly to the S3 bucket.
     // The service needs a bucket policy to allow PutObject.
@@ -118,6 +128,9 @@ class SbomOutputImpl extends SbomOutput {
         conditions: {
           StringEquals: {
             'aws:SourceAccount': account,
+          },
+          ArnLike: {
+            'aws:SourceArn': reportArn,
           },
         },
       }),
@@ -132,6 +145,9 @@ class SbomOutputImpl extends SbomOutput {
         conditions: {
           StringEquals: {
             'aws:SourceAccount': account,
+          },
+          ArnLike: {
+            'aws:SourceArn': reportArn,
           },
         },
       }),

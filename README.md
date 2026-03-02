@@ -1,24 +1,36 @@
 # ecr-scan-verifier
 
-## What is
+An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other services when **ECR Image Scanning detects vulnerabilities**.
 
-This is an AWS CDK Construct that allows you to **verify container image scan findings using ECR Image Scanning (Basic/Enhanced) in CDK deployment layer**.
+It integrates both Basic and Enhanced (Amazon Inspector) scanning into your CDK deployment pipeline.
 
-If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and other services, or prevent the image from being pushed to the application ECR. You can also choose to receive **notifications without failing the deployment**.
-
-- **Block deployments on vulnerability detection** — works with ECS, Lambda, application ECR push, or any construct
+- **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
-- **Scan logs output** — results go to CloudWatch Logs or S3
+- **Scan logs output** — results go to S3 or CloudWatch Logs
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
-- **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
-Basic scanning supports both starting a scan via API and checking scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+## Scanning Modes
+
+This construct supports two scanning modes. With Basic scanning, the construct starts a scan via API during deployment, or checks existing scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
 
 | Feature | Basic Scanning | Enhanced Scanning |
 |---|---|---|
 | Start scan via API | ✅ (`startScan: true`) | — |
 | Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
 | SBOM generation | — | ✅ |
+
+### Prerequisites
+
+When using `ScanConfig.basic({ startScan: true })` (the default), the construct starts a scan via the ECR `StartImageScan` API during deployment — no additional ECR configuration is required.
+
+For all other modes, **scan-on-push must be enabled** on your ECR repository or account before deployment:
+
+- **`ScanConfig.basic({ startScan: false })`** — requires Basic scan-on-push to be enabled on the repository
+- **`ScanConfig.enhanced()`** — requires Enhanced scanning (Amazon Inspector) to be enabled on the account, with the repository included in Inspector's coverage
+
+If scan-on-push is not configured and no prior scan results exist, the deployment will fail with an error.
+
+> **Tip**: `startScan: true` works even when scan-on-push is already enabled. If a scan has already been triggered, the construct simply uses the existing scan results.
 
 ## Usage
 
@@ -101,12 +113,8 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-When using `startScan: false`, the construct polls for existing scan results instead of starting a new scan. This is useful when scan-on-push is configured on your ECR repository.
+See [Prerequisites](#prerequisites) for the scan-on-push requirements of each mode.
 
-> **Important**: When `startScan: false` is used, scan-on-push must be enabled on the ECR repository (or a scan must have been previously performed). If no scan results exist for the image, the deployment will immediately fail with a `ScanNotFoundException` error.
->
-> **Note**: If scan-on-push is already configured and `startScan: true` is used, the `StartImageScan` API may return a `LimitExceededException` because the image has already been scanned. The construct handles this gracefully by falling back to polling for the existing scan results.
->
 > **Important**: If Enhanced scanning (Amazon Inspector) is enabled on your account, you must use `ScanConfig.enhanced()`. Using `ScanConfig.basic()` with an Enhanced scanning account will result in a deployment error.
 
 ### Severity
@@ -137,25 +145,24 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-### Default Log Group
+### Scan Logs Output
 
-If you want to use a custom log group for the Scanner Lambda function's default log group, you can specify the `defaultLogGroup` option.
+You can choose where to output the scan logs using `ScanLogsOutput`: S3 or CloudWatch Logs. If not specified, scan logs are written to the Scanner Lambda function's default log group.
 
-If you use EcrScanVerifier construct multiple times in the same stack, you have to set the same log group for `defaultLogGroup` for each construct. When you set different log groups for each construct, a warning message will be displayed.
+#### S3
 
 ```ts
-const logGroup = new LogGroup(this, 'LogGroup');
+const scanLogsBucket = new Bucket(this, 'ScanLogsBucket');
 
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.basic(),
-  defaultLogGroup: logGroup,
+  scanLogsOutput: ScanLogsOutput.s3({
+    bucket: scanLogsBucket,
+    prefix: 'scan-logs/', // Optional
+  }),
 });
 ```
-
-### Scan Logs Output
-
-You can choose where to output the scan logs using `ScanLogsOutput`.
 
 #### CloudWatch Logs
 
@@ -171,18 +178,26 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-#### S3
+#### Default Log Group
+
+You can customize the Scanner Lambda function's log group with `defaultLogGroup`.
+
+If you use `EcrScanVerifier` construct multiple times in the same stack, you have to set the same log group for `defaultLogGroup` for each construct. When you set different log groups for each construct, a warning message will be displayed.
 
 ```ts
-const scanLogsBucket = new Bucket(this, 'ScanLogsBucket');
+const logGroup = new LogGroup(this, 'LogGroup');
 
-new EcrScanVerifier(this, 'Scanner', {
+new EcrScanVerifier(this, 'Scanner1', {
   repository,
   scanConfig: ScanConfig.basic(),
-  scanLogsOutput: ScanLogsOutput.s3({
-    bucket: scanLogsBucket,
-    prefix: 'scan-logs/', // Optional
-  }),
+  defaultLogGroup: logGroup,
+});
+
+new EcrScanVerifier(this, 'Scanner2', {
+  repository,
+  scanConfig: ScanConfig.basic(),
+  defaultLogGroup: new LogGroup(this, 'AnotherLogGroup'), // NG: different log group from Scanner1
+  defaultLogGroup: logGroup, // OK: Use the same log group as Scanner1 to avoid warning
 });
 ```
 
@@ -215,9 +230,10 @@ Available SBOM formats:
 
 ### SNS Notification for Vulnerabilities
 
-You can configure an SNS topic to receive notifications when vulnerabilities are detected.
+You can configure an SNS topic via `vulnsNotificationTopic` to receive notifications when vulnerabilities are detected.
 
-The notification is sent **regardless of the `failOnVulnerability` setting**. This means you can receive notifications even when you don't want the deployment to fail.
+By default, the construct fails the deployment when vulnerabilities are found.
+You can set `failOnVulnerability: false` to receive SNS notifications without blocking the deployment.
 
 ```ts
 const notificationTopic = new Topic(this, 'VulnerabilityNotificationTopic');

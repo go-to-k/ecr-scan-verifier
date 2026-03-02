@@ -4,7 +4,7 @@ An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other servi
 
 It integrates both Basic and Enhanced (Amazon Inspector) scanning into your CDK deployment pipeline.
 
-- **Block deployments on vulnerability detection** — works with ECS, Lambda, or any construct
+- **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
 - **Scan logs output** — results go to CloudWatch Logs or S3
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector

@@ -35,12 +35,12 @@ export const sendVulnsNotification = async (
     version: '1.0',
     source: 'custom',
     content: {
-      title: 'Image Scanner with ECR - Vulnerability Alert',
+      title: 'Ecr Scan Verifier - Vulnerability Alert',
       description: `## Scanned Image\n${imageIdentifier}\n\n## Scan Logs\n${logsInfo}\n\n## Details\n${errorMessage}`,
     },
   };
 
-  const plainTextMessage = `Image Scanner with ECR detected vulnerabilities in ${imageIdentifier}\n\n${logsInfo}\n\n${errorMessage}`;
+  const plainTextMessage = `Ecr Scan Verifier detected vulnerabilities in ${imageIdentifier}\n\n${logsInfo}\n\n${errorMessage}`;
 
   const messageStructure = {
     default: plainTextMessage,

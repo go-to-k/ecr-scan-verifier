@@ -71,177 +71,378 @@ describe('EcrScanVerifier', () => {
     });
   });
 
-  test('grants ECR scan permissions', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic(),
+  describe('grants', () => {
+    test('ECR scan permissions', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+              Effect: 'Allow',
+            }),
+          ]),
+        },
+      });
     });
 
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
-            Effect: 'Allow',
-          }),
-        ]),
-      },
-    });
-  });
+    test('Inspector2 permissions for enhanced scan', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+      });
 
-  test('grants Inspector2 permissions only for enhanced scan', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.enhanced(),
-    });
-
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
-            Effect: 'Allow',
-            Resource: '*',
-          }),
-        ]),
-      },
-    });
-  });
-
-  test('does not grant Inspector2 permissions for basic scan', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic(),
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        1,
+      );
     });
 
-    const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const inspectorStatements = policyStatements.filter(
-      (s: any) => Array.isArray(s.Action) && s.Action.includes('inspector2:ListCoverage'),
-    );
-    expect(inspectorStatements.length).toBe(0);
-  });
+    test('no Inspector2 permissions for basic scan', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
 
-  test('grants StartImageScan for basic scan with startScan true', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic({ startScan: true }),
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        0,
+      );
     });
 
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: 'ecr:StartImageScan',
-            Effect: 'Allow',
-          }),
-        ]),
-      },
-    });
-  });
+    test('StartImageScan for basic scan with startScan true', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic({ startScan: true }),
+      });
 
-  test('does not grant StartImageScan for basic scan with startScan false', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic({ startScan: false }),
-    });
-
-    const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const startScanStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'ecr:StartImageScan' ||
-        (Array.isArray(s.Action) && s.Action.includes('ecr:StartImageScan')),
-    );
-    expect(startScanStatements.length).toBe(0);
-  });
-
-  test('does not grant StartImageScan for enhanced scan', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.enhanced(),
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:StartImageScan',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        1,
+      );
     });
 
-    const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const startScanStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'ecr:StartImageScan' ||
-        (Array.isArray(s.Action) && s.Action.includes('ecr:StartImageScan')),
-    );
-    expect(startScanStatements.length).toBe(0);
-  });
+    test('no StartImageScan for basic scan with startScan false', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic({ startScan: false }),
+      });
 
-  test('grants CloudFormation DescribeStacks permission', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic(),
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:StartImageScan',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
     });
 
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: 'cloudformation:DescribeStacks',
-            Effect: 'Allow',
-          }),
-        ]),
-      },
-    });
-  });
+    test('no StartImageScan for enhanced scan', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+      });
 
-  test('does not grant CloudFormation permission when suppressErrorOnRollback is false', () => {
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic(),
-      suppressErrorOnRollback: false,
-    });
-
-    const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const cfnStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'cloudformation:DescribeStacks' ||
-        (Array.isArray(s.Action) && s.Action.includes('cloudformation:DescribeStacks')),
-    );
-    expect(cfnStatements.length).toBe(0);
-  });
-
-  test('grants SNS publish permission when topic is specified', () => {
-    const topic = new Topic(stack, 'Topic');
-
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.basic(),
-      vulnsNotificationTopic: topic,
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:StartImageScan',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
     });
 
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: 'sns:Publish',
-            Effect: 'Allow',
-          }),
-        ]),
-      },
+    test('CloudFormation DescribeStacks permission', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'cloudformation:DescribeStacks',
+                Effect: 'Allow',
+                Resource: { Ref: 'AWS::StackId' },
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
+    test('no CloudFormation permission when suppressErrorOnRollback is false', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        suppressErrorOnRollback: false,
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'cloudformation:DescribeStacks',
+                Effect: 'Allow',
+                Resource: { Ref: 'AWS::StackId' },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+    });
+
+    test('SNS publish permission when topic is specified', () => {
+      const topic = new Topic(stack, 'Topic');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        vulnsNotificationTopic: topic,
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'sns:Publish',
+                Effect: 'Allow',
+                Resource: { Ref: Match.stringLikeRegexp('Topic') },
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
+    test('no SNS publish permission when topic is not specified', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'sns:Publish',
+                Effect: 'Allow',
+                Resource: { Ref: Match.stringLikeRegexp('Topic') },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+    });
+
+    test('SBOM export permissions when sbomOutput is specified', () => {
+      const bucket = new Bucket(stack, 'SbomBucket');
+      const key = new Key(stack, 'SbomKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['inspector2:CreateSbomExport', 'inspector2:GetSbomExport'],
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
+    test('no SBOM export permissions when sbomOutput is not specified', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['inspector2:CreateSbomExport', 'inspector2:GetSbomExport'],
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        0,
+      );
+    });
+
+    test('S3 bucket policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
+      const bucket = new Bucket(stack, 'SbomBucket');
+      const key = new Key(stack, 'SbomKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::S3::BucketPolicy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: ['s3:PutObject', 's3:AbortMultipartUpload'],
+              Effect: 'Allow',
+              Principal: {
+                Service: 'inspector2.amazonaws.com',
+              },
+              Condition: {
+                StringEquals: {
+                  'aws:SourceAccount': { Ref: 'AWS::AccountId' },
+                },
+                ArnLike: {
+                  'aws:SourceArn': {
+                    'Fn::Join': Match.arrayWith([
+                      Match.arrayWith([
+                        Match.stringLikeRegexp('arn:'),
+                        Match.stringLikeRegexp(':inspector2:'),
+                      ]),
+                    ]),
+                  },
+                },
+              },
+            }),
+          ]),
+        },
+      });
+    });
+
+    test('KMS key policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
+      const bucket = new Bucket(stack, 'SbomBucket');
+      const key = new Key(stack, 'SbomKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::KMS::Key', {
+        KeyPolicy: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: ['kms:Decrypt', 'kms:GenerateDataKey*'],
+              Effect: 'Allow',
+              Principal: {
+                Service: 'inspector2.amazonaws.com',
+              },
+              Condition: {
+                StringEquals: {
+                  'aws:SourceAccount': { Ref: 'AWS::AccountId' },
+                },
+                ArnLike: {
+                  'aws:SourceArn': {
+                    'Fn::Join': Match.arrayWith([
+                      Match.arrayWith([
+                        Match.stringLikeRegexp('arn:'),
+                        Match.stringLikeRegexp(':inspector2:'),
+                      ]),
+                    ]),
+                  },
+                },
+              },
+            }),
+          ]),
+        },
+      });
     });
   });
 
@@ -313,112 +514,6 @@ describe('EcrScanVerifier', () => {
     const template = Template.fromStack(stack);
     template.hasResourceProperties('Custom::EcrScanVerifier', {
       imageTag: 'v2.0',
-    });
-  });
-
-  test('grants SBOM export permissions when sbomOutput is specified', () => {
-    const bucket = new Bucket(stack, 'SbomBucket');
-    const key = new Key(stack, 'SbomKey');
-
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.enhanced(),
-      sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
-    });
-
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: ['inspector2:CreateSbomExport', 'inspector2:GetSbomExport'],
-            Effect: 'Allow',
-            Resource: '*',
-          }),
-        ]),
-      },
-    });
-  });
-
-  test('adds S3 bucket policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
-    const bucket = new Bucket(stack, 'SbomBucket');
-    const key = new Key(stack, 'SbomKey');
-
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.enhanced(),
-      sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
-    });
-
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::S3::BucketPolicy', {
-      PolicyDocument: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: ['s3:PutObject', 's3:AbortMultipartUpload'],
-            Effect: 'Allow',
-            Principal: {
-              Service: 'inspector2.amazonaws.com',
-            },
-            Condition: {
-              StringEquals: {
-                'aws:SourceAccount': { Ref: 'AWS::AccountId' },
-              },
-              ArnLike: {
-                'aws:SourceArn': {
-                  'Fn::Join': Match.arrayWith([
-                    Match.arrayWith([
-                      Match.stringLikeRegexp('arn:'),
-                      Match.stringLikeRegexp(':inspector2:'),
-                    ]),
-                  ]),
-                },
-              },
-            },
-          }),
-        ]),
-      },
-    });
-  });
-
-  test('adds KMS key policy for Inspector2 with ArnLike condition when sbomOutput is specified', () => {
-    const bucket = new Bucket(stack, 'SbomBucket');
-    const key = new Key(stack, 'SbomKey');
-
-    new EcrScanVerifier(stack, 'Scanner', {
-      repository,
-      scanConfig: ScanConfig.enhanced(),
-      sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
-    });
-
-    const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::KMS::Key', {
-      KeyPolicy: {
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: ['kms:Decrypt', 'kms:GenerateDataKey*'],
-            Effect: 'Allow',
-            Principal: {
-              Service: 'inspector2.amazonaws.com',
-            },
-            Condition: {
-              StringEquals: {
-                'aws:SourceAccount': { Ref: 'AWS::AccountId' },
-              },
-              ArnLike: {
-                'aws:SourceArn': {
-                  'Fn::Join': Match.arrayWith([
-                    Match.arrayWith([
-                      Match.stringLikeRegexp('arn:'),
-                      Match.stringLikeRegexp(':inspector2:'),
-                    ]),
-                  ]),
-                },
-              },
-            },
-          }),
-        ]),
-      },
     });
   });
 

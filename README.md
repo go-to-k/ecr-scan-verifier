@@ -6,7 +6,7 @@ It integrates both Basic and Enhanced (Amazon Inspector) scanning into your CDK 
 
 - **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
-- **Scan logs output** — results go to CloudWatch Logs or S3
+- **Scan logs output** — results go to S3 or CloudWatch Logs
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
 
 ## Scanning Modes
@@ -145,25 +145,24 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-### Default Log Group
+### Scan Logs Output
 
-If you want to use a custom log group for the Scanner Lambda function's default log group, you can specify the `defaultLogGroup` option.
+You can choose where to output the scan logs using `ScanLogsOutput`: S3 or CloudWatch Logs. If not specified, scan logs are written to the Scanner Lambda function's default log group.
 
-If you use EcrScanVerifier construct multiple times in the same stack, you have to set the same log group for `defaultLogGroup` for each construct. When you set different log groups for each construct, a warning message will be displayed.
+#### S3
 
 ```ts
-const logGroup = new LogGroup(this, 'LogGroup');
+const scanLogsBucket = new Bucket(this, 'ScanLogsBucket');
 
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.basic(),
-  defaultLogGroup: logGroup,
+  scanLogsOutput: ScanLogsOutput.s3({
+    bucket: scanLogsBucket,
+    prefix: 'scan-logs/', // Optional
+  }),
 });
 ```
-
-### Scan Logs Output
-
-You can choose where to output the scan logs using `ScanLogsOutput`.
 
 #### CloudWatch Logs
 
@@ -179,18 +178,26 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
-#### S3
+#### Default Log Group
+
+You can customize the Scanner Lambda function's log group with `defaultLogGroup`.
+
+If you use `EcrScanVerifier` construct multiple times in the same stack, you have to set the same log group for `defaultLogGroup` for each construct. When you set different log groups for each construct, a warning message will be displayed.
 
 ```ts
-const scanLogsBucket = new Bucket(this, 'ScanLogsBucket');
+const logGroup = new LogGroup(this, 'LogGroup');
 
-new EcrScanVerifier(this, 'Scanner', {
+new EcrScanVerifier(this, 'Scanner1', {
   repository,
   scanConfig: ScanConfig.basic(),
-  scanLogsOutput: ScanLogsOutput.s3({
-    bucket: scanLogsBucket,
-    prefix: 'scan-logs/', // Optional
-  }),
+  defaultLogGroup: logGroup,
+});
+
+new EcrScanVerifier(this, 'Scanner2', {
+  repository,
+  scanConfig: ScanConfig.basic(),
+  defaultLogGroup: new LogGroup(this, 'AnotherLogGroup'), // NG: different log group from Scanner1
+  defaultLogGroup: logGroup, // OK: Use the same log group as Scanner1 to avoid warning
 });
 ```
 

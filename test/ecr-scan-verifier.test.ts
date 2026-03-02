@@ -97,17 +97,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
       PolicyDocument: {
         Statement: Match.arrayWith([
-          Match.objectLike({
+          {
             Action: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
             Effect: 'Allow',
             Resource: '*',
-          }),
+          },
         ]),
       },
-    });
+    }, 1);
   });
 
   test('does not grant Inspector2 permissions for basic scan', () => {
@@ -117,14 +117,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const inspectorStatements = policyStatements.filter(
-      (s: any) => Array.isArray(s.Action) && s.Action.includes('inspector2:ListCoverage'),
-    );
-    expect(inspectorStatements.length).toBe(0);
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          {
+            Action: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
+            Effect: 'Allow',
+            Resource: '*',
+          },
+        ]),
+      },
+    }, 0);
   });
 
   test('grants StartImageScan for basic scan with startScan true', () => {
@@ -134,16 +137,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
       PolicyDocument: {
         Statement: Match.arrayWith([
-          Match.objectLike({
+          {
             Action: 'ecr:StartImageScan',
             Effect: 'Allow',
-          }),
+            Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+          },
         ]),
       },
-    });
+    }, 1);
   });
 
   test('does not grant StartImageScan for basic scan with startScan false', () => {
@@ -153,16 +157,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const startScanStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'ecr:StartImageScan' ||
-        (Array.isArray(s.Action) && s.Action.includes('ecr:StartImageScan')),
-    );
-    expect(startScanStatements.length).toBe(0);
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          {
+            Action: 'ecr:StartImageScan',
+            Effect: 'Allow',
+            Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+          },
+        ]),
+      },
+    }, 0);
   });
 
   test('does not grant StartImageScan for enhanced scan', () => {
@@ -172,16 +177,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const startScanStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'ecr:StartImageScan' ||
-        (Array.isArray(s.Action) && s.Action.includes('ecr:StartImageScan')),
-    );
-    expect(startScanStatements.length).toBe(0);
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          {
+            Action: 'ecr:StartImageScan',
+            Effect: 'Allow',
+            Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+          },
+        ]),
+      },
+    }, 0);
   });
 
   test('grants CloudFormation DescribeStacks permission', () => {
@@ -191,16 +197,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    template.hasResourceProperties('AWS::IAM::Policy', {
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
       PolicyDocument: {
         Statement: Match.arrayWith([
-          Match.objectLike({
+          {
             Action: 'cloudformation:DescribeStacks',
             Effect: 'Allow',
-          }),
+            Resource: { Ref: 'AWS::StackId' },
+          },
         ]),
       },
-    });
+    }, 1);
   });
 
   test('does not grant CloudFormation permission when suppressErrorOnRollback is false', () => {
@@ -211,16 +218,17 @@ describe('EcrScanVerifier', () => {
     });
 
     const template = Template.fromStack(stack);
-    const policies = template.findResources('AWS::IAM::Policy');
-    const policyStatements = Object.values(policies).flatMap(
-      (p: any) => p.Properties.PolicyDocument.Statement,
-    );
-    const cfnStatements = policyStatements.filter(
-      (s: any) =>
-        s.Action === 'cloudformation:DescribeStacks' ||
-        (Array.isArray(s.Action) && s.Action.includes('cloudformation:DescribeStacks')),
-    );
-    expect(cfnStatements.length).toBe(0);
+    template.resourcePropertiesCountIs('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          {
+            Action: 'cloudformation:DescribeStacks',
+            Effect: 'Allow',
+            Resource: { Ref: 'AWS::StackId' },
+          },
+        ]),
+      },
+    }, 0);
   });
 
   test('grants SNS publish permission when topic is specified', () => {

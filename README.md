@@ -1,16 +1,13 @@
 # ecr-scan-verifier
 
-## What is
+An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other services when **ECR Image Scanning detects vulnerabilities**.
 
-This is an AWS CDK Construct that allows you to **verify container image scan findings using ECR Image Scanning (Basic/Enhanced) in CDK deployment layer**.
-
-If it detects vulnerabilities, it can **block deployments** to ECS, Lambda, and other services.
+It integrates both Basic and Enhanced (Amazon Inspector) scanning into your CDK deployment pipeline.
 
 - **Block deployments on vulnerability detection** — works with ECS, Lambda, or any construct
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
 - **Scan logs output** — results go to CloudWatch Logs or S3
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
-- **Basic and Enhanced scanning** — use ECR native basic scanning or Amazon Inspector enhanced scanning
 
 ## Scanning Modes
 

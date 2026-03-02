@@ -2,7 +2,7 @@
 
 An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other services when **ECR Image Scanning detects vulnerabilities**.
 
-It integrates both Basic and Enhanced (Amazon Inspector) scanning into your CDK deployment pipeline.
+It scans a specified container image during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning.
 
 - **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
@@ -152,6 +152,8 @@ You can choose where to output the scan logs using `ScanLogsOutput`: S3 or Cloud
 #### S3
 
 ```ts
+import { ScanLogsOutput } from 'ecr-scan-verifier';
+
 const scanLogsBucket = new Bucket(this, 'ScanLogsBucket');
 
 new EcrScanVerifier(this, 'Scanner', {

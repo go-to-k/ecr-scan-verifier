@@ -70,6 +70,28 @@
          "aws:SourceAccount": {
           "Ref": "AWS::AccountId"
          }
+        },
+        "ArnLike": {
+         "aws:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":inspector2:",
+            {
+             "Ref": "AWS::Region"
+            },
+            ":",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":report/*"
+           ]
+          ]
+         }
         }
        },
        "Effect": "Allow",
@@ -218,6 +240,28 @@
         "StringEquals": {
          "aws:SourceAccount": {
           "Ref": "AWS::AccountId"
+         }
+        },
+        "ArnLike": {
+         "aws:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":inspector2:",
+            {
+             "Ref": "AWS::Region"
+            },
+            ":",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":report/*"
+           ]
+          ]
          }
         }
        },

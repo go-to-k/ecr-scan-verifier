@@ -128,6 +128,10 @@ Lambda 側の署名検証ロジック。
    - trust store: `truststore/signingAuthority/aws-signer-ts/<certs>`
    - 修正: Dockerfile の COPY で正しい構造に配置
 
+5. **trust policy not present エラー**: notation が trust policy を見つけられない
+   - 原因: `trustpolicy/trustpolicy.json` (サブディレクトリ) に書いていたが、notation は `{NOTATION_CONFIG}/trustpolicy.json` (直下) を期待
+   - 修正: `mkdirSync('trustpolicy')` を削除し、`trustpolicy.json` を `NOTATION_CONFIG` 直下に書き込み
+
 #### 5. `test/signature-verification.test.ts` ✅
 
 CDK Construct テスト

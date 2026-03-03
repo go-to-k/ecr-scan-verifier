@@ -9,19 +9,20 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *
  * Prerequisites:
  *   1. Create an AWS Signer signing profile:
- *     aws signer put-signing-profile \
+ *     VERSION_ARN=$(aws signer put-signing-profile \
  *       --profile-name EcrScanVerifierTest \
- *       --platform-id Notation-OCI-SHA384-ECDSA
+ *       --platform-id Notation-OCI-SHA384-ECDSA \
+ *       --query 'profileVersionArn' --output text)
  *
  *   2. Enable ECR Managed Signing on the CDK staging ECR repository (cdk-xxx-container-assets-xxx):
  *     aws ecr put-account-setting --name CONTAINER_REGISTRAR_SIGNING --value ENABLED
  *     aws ecr put-registry-signing-configuration \
- *       --signing-profiles '[{"signingProfileName": "EcrScanVerifierTest", "signingProfileVersionArn": "<signing-profile-version-arn>"}]'
+ *       --signing-profiles "[{\"signingProfileName\": \"EcrScanVerifierTest\", \"signingProfileVersionArn\": \"${VERSION_ARN}\"}]"
  *
  *     Alternatively, configure signing per-repository:
  *     aws ecr put-image-signing-configuration \
  *       --repository-name <cdk-staging-repo> \
- *       --image-signing-configuration '{"signingProfileVersionArn":"<signing-profile-version-arn>"}'
+ *       --image-signing-configuration "{\"signingProfileVersionArn\":\"${VERSION_ARN}\"}"
  *
  *   3. After enabling, push a test image and verify it gets signed:
  *     aws ecr describe-image-signing-status \
@@ -32,10 +33,8 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *     aws inspector2 disable --resource-types ECR
  *
  * Run:
- *   pnpm integ:signature:update -- --test integ.notation
- *
- * Pass the signing profile ARN via CDK context:
- *   -c signerProfileArn=arn:aws:signer:us-east-1:123456789012:/signing-profiles/EcrScanVerifierTest
+ *   PROFILE_ARN=$(aws signer get-signing-profile --profile-name EcrScanVerifierTest --query 'arn' --output text)
+ *   pnpm integ:signature:update -- --test integ.notation -c signerProfileArn="${PROFILE_ARN}"
  */
 
 const app = new App();

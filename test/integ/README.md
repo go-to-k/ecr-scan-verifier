@@ -109,20 +109,24 @@ Requires Enhanced scanning to be **DISABLED** and additional setup for signing.
 #### Notation (AWS Signer)
 
 ```bash
-# 1. Create a signing profile
-aws signer put-signing-profile \
+# 1. Create a signing profile and capture the version ARN
+VERSION_ARN=$(aws signer put-signing-profile \
   --profile-name EcrScanVerifierTest \
-  --platform-id Notation-OCI-SHA384-ECDSA
+  --platform-id Notation-OCI-SHA384-ECDSA \
+  --query 'profileVersionArn' --output text)
 
 # 2. Enable ECR Managed Signing (auto-signs images on push)
 aws ecr put-account-setting --name CONTAINER_REGISTRAR_SIGNING --value ENABLED
 aws ecr put-registry-signing-configuration \
-  --signing-profiles '[{"signingProfileName": "EcrScanVerifierTest", "signingProfileVersionArn": "<version-arn>"}]'
+  --signing-profiles "[{\"signingProfileName\": \"EcrScanVerifierTest\", \"signingProfileVersionArn\": \"${VERSION_ARN}\"}]"
 
 # 3. Run the Notation integ test
+PROFILE_ARN=$(aws signer get-signing-profile \
+  --profile-name EcrScanVerifierTest \
+  --query 'arn' --output text)
 pnpm integ:signature:update -- \
   --test integ.notation \
-  -c signerProfileArn=arn:aws:signer:<region>:<account>:/signing-profiles/EcrScanVerifierTest
+  -c signerProfileArn="${PROFILE_ARN}"
 ```
 
 #### Cosign (KMS)

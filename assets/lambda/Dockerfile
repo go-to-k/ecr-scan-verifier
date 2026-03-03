@@ -1,6 +1,6 @@
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
 
-RUN dnf install -y cpio curl unzip && dnf clean all
+RUN dnf install -y cpio && dnf clean all
 
 # Notation CLI + AWS Signer plugin (rpm2cpio for cross-arch build)
 RUN curl -sLo /tmp/signer.rpm \

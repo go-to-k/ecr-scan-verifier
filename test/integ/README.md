@@ -109,24 +109,21 @@ Requires Enhanced scanning to be **DISABLED** and additional setup for signing.
 #### Notation (AWS Signer)
 
 ```bash
-# 1. Create a signing profile and capture the version ARN
-VERSION_ARN=$(aws signer put-signing-profile \
+# 1. Create a signing profile
+aws signer put-signing-profile \
   --profile-name EcrScanVerifierTest \
-  --platform-id Notation-OCI-SHA384-ECDSA \
-  --query 'profileVersionArn' --output text)
+  --platform-id Notation-OCI-SHA384-ECDSA
 
 # 2. Enable ECR Managed Signing (auto-signs images on push)
-aws ecr put-account-setting --name CONTAINER_REGISTRAR_SIGNING --value ENABLED
-aws ecr put-registry-signing-configuration \
-  --signing-profiles "[{\"signingProfileName\": \"EcrScanVerifierTest\", \"signingProfileVersionArn\": \"${VERSION_ARN}\"}]"
-
-# 3. Run the Notation integ test
 PROFILE_ARN=$(aws signer get-signing-profile \
   --profile-name EcrScanVerifierTest \
   --query 'arn' --output text)
-pnpm integ:signature:update -- \
-  --test integ.notation \
-  -c signerProfileArn="${PROFILE_ARN}"
+aws ecr put-signing-configuration \
+  --signing-configuration "{\"rules\":[{\"signingProfileArn\":\"${PROFILE_ARN}\"}]}"
+
+# 3. Run the Notation integ test
+SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
+  --language javascript --test-regex integ.notation.js
 ```
 
 #### Cosign (KMS)
@@ -140,18 +137,39 @@ KMS_KEY_ARN=$(aws kms create-key \
   --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
   --query 'KeyMetadata.Arn' --output text)
 
-# 3. Push the image first by running cdk synth (which triggers docker push)
+# 3. Build and synth to publish the Docker image asset only (no deploy)
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGION=$(aws configure get region)
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
-#    Then sign the image with cosign.
-#    Replace <repo> and <digest> with the values from the cdk synth output.
+tsc -p tsconfig.dev.json
+cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth \
+  --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
+npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
+
+# 4. Sign the pushed image with cosign
+DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
+  --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
 aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
-cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/<repo>@<digest>"
+cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
-# 4. Run the Cosign KMS integ test
-pnpm integ:signature:update -- \
-  --test integ.cosign-kms \
-  -c cosignKmsKeyArn="${KMS_KEY_ARN}"
+# 5. Run the integ test
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
+  --language javascript --test-regex integ.cosign-kms.js
+```
+
+#### Cleanup
+
+```bash
+# Remove ECR Managed Signing configuration
+aws ecr delete-signing-configuration
+
+# Cancel the signing profile (cannot be deleted, but can be revoked)
+aws signer cancel-signing-profile --profile-name EcrScanVerifierTest
+
+# Schedule KMS key deletion (minimum 7-day waiting period)
+KMS_KEY_ID=$(echo "${KMS_KEY_ARN}" | grep -o '[^/]*$')
+aws kms schedule-key-deletion --key-id "${KMS_KEY_ID}" --pending-window-in-days 7
 ```

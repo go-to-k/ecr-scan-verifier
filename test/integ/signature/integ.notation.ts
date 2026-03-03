@@ -9,42 +9,32 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *
  * Prerequisites:
  *   1. Create an AWS Signer signing profile:
- *     VERSION_ARN=$(aws signer put-signing-profile \
+ *     aws signer put-signing-profile \
  *       --profile-name EcrScanVerifierTest \
- *       --platform-id Notation-OCI-SHA384-ECDSA \
- *       --query 'profileVersionArn' --output text)
+ *       --platform-id Notation-OCI-SHA384-ECDSA
  *
- *   2. Enable ECR Managed Signing on the CDK staging ECR repository (cdk-xxx-container-assets-xxx):
- *     aws ecr put-account-setting --name CONTAINER_REGISTRAR_SIGNING --value ENABLED
- *     aws ecr put-registry-signing-configuration \
- *       --signing-profiles "[{\"signingProfileName\": \"EcrScanVerifierTest\", \"signingProfileVersionArn\": \"${VERSION_ARN}\"}]"
+ *   2. Enable ECR Managed Signing (auto-signs images on push):
+ *     PROFILE_ARN=$(aws signer get-signing-profile \
+ *       --profile-name EcrScanVerifierTest --query 'arn' --output text)
+ *     aws ecr put-signing-configuration \
+ *       --signing-configuration "{\"rules\":[{\"signingProfileArn\":\"${PROFILE_ARN}\"}]}"
  *
- *     Alternatively, configure signing per-repository:
- *     aws ecr put-image-signing-configuration \
- *       --repository-name <cdk-staging-repo> \
- *       --image-signing-configuration "{\"signingProfileVersionArn\":\"${VERSION_ARN}\"}"
- *
- *   3. After enabling, push a test image and verify it gets signed:
- *     aws ecr describe-image-signing-status \
- *       --repository-name <repo-name> \
- *       --image-id imageDigest=<digest>
- *
- *   4. Enhanced scanning must be DISABLED:
+ *   3. Enhanced scanning must be DISABLED:
  *     aws inspector2 disable --resource-types ECR
  *
  * Run:
- *   PROFILE_ARN=$(aws signer get-signing-profile --profile-name EcrScanVerifierTest --query 'arn' --output text)
- *   pnpm integ:signature:update -- --test integ.notation -c signerProfileArn="${PROFILE_ARN}"
+ *   SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
+ *     --language javascript --test-regex integ.notation.js
  */
 
 const app = new App();
 const stack = new Stack(app, 'NotationSignatureStack');
 
-const signerProfileArn = app.node.tryGetContext('signerProfileArn');
+const signerProfileArn = process.env.SIGNER_PROFILE_ARN;
 if (!signerProfileArn) {
   throw new Error(
-    'Missing required context: signerProfileArn. ' +
-      'Pass it via: -c signerProfileArn=arn:aws:signer:...',
+    'Missing required env: SIGNER_PROFILE_ARN. ' +
+      'Pass it via: SIGNER_PROFILE_ARN=arn:aws:signer:... pnpm integ:signature:update',
   );
 }
 

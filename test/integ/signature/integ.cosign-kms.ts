@@ -18,31 +18,39 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *       --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
  *       --query 'KeyMetadata.Arn' --output text)
  *
- *   3. Push the test image to ECR manually and sign it:
- *     # First, do a cdk deploy --no-execute or cdk synth to push the Docker image asset
- *     # Then sign the image:
+ *   3. Build, synth, and publish the Docker image asset only (no deploy):
+ *     tsc -p tsconfig.dev.json
+ *     cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
+ *     COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth \
+ *       --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
+ *     npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
+ *
+ *   4. Sign the pushed image with cosign:
  *     ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
  *     REGION=$(aws configure get region)
  *     REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+ *     REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
+ *     DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
+ *       --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
  *     aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
- *     cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/<repo>@<digest>"
- *     # Replace <repo> and <digest> with the values from the cdk synth output.
+ *     cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
  *
- *   4. Enhanced scanning must be DISABLED:
+ *   5. Enhanced scanning must be DISABLED:
  *     aws inspector2 disable --resource-types ECR
  *
  * Run:
- *   pnpm integ:signature:update -- --test integ.cosign-kms -c cosignKmsKeyArn="${KMS_KEY_ARN}"
+ *   COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
+ *     --language javascript --test-regex integ.cosign-kms.js
  */
 
 const app = new App();
 const stack = new Stack(app, 'CosignKmsSignatureStack');
 
-const cosignKmsKeyArn = app.node.tryGetContext('cosignKmsKeyArn');
+const cosignKmsKeyArn = process.env.COSIGN_KMS_KEY_ARN;
 if (!cosignKmsKeyArn) {
   throw new Error(
-    'Missing required context: cosignKmsKeyArn. ' +
-      'Pass it via: -c cosignKmsKeyArn=arn:aws:kms:...',
+    'Missing required env: COSIGN_KMS_KEY_ARN. ' +
+      'Pass it via: COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update',
   );
 }
 

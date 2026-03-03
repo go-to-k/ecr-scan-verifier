@@ -1,11 +1,9 @@
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
 
-RUN dnf install -y cpio && dnf clean all
-
-# Notation CLI + AWS Signer plugin (rpm2cpio for cross-arch build)
+# Notation CLI + AWS Signer plugin
 RUN curl -sLo /tmp/signer.rpm \
-    "https://d2hvyiie56hcat.cloudfront.net/linux/arm64/installer/latest/aws-signer-notation-cli_arm64.rpm" \
-    && cd / && rpm2cpio /tmp/signer.rpm | cpio -idm
+    "https://d2hvyiie56hcat.cloudfront.net/linux/arm64/installer/rpm/latest/aws-signer-notation-cli_arm64.rpm" \
+    && rpm -ivh /tmp/signer.rpm && rm /tmp/signer.rpm
 
 # Cosign for ARM64 (Sigstore)
 ARG COSIGN_VERSION=2.4.1

@@ -135,17 +135,23 @@ pnpm integ:signature:update -- \
 # 1. Install cosign
 brew install cosign  # macOS
 
-# 2. Create a KMS key for signing
-aws kms create-key --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256
-# Note the Arn from the output
+# 2. Create a KMS key for signing and capture the ARN
+KMS_KEY_ARN=$(aws kms create-key \
+  --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
+  --query 'KeyMetadata.Arn' --output text)
 
-# 3. Push the image first (cdk deploy creates the ECR repo and pushes the image)
-#    Then sign the image with cosign:
-aws ecr get-login-password | cosign login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
-cosign sign --key awskms:///<kms-key-arn> <account>.dkr.ecr.<region>.amazonaws.com/<repo>@<digest>
+# 3. Push the image first by running cdk synth (which triggers docker push)
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+REGION=$(aws configure get region)
+REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+
+#    Then sign the image with cosign.
+#    Replace <repo> and <digest> with the values from the cdk synth output.
+aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
+cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/<repo>@<digest>"
 
 # 4. Run the Cosign KMS integ test
 pnpm integ:signature:update -- \
   --test integ.cosign-kms \
-  -c cosignKmsKeyArn=arn:aws:kms:<region>:<account>:key/<key-id>
+  -c cosignKmsKeyArn="${KMS_KEY_ARN}"
 ```

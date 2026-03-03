@@ -14,23 +14,25 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *     # or see https://docs.sigstore.dev/cosign/system_config/installation/
  *
  *   2. Create a KMS key for signing (or reuse an existing one):
- *     aws kms create-key --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256
- *     # Note the KeyId from the output
+ *     KMS_KEY_ARN=$(aws kms create-key \
+ *       --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
+ *       --query 'KeyMetadata.Arn' --output text)
  *
  *   3. Push the test image to ECR manually and sign it:
  *     # First, do a cdk deploy --no-execute or cdk synth to push the Docker image asset
  *     # Then sign the image:
- *     aws ecr get-login-password | cosign login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
- *     cosign sign --key awskms:///<kms-key-arn> <account>.dkr.ecr.<region>.amazonaws.com/<repo>@<digest>
+ *     ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+ *     REGION=$(aws configure get region)
+ *     REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+ *     aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
+ *     cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/<repo>@<digest>"
+ *     # Replace <repo> and <digest> with the values from the cdk synth output.
  *
  *   4. Enhanced scanning must be DISABLED:
  *     aws inspector2 disable --resource-types ECR
  *
  * Run:
- *   pnpm integ:signature:update -- --test integ.cosign-kms
- *
- * Pass the KMS key ARN via CDK context:
- *   -c cosignKmsKeyArn=arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012
+ *   pnpm integ:signature:update -- --test integ.cosign-kms -c cosignKmsKeyArn="${KMS_KEY_ARN}"
  */
 
 const app = new App();

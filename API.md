@@ -322,7 +322,7 @@ Whether to fail the deployment if the image is unsigned or signature verificatio
 
 ### CosignPublicKeyVerificationOptions <a name="CosignPublicKeyVerificationOptions" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions"></a>
 
-Options for Cosign signature verification using a public key file.
+Options for Cosign signature verification using a public key.
 
 #### Initializer <a name="Initializer" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.Initializer"></a>
 
@@ -336,25 +336,29 @@ const cosignPublicKeyVerificationOptions: CosignPublicKeyVerificationOptions = {
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKeyPath">publicKeyPath</a></code> | <code>string</code> | Path to the cosign public key file. |
+| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey">publicKey</a></code> | <code>string</code> | The PEM-encoded public key content used to verify the image signature. |
 | <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
 
 ---
 
-##### `publicKeyPath`<sup>Required</sup> <a name="publicKeyPath" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKeyPath"></a>
+##### `publicKey`<sup>Required</sup> <a name="publicKey" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey"></a>
 
 ```typescript
-public readonly publicKeyPath: string;
+public readonly publicKey: string;
 ```
 
 - *Type:* string
 
-Path to the cosign public key file.
-
-The file is read during CDK synthesis (in the `bind()` call) and its content
-is passed to the Lambda function as a Custom Resource property.
+The PEM-encoded public key content used to verify the image signature.
 
 ---
+
+*Example*
+
+```typescript
+'-----BEGIN PUBLIC KEY-----\nMIIBI...\n-----END PUBLIC KEY-----'
+```
+
 
 ##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned"></a>
 
@@ -1382,7 +1386,7 @@ Returns the signature verification configuration.
 | **Name** | **Description** |
 | --- | --- |
 | <code><a href="#ecr-scan-verifier.SignatureVerification.cosignKms">cosignKms</a></code> | Verify image signature using Cosign with an AWS KMS key. |
-| <code><a href="#ecr-scan-verifier.SignatureVerification.cosignPublicKey">cosignPublicKey</a></code> | Verify image signature using Cosign with a public key file. |
+| <code><a href="#ecr-scan-verifier.SignatureVerification.cosignPublicKey">cosignPublicKey</a></code> | Verify image signature using Cosign with a public key. |
 | <code><a href="#ecr-scan-verifier.SignatureVerification.notation">notation</a></code> | Verify image signature using Notation (AWS Signer). |
 
 ---
@@ -1413,10 +1417,9 @@ import { SignatureVerification } from 'ecr-scan-verifier'
 SignatureVerification.cosignPublicKey(options: CosignPublicKeyVerificationOptions)
 ```
 
-Verify image signature using Cosign with a public key file.
+Verify image signature using Cosign with a public key.
 
-The public key file is read during CDK synthesis and its content is passed
-to the Lambda function.
+The public key content is passed to the Lambda function as a Custom Resource property.
 
 ###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.cosignPublicKey.parameter.options"></a>
 

@@ -242,6 +242,8 @@ Signature verification is performed before the vulnerability scan during deploym
 
 #### Notation (AWS Signer)
 
+Images must be signed with [AWS Signer](https://docs.aws.amazon.com/signer/latest/developerguide/Welcome.html) before deployment. You can sign images using the [Notation CLI](https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html) or [ECR Managed Signing](https://docs.aws.amazon.com/AmazonECR/latest/userguide/managed-signing.html).
+
 ```ts
 import { SignatureVerification, ScanConfig } from 'ecr-scan-verifier';
 

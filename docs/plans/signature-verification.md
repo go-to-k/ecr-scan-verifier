@@ -201,7 +201,15 @@ SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
   --language javascript --test-regex integ.notation.js
 ```
 
-前提: ECR Managed Signing を有効化 (`aws ecr put-signing-configuration`)
+Cosign KMS と同じパターン（push → 手動署名 → テスト）:
+
+1. Signing profile 作成 + Notation CLI インストール
+2. `cdk synth` → `cdk-assets publish` でイメージ push
+3. `notation sign` で手動署名
+4. integ test 実行
+
+注: ECR Managed Signing は `signer:SignPayload` の identity-based policy が push 元に必要。
+CDK bootstrap role を変更せずに済む手動署名アプローチを採用。
 
 ### Cosign KMS (`test/integ/signature/integ.cosign-kms.ts`)
 

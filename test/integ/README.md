@@ -114,14 +114,34 @@ aws signer put-signing-profile \
   --profile-name EcrScanVerifierTest \
   --platform-id Notation-OCI-SHA384-ECDSA
 
-# 2. Enable ECR Managed Signing (auto-signs images on push)
-PROFILE_ARN=$(aws signer get-signing-profile \
-  --profile-name EcrScanVerifierTest \
-  --query 'arn' --output text)
-aws ecr put-signing-configuration \
-  --signing-configuration "{\"rules\":[{\"signingProfileArn\":\"${PROFILE_ARN}\"}]}"
+# 2. Install notation CLI + AWS Signer plugin
+#    https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html
+brew install notation  # macOS
 
-# 3. Run the Notation integ test
+# 3. Build and synth to publish the Docker image asset only (no deploy)
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+REGION=$(aws configure get region)
+REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
+PROFILE_ARN=$(aws signer get-signing-profile \
+  --profile-name EcrScanVerifierTest --query 'arn' --output text)
+
+tsc -p tsconfig.dev.json
+cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
+SIGNER_PROFILE_ARN="${PROFILE_ARN}" npx cdk synth \
+  --app 'node test/integ/signature/integ.notation.js' -o cdk.out
+npx cdk-assets -p cdk.out/NotationSignatureStack.assets.json publish
+
+# 4. Sign the pushed image with notation
+DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
+  --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
+aws ecr get-login-password | notation login --username AWS --password-stdin "${REGISTRY}"
+notation sign \
+  --plugin com.amazonaws.signer.notation.plugin \
+  --id "${PROFILE_ARN}" \
+  "${REGISTRY}/${REPO}@${DIGEST}"
+
+# 5. Run the Notation integ test
 SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
   --language javascript --test-regex integ.notation.js
 ```
@@ -163,9 +183,6 @@ COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
 #### Cleanup
 
 ```bash
-# Remove ECR Managed Signing configuration
-aws ecr delete-signing-configuration
-
 # Cancel the signing profile (cannot be deleted, but can be revoked)
 aws signer cancel-signing-profile --profile-name EcrScanVerifierTest
 

@@ -13,11 +13,11 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *       --profile-name EcrScanVerifierTest \
  *       --platform-id Notation-OCI-SHA384-ECDSA
  *
- *   2. Enable ECR Managed Signing (auto-signs images on push):
- *     PROFILE_ARN=$(aws signer get-signing-profile \
- *       --profile-name EcrScanVerifierTest --query 'arn' --output text)
- *     aws ecr put-signing-configuration \
- *       --signing-configuration "{\"rules\":[{\"signingProfileArn\":\"${PROFILE_ARN}\"}]}"
+ *   2. Install notation CLI + AWS Signer plugin:
+ *     https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html
+ *
+ *   3. Push the Docker image asset and sign it with notation
+ *      (see test/integ/README.md for full commands)
  *
  * Run:
  *   SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \

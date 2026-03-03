@@ -35,9 +35,6 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *     aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
  *     cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
  *
- *   5. Enhanced scanning must be DISABLED:
- *     aws inspector2 disable --resource-types ECR
- *
  * Run:
  *   COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
  *     --language javascript --test-regex integ.cosign-kms.js

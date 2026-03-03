@@ -11,12 +11,12 @@ RUN curl -sLo /tmp/cosign \
     "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-arm64" \
     && chmod +x /tmp/cosign
 
-FROM public.ecr.aws/lambda/nodejs:22-arm64
+FROM public.ecr.aws/lambda/nodejs:24-arm64
 
 # Notation
-COPY --from=builder /usr/bin/notation /var/task/bin/notation
-COPY --from=builder /root/.config/notation/plugins /var/task/notation-config/plugins
-COPY --from=builder /root/.config/notation/truststore /var/task/notation-config/truststore
+COPY --from=builder /usr/local/bin/notation /var/task/bin/notation
+COPY --from=builder /opt/com.amazonaws.signer.notation.installer.rpm/notation_libexec /var/task/notation-config/plugins
+COPY --from=builder /opt/com.amazonaws.signer.notation.installer.rpm/notation_config /var/task/notation-config/truststore
 
 # Cosign
 COPY --from=builder /tmp/cosign /var/task/bin/cosign

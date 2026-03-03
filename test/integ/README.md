@@ -104,7 +104,7 @@ done
 
 ### Signature verification (`signature/`)
 
-Requires Enhanced scanning to be **DISABLED** and additional setup for signing.
+Requires additional setup for signing. Works with both Basic and Enhanced scanning.
 
 #### Notation (AWS Signer)
 

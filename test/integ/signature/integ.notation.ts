@@ -19,9 +19,6 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *     aws ecr put-signing-configuration \
  *       --signing-configuration "{\"rules\":[{\"signingProfileArn\":\"${PROFILE_ARN}\"}]}"
  *
- *   3. Enhanced scanning must be DISABLED:
- *     aws inspector2 disable --resource-types ECR
- *
  * Run:
  *   SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
  *     --language javascript --test-regex integ.notation.js

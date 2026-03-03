@@ -5,6 +5,7 @@ An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other servi
 It scans a specified container image during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning.
 
 - **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
+- **Signature verification** — verify image signatures with Notation (AWS Signer) or Cosign (Sigstore) before scanning
 - **Notify without failing** — get alerts via SNS without blocking deployment. Great for gradual adoption
 - **Scan logs output** — results go to S3 or CloudWatch Logs
 - **SBOM generation** — output Software Bill of Materials in CycloneDX or SPDX format to S3 via Amazon Inspector
@@ -230,6 +231,56 @@ Available SBOM formats:
 
 - `SbomOutput.cycloneDx14()` — CycloneDX 1.4 JSON format
 - `SbomOutput.spdx23()` — SPDX 2.3 JSON format
+
+### Signature Verification
+
+You can verify container image signatures before scanning using Notation (AWS Signer) or Cosign (Sigstore).
+
+Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail.
+
+> **Note**: This feature requires Docker to be available at deploy time, as the Lambda function is built via `Code.fromDockerBuild()` to bundle the Notation and Cosign CLI binaries.
+
+#### Notation (AWS Signer)
+
+```ts
+import { SignatureVerification, ScanConfig } from 'ecr-scan-verifier';
+
+new EcrScanVerifier(this, 'Scanner', {
+  repository,
+  scanConfig: ScanConfig.basic(),
+  signatureVerification: SignatureVerification.notation({
+    trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+  }),
+});
+```
+
+#### Cosign with Public Key
+
+```ts
+new EcrScanVerifier(this, 'Scanner', {
+  repository,
+  scanConfig: ScanConfig.basic(),
+  signatureVerification: SignatureVerification.cosignPublicKey({
+    publicKeyPath: 'path/to/cosign.pub',
+  }),
+});
+```
+
+#### Cosign with KMS
+
+```ts
+import { Key } from 'aws-cdk-lib/aws-kms';
+
+const cosignKey = Key.fromKeyArn(this, 'CosignKey', 'arn:aws:kms:...');
+
+new EcrScanVerifier(this, 'Scanner', {
+  repository,
+  scanConfig: ScanConfig.basic(),
+  signatureVerification: SignatureVerification.cosignKms({
+    key: cosignKey,
+  }),
+});
+```
 
 ### SNS Notification for Vulnerabilities
 

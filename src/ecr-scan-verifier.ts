@@ -1,8 +1,15 @@
 import { join } from 'path';
-import { Annotations, Aspects, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { Annotations, Aspects, CustomResource, Duration, IgnoreMode, Stack } from 'aws-cdk-lib';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
+import {
+  Architecture,
+  AssetCode,
+  Handler,
+  Runtime,
+  SingletonFunction,
+} from 'aws-cdk-lib/aws-lambda';
 import { ILogGroup } from 'aws-cdk-lib/aws-logs';
 import { ITopic } from 'aws-cdk-lib/aws-sns';
 import { Provider } from 'aws-cdk-lib/custom-resources';
@@ -11,6 +18,7 @@ import { ScannerCustomResourceProps } from './custom-resource-props';
 import { SbomOutput } from './sbom-output';
 import { ScanConfig } from './scan-config';
 import { ScanLogsOutput } from './scan-logs-output';
+import { SignatureVerification } from './signature-verification';
 import { Severity } from './types';
 
 /**
@@ -96,6 +104,16 @@ export interface EcrScanVerifierProps {
   readonly sbomOutput?: SbomOutput;
 
   /**
+   * Signature verification configuration for the container image.
+   *
+   * Verifies the image signature before scanning using Notation (AWS Signer) or Cosign (Sigstore).
+   * Requires Docker to be available at deploy time for building the Lambda function.
+   *
+   * @default - no signature verification
+   */
+  readonly signatureVerification?: SignatureVerification;
+
+  /**
    * The Scanner Lambda function's default log group.
    *
    * If you use EcrScanVerifier construct multiple times in the same stack,
@@ -146,13 +164,11 @@ export class EcrScanVerifier extends Construct {
     const customResourceLambda = new SingletonFunction(this, 'CustomResourceLambda', {
       uuid: 'c56cee6b-6775-541b-d179-c1535d88a0c8',
       lambdaPurpose,
-      runtime: Runtime.NODEJS_22_X,
-      handler: 'index.handler',
-      code: Code.fromAsset(join(__dirname, '../assets/lambda/dist'), {
-        // exclude node_modules
-        // because the native binary of the installed esbuild changes depending on the cpu architecture
-        // and the hash value of the image asset changes depending on the execution environment.
-        exclude: ['node_modules'],
+      runtime: Runtime.FROM_IMAGE,
+      handler: Handler.FROM_IMAGE,
+      code: AssetCode.fromAssetImage(join(__dirname, '../assets/lambda'), {
+        platform: Platform.LINUX_ARM64,
+        ignoreMode: IgnoreMode.DOCKER,
       }),
       architecture: Architecture.ARM_64,
       timeout: Duration.seconds(900),
@@ -174,6 +190,9 @@ export class EcrScanVerifier extends Construct {
 
     // SBOM output (independent from scan logs)
     const sbomConfig = props.sbomOutput?.bind(customResourceLambda);
+
+    // Signature verification
+    const signatureVerificationConfig = props.signatureVerification?.bind(customResourceLambda);
 
     // ECR scan permissions
     customResourceLambda.addToRolePolicy(
@@ -199,6 +218,32 @@ export class EcrScanVerifier extends Construct {
           resources: [props.repository.repositoryArn],
         }),
       );
+    }
+
+    // Signature verification permissions
+    if (signatureVerificationConfig) {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:GetAuthorizationToken'],
+          resources: ['*'],
+        }),
+      );
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer'],
+          resources: [props.repository.repositoryArn],
+        }),
+      );
+
+      if (signatureVerificationConfig.type === 'NOTATION') {
+        customResourceLambda.addToRolePolicy(
+          new PolicyStatement({
+            actions: ['signer:GetRevocationStatus'],
+            resources: ['*'],
+          }),
+        );
+      }
+      // Cosign KMS permissions are granted by key.grant() in bind()
     }
 
     // SBOM export permissions (Inspector CreateSbomExport)
@@ -255,6 +300,15 @@ export class EcrScanVerifier extends Construct {
       ignoreFindings: props.ignoreFindings ?? [],
       output: outputOptions,
       sbom: sbomConfig,
+      signatureVerification: signatureVerificationConfig
+        ? {
+            type: signatureVerificationConfig.type,
+            trustedIdentities: signatureVerificationConfig.trustedIdentities,
+            publicKey: signatureVerificationConfig.publicKey,
+            kmsKeyArn: signatureVerificationConfig.kmsKeyArn,
+            failOnUnsigned: String(signatureVerificationConfig.failOnUnsigned),
+          }
+        : undefined,
       suppressErrorOnRollback: String(suppressErrorOnRollback),
       vulnsTopicArn: props.vulnsNotificationTopic?.topicArn,
       defaultLogGroupName:

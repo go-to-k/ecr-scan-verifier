@@ -2,6 +2,17 @@ import { SbomOutputConfig } from './sbom-output';
 import { ScanLogsOutputOptions } from './scan-logs-output';
 
 /**
+ * Signature verification configuration passed to Lambda.
+ */
+export interface SignatureVerificationConfig {
+  readonly type: string;
+  readonly trustedIdentities?: string[];
+  readonly publicKey?: string;
+  readonly kmsKeyArn?: string;
+  readonly failOnUnsigned: string;
+}
+
+/**
  * Lambda function event object for Scanner Custom Resource.
  */
 export interface ScannerCustomResourceProps {
@@ -18,4 +29,5 @@ export interface ScannerCustomResourceProps {
   readonly vulnsTopicArn?: string;
   readonly defaultLogGroupName: string;
   readonly sbom?: SbomOutputConfig;
+  readonly signatureVerification?: SignatureVerificationConfig;
 }

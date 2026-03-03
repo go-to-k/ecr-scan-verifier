@@ -34,7 +34,9 @@
     "integ:basic": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/basic",
     "integ:basic:update": "pnpm integ:basic --update-on-failed",
     "integ:enhanced": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/enhanced",
-    "integ:enhanced:update": "pnpm integ:enhanced --update-on-failed"
+    "integ:enhanced:update": "pnpm integ:enhanced --update-on-failed",
+    "integ:signature": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/signature",
+    "integ:signature:update": "pnpm integ:signature --update-on-failed"
   },
   "author": {
     "name": "go-to-k",

@@ -104,6 +104,11 @@ project.setScript(
   'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/enhanced',
 );
 project.setScript('integ:enhanced:update', 'pnpm integ:enhanced --update-on-failed');
+project.setScript(
+  'integ:signature',
+  'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/signature',
+);
+project.setScript('integ:signature:update', 'pnpm integ:signature --update-on-failed');
 project.projectBuild.compileTask.prependExec('pnpm install --frozen-lockfile && pnpm build', {
   cwd: 'assets/lambda',
 });

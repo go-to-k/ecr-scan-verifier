@@ -13,6 +13,7 @@ import { outputScanLogsToS3, SbomContent } from './s3-output';
 import { sendVulnsNotification } from './sns-notification';
 import { isRollbackInProgress } from './cloudformation-utils';
 import { exportSbom } from './sbom-export';
+import { verifySignature } from './signature-verification';
 import { ScanLogsDetails } from './types';
 
 export const handler: CdkCustomResourceHandler = async function (event) {
@@ -35,6 +36,33 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   const pollingIntervalSeconds = 5;
   const pollingMaxRetries = 60;
   const imageIdentifier = `${props.repositoryName}:${props.imageTag}`;
+
+  // 0. Signature verification (before scan)
+  if (props.signatureVerification) {
+    try {
+      await verifySignature(props.repositoryName, props.imageTag, props.signatureVerification);
+    } catch (error: any) {
+      const errorMessage =
+        `Signature verification failed for image: ${imageIdentifier}\n` +
+        `${error.message || error}`;
+
+      if (props.vulnsTopicArn) {
+        await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, {
+          type: 'default',
+          logGroupName: props.defaultLogGroupName,
+        });
+      }
+
+      if (props.suppressErrorOnRollback === 'true' && (await isRollbackInProgress(event.StackId))) {
+        console.log(
+          `Signature verification failed, but suppressing errors during rollback.\n${errorMessage}`,
+        );
+        return funcResponse;
+      }
+
+      throw new Error(errorMessage);
+    }
+  }
 
   // 1. Execute scan / poll for results
   let scanFindings: ScanFindings;

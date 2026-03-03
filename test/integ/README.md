@@ -1,6 +1,10 @@
 # Integration Tests
 
-Integration tests are split into two directories based on the required AWS account scanning configuration.
+Integration tests are split into three directories based on the required AWS account configuration.
+
+- `basic/` — Basic ECR scanning
+- `enhanced/` — Enhanced scanning (Amazon Inspector)
+- `signature/` — Signature verification (Notation / Cosign)
 
 Tests deploy stacks across multiple regions (e.g. `us-east-1`, `us-east-2`, `us-west-2`), so the scanning configuration must be changed in **all regions**.
 
@@ -96,4 +100,48 @@ for region in us-east-1 us-east-2 us-west-2; do
     --query 'accounts[0].resourceState.ecr.status' \
     --output text)"
 done
+```
+
+### Signature verification (`signature/`)
+
+Requires Enhanced scanning to be **DISABLED** and additional setup for signing.
+
+#### Notation (AWS Signer)
+
+```bash
+# 1. Create a signing profile
+aws signer put-signing-profile \
+  --profile-name EcrScanVerifierTest \
+  --platform-id Notation-OCI-SHA384-ECDSA
+
+# 2. Enable ECR Managed Signing (auto-signs images on push)
+aws ecr put-account-setting --name CONTAINER_REGISTRAR_SIGNING --value ENABLED
+aws ecr put-registry-signing-configuration \
+  --signing-profiles '[{"signingProfileName": "EcrScanVerifierTest", "signingProfileVersionArn": "<version-arn>"}]'
+
+# 3. Run the Notation integ test
+pnpm integ:signature:update -- \
+  --test integ.notation \
+  -c signerProfileArn=arn:aws:signer:<region>:<account>:/signing-profiles/EcrScanVerifierTest
+```
+
+#### Cosign (KMS)
+
+```bash
+# 1. Install cosign
+brew install cosign  # macOS
+
+# 2. Create a KMS key for signing
+aws kms create-key --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256
+# Note the Arn from the output
+
+# 3. Push the image first (cdk deploy creates the ECR repo and pushes the image)
+#    Then sign the image with cosign:
+aws ecr get-login-password | cosign login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
+cosign sign --key awskms:///<kms-key-arn> <account>.dkr.ecr.<region>.amazonaws.com/<repo>@<digest>
+
+# 4. Run the Cosign KMS integ test
+pnpm integ:signature:update -- \
+  --test integ.cosign-kms \
+  -c cosignKmsKeyArn=arn:aws:kms:<region>:<account>:key/<key-id>
 ```

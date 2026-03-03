@@ -1,6 +1,3 @@
-import { writeFileSync, unlinkSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
 import { App, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
@@ -8,19 +5,6 @@ import { Key } from 'aws-cdk-lib/aws-kms';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../src';
 
 const MOCK_PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----';
-const TEST_KEY_PATH = join(tmpdir(), 'ecr-scan-verifier-test-cosign.pub');
-
-beforeAll(() => {
-  writeFileSync(TEST_KEY_PATH, MOCK_PUBLIC_KEY);
-});
-
-afterAll(() => {
-  try {
-    unlinkSync(TEST_KEY_PATH);
-  } catch {
-    // ignore
-  }
-});
 
 describe('SignatureVerification', () => {
   let app: App;
@@ -173,7 +157,7 @@ describe('SignatureVerification', () => {
         repository,
         scanConfig: ScanConfig.basic(),
         signatureVerification: SignatureVerification.cosignPublicKey({
-          publicKeyPath: TEST_KEY_PATH,
+          publicKey: MOCK_PUBLIC_KEY,
         }),
       });
 
@@ -186,7 +170,7 @@ describe('SignatureVerification', () => {
         repository,
         scanConfig: ScanConfig.basic(),
         signatureVerification: SignatureVerification.cosignPublicKey({
-          publicKeyPath: TEST_KEY_PATH,
+          publicKey: MOCK_PUBLIC_KEY,
         }),
       });
 
@@ -205,7 +189,7 @@ describe('SignatureVerification', () => {
         repository,
         scanConfig: ScanConfig.basic(),
         signatureVerification: SignatureVerification.cosignPublicKey({
-          publicKeyPath: TEST_KEY_PATH,
+          publicKey: MOCK_PUBLIC_KEY,
         }),
       });
 
@@ -228,7 +212,7 @@ describe('SignatureVerification', () => {
         repository,
         scanConfig: ScanConfig.basic(),
         signatureVerification: SignatureVerification.cosignPublicKey({
-          publicKeyPath: TEST_KEY_PATH,
+          publicKey: MOCK_PUBLIC_KEY,
         }),
       });
 

@@ -18,12 +18,12 @@ new EcrScanVerifier(this, 'Verifier', {
   }),
 });
 
-// Cosign (公開鍵ファイルパス - Construct 内部で読み込み)
+// Cosign (公開鍵文字列 - PEM コンテンツを直接渡す)
 new EcrScanVerifier(this, 'Verifier', {
   repository,
   scanConfig: ScanConfig.basic(),
   signatureVerification: SignatureVerification.cosignPublicKey({
-    publicKeyPath: 'path/to/cosign.pub',
+    publicKey: readFileSync('path/to/cosign.pub', 'utf-8'),
   }),
 });
 
@@ -75,7 +75,7 @@ export interface NotationVerificationOptions {
 
 // --- Cosign (公開鍵) ---
 export interface CosignPublicKeyVerificationOptions {
-  readonly publicKeyPath: string;      // 公開鍵ファイルパス (bind()時に読み込み)
+  readonly publicKey: string;          // PEM エンコードされた公開鍵コンテンツ
   readonly failOnUnsigned?: boolean;   // default: true
 }
 
@@ -104,14 +104,14 @@ export abstract class SignatureVerification {
 }
 
 // private class NotationSignatureVerification { ... }
-// private class CosignPublicKeySignatureVerification { bind() → readFileSync(publicKeyPath) }
+// private class CosignPublicKeySignatureVerification { bind() → publicKey をそのまま返す }
 // private class CosignKmsSignatureVerification { bind(grantee) → key.grant(grantee, ...) }
 ```
 
 バリデーション:
 
 - Notation: `trustedIdentities` が空 → エラー
-- CosignPublicKey: `publicKeyPath` のファイルが読めない → エラー（bind() 時）
+- CosignPublicKey: `publicKey` 必須（型レベルで保証）
 - CosignKms: `key` 必須（型レベルで保証）
 
 #### 2. `assets/lambda/Dockerfile`

@@ -257,11 +257,13 @@ new EcrScanVerifier(this, 'Scanner', {
 #### Cosign with Public Key
 
 ```ts
+import { readFileSync } from 'fs';
+
 new EcrScanVerifier(this, 'Scanner', {
   repository,
   scanConfig: ScanConfig.basic(),
   signatureVerification: SignatureVerification.cosignPublicKey({
-    publicKeyPath: 'path/to/cosign.pub',
+    publicKey: readFileSync('path/to/cosign.pub', 'utf-8'),
   }),
 });
 ```

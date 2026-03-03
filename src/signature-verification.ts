@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { IGrantable } from 'aws-cdk-lib/aws-iam';
 import { IKey } from 'aws-cdk-lib/aws-kms';
 
@@ -24,16 +23,15 @@ export interface NotationVerificationOptions {
 }
 
 /**
- * Options for Cosign signature verification using a public key file.
+ * Options for Cosign signature verification using a public key.
  */
 export interface CosignPublicKeyVerificationOptions {
   /**
-   * Path to the cosign public key file.
+   * The PEM-encoded public key content used to verify the image signature.
    *
-   * The file is read during CDK synthesis (in the `bind()` call) and its content
-   * is passed to the Lambda function as a Custom Resource property.
+   * @example '-----BEGIN PUBLIC KEY-----\nMIIBI...\n-----END PUBLIC KEY-----'
    */
-  readonly publicKeyPath: string;
+  readonly publicKey: string;
 
   /**
    * Whether to fail the deployment if the image is unsigned or signature verification fails.
@@ -111,10 +109,9 @@ export abstract class SignatureVerification {
   }
 
   /**
-   * Verify image signature using Cosign with a public key file.
+   * Verify image signature using Cosign with a public key.
    *
-   * The public key file is read during CDK synthesis and its content is passed
-   * to the Lambda function.
+   * The public key content is passed to the Lambda function as a Custom Resource property.
    */
   public static cosignPublicKey(
     options: CosignPublicKeyVerificationOptions,
@@ -162,22 +159,20 @@ class NotationSignatureVerification extends SignatureVerification {
 }
 
 class CosignPublicKeySignatureVerification extends SignatureVerification {
-  private readonly publicKeyPath: string;
+  private readonly publicKey: string;
   private readonly failOnUnsigned: boolean;
 
   constructor(options: CosignPublicKeyVerificationOptions) {
     super();
 
-    this.publicKeyPath = options.publicKeyPath;
+    this.publicKey = options.publicKey;
     this.failOnUnsigned = options.failOnUnsigned ?? true;
   }
 
   public bind(_grantee: IGrantable): SignatureVerificationBindOutput {
-    const publicKey = readFileSync(this.publicKeyPath, 'utf-8');
-
     return {
       type: 'COSIGN',
-      publicKey,
+      publicKey: this.publicKey,
       failOnUnsigned: this.failOnUnsigned,
     };
   }

@@ -45,11 +45,15 @@ new EcrScanVerifier(this, 'Verifier', {
    ├─ ECR 認証トークン取得 → login
    │
    ├─ type=NOTATION の場合:
-   │  ├─ trust policy を /tmp/ に生成
    │  ├─ trust store を /var/task/ → /tmp/ にコピー
+   │  ├─ trust policy を /tmp/ に生成
+   │  ├─ HOME=/tmp (Lambda コンテナは HOME 未定義)
+   │  ├─ NOTATION_CONFIG=/tmp/notation-config (trust policy + trust store)
+   │  ├─ NOTATION_LIBEXEC=/var/task/notation-config (plugins はここから直接参照)
    │  └─ notation verify <registry>/<repo>@<digest>
    │
    ├─ type=COSIGN の場合:
+   │  ├─ DOCKER_CONFIG=/tmp/.docker
    │  ├─ publicKey → /tmp/cosign.pub に書き出し → cosign verify --key /tmp/cosign.pub
    │  └─ kmsKeyArn → cosign verify --key awskms:///<arn>
    │
@@ -64,37 +68,9 @@ new EcrScanVerifier(this, 'Verifier', {
 
 ### 新規作成
 
-#### 1. `src/signature-verification.ts`
+#### 1. `src/signature-verification.ts` ✅
 
 ```typescript
-// --- Notation ---
-export interface NotationVerificationOptions {
-  readonly trustedIdentities: string[];  // Signing profile ARNs
-  readonly failOnUnsigned?: boolean;     // default: true
-}
-
-// --- Cosign (公開鍵) ---
-export interface CosignPublicKeyVerificationOptions {
-  readonly publicKey: string;          // PEM エンコードされた公開鍵コンテンツ
-  readonly failOnUnsigned?: boolean;   // default: true
-}
-
-// --- Cosign (KMS) ---
-export interface CosignKmsVerificationOptions {
-  readonly key: IKey;                  // AWS KMS key (IKey)
-  readonly failOnUnsigned?: boolean;   // default: true
-}
-
-// --- 共通出力 ---
-export interface SignatureVerificationBindOutput {
-  readonly type: string;               // 'NOTATION' | 'COSIGN'
-  readonly trustedIdentities?: string[];
-  readonly publicKey?: string;
-  readonly kmsKeyArn?: string;
-  readonly failOnUnsigned: boolean;
-}
-
-// --- 抽象クラス ---
 // bind(grantee) で IAM 権限を付与（ScanLogsOutput, SbomOutput と同じパターン）
 export abstract class SignatureVerification {
   public static notation(options: NotationVerificationOptions): SignatureVerification;
@@ -102,10 +78,6 @@ export abstract class SignatureVerification {
   public static cosignKms(options: CosignKmsVerificationOptions): SignatureVerification;
   public abstract bind(grantee: IGrantable): SignatureVerificationBindOutput;
 }
-
-// private class NotationSignatureVerification { ... }
-// private class CosignPublicKeySignatureVerification { bind() → publicKey をそのまま返す }
-// private class CosignKmsSignatureVerification { bind(grantee) → key.grant(grantee, ...) }
 ```
 
 バリデーション:
@@ -114,210 +86,128 @@ export abstract class SignatureVerification {
 - CosignPublicKey: `publicKey` 必須（型レベルで保証）
 - CosignKms: `key` 必須（型レベルで保証）
 
-#### 2. `assets/lambda/Dockerfile`
+#### 2. `assets/lambda/Dockerfile` ✅
 
-```dockerfile
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
+コンテナイメージ Lambda (Notation CLI + Cosign バイナリ同梱)
 
-RUN dnf install -y cpio curl unzip && dnf clean all
+**RPM のファイル配置 (実測):**
 
-# Notation CLI + AWS Signer plugin (rpm2cpio で展開、x86_64/ARM64 どちらでもビルド可能)
-RUN curl -sLo /tmp/signer.rpm \
-    "https://d2hvyiie56hcat.cloudfront.net/linux/arm64/installer/latest/aws-signer-notation-cli_arm64.rpm" \
-    && cd / && rpm2cpio /tmp/signer.rpm | cpio -idm
+- `/usr/local/bin/notation` — notation バイナリ
+- `/opt/.../notation_libexec/notation-com.amazonaws.signer.notation.plugin` — プラグインバイナリ (flat)
+- `/opt/.../notation_config/aws-signer-notation-root.crt` — ルート CA 証明書 (flat)
+- `/opt/.../notation_config/aws-us-gov-signer-notation-root.crt` — GovCloud ルート CA
 
-# Cosign for ARM64 (Sigstore)
-ARG COSIGN_VERSION=2.4.1
-RUN curl -sLo /tmp/cosign \
-    "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-arm64" \
-    && chmod +x /tmp/cosign
+**Dockerfile で notation の期待するディレクトリ構造に変換:**
 
-FROM public.ecr.aws/lambda/nodejs:22-arm64
+- プラグイン: `plugins/<plugin-name>/<binary>` 構造に配置
+- trust store: `truststore/signingAuthority/aws-signer-ts/<certs>` 構造に配置
+- `chmod -R 755` でパーミッション修正 (RPM は 700/600 で Lambda 非 root ユーザーが読めない)
 
-# Notation
-COPY --from=builder /usr/bin/notation /var/task/bin/notation
-COPY --from=builder /root/.config/notation/plugins /var/task/notation-config/plugins
-COPY --from=builder /root/.config/notation/truststore /var/task/notation-config/truststore
+#### 3. `assets/lambda/.dockerignore` ✅
 
-# Cosign
-COPY --from=builder /tmp/cosign /var/task/bin/cosign
+#### 4. `assets/lambda/lib/signature-verification.ts` ✅
 
-# Lambda handler
-COPY dist/index.js ${LAMBDA_TASK_ROOT}/index.js
+Lambda 側の署名検証ロジック。
 
-CMD ["index.handler"]
-```
+**デバッグで発見・修正した問題:**
 
-注: コンテナイメージ Lambda として動作する。`public.ecr.aws/lambda/nodejs:22-arm64` ベースイメージを使用。
-`rpm2cpio | cpio` により rpm パッケージ内のファイルを展開するため、ホストの
-アーキテクチャ (x86_64/ARM64) に関係なく ARM64 用バイナリを取得できる。
+1. **EACCES エラー**: `cpSync` で plugins を `/tmp` にコピーする際 Permission denied
+   - 原因: RPM が 700/600 パーミッションでインストール + Lambda は非 root ユーザーで実行
+   - 修正: Dockerfile で `chmod -R 755` + plugins の `/tmp` コピー削除 (`NOTATION_LIBEXEC` で直接参照)
 
-#### 3. `assets/lambda/.dockerignore`
+2. **`$HOME is not defined` エラー**: notation login が Docker credential store 初期化に `$HOME` を参照
+   - 原因: Lambda コンテナイメージは `HOME` 環境変数が未定義
+   - 修正: Notation env に `HOME: '/tmp'` を追加
 
-```text
-node_modules
-test
-lib
-src
-*.ts
-tsconfig.json
-pnpm-lock.yaml
-```
+3. **ディレクトリ構造の不一致**: RPM は flat にインストールするが notation は nested 構造を期待
+   - プラグイン: `plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin`
+   - trust store: `truststore/signingAuthority/aws-signer-ts/<certs>`
+   - 修正: Dockerfile の COPY で正しい構造に配置
 
-#### 4. `assets/lambda/lib/signature-verification.ts`
+#### 5. `test/signature-verification.test.ts` ✅
 
-Lambda 側の署名検証ロジック:
+CDK Construct テスト
 
-```typescript
-export async function verifySignature(
-  repositoryName: string,
-  imageTag: string,
-  config: SignatureVerificationConfig,
-): Promise<SignatureVerificationResult>
-```
+#### 6. `assets/lambda/test/signature-verification.test.ts` ✅
 
-共通処理:
-
-- `getImageDigest()`: imageTag → digest 解決
-- `getEcrAuthInfo()`: `GetAuthorizationToken` で認証情報取得
-- `execFileSync` でシェルインジェクション防止、パスワードは stdin
-
-Notation 固有:
-
-- `setupNotationConfig()`: trust policy + trust store を /tmp/ にセットアップ
-- `notation login` → `notation verify`
-- 環境変数: `NOTATION_CONFIG`, `NOTATION_LIBEXEC`
-
-Cosign 固有:
-
-- publicKey（bind()でファイルから読み込み済み）→ `/tmp/cosign.pub` に書き出し → `cosign verify --key /tmp/cosign.pub`
-- kmsKeyArn → `cosign verify --key awskms:///<arn>`
-- `cosign login` で ECR 認証
-
-#### 5. `test/signature-verification.test.ts`
-
-CDK Construct テスト:
-
-- Notation: スナップショット、props検証、IAMパーミッション、trustedIdentities空配列エラー
-- CosignPublicKey: スナップショット、props検証、IAMパーミッション、ファイル読み込み
-- CosignKms: スナップショット、KMS パーミッション検証（IKey 経由）
-- failOnUnsigned デフォルト値テスト
-- signatureVerification 未設定時は props に含まれないこと
-
-#### 6. `assets/lambda/test/signature-verification.test.ts`
-
-Lambda テスト (child_process + ECR client mock):
-
-- Notation: 検証成功/失敗、login失敗
-- Cosign (publicKey): 検証成功/失敗
-- Cosign (kmsKeyArn): 検証成功/失敗
-- failOnUnsigned true/false 動作
-- digest 直接使用 (sha256:...)
+Lambda テスト (child_process + ECR client mock)
 
 ### 修正
 
-#### 7. `src/custom-resource-props.ts`
+#### 7. `src/custom-resource-props.ts` ✅
 
-```typescript
-export interface SignatureVerificationConfig {
-  readonly type: string;               // 'NOTATION' | 'COSIGN'
-  readonly trustedIdentities?: string[];
-  readonly publicKey?: string;         // bind()時にファイルから読み込み済みの内容
-  readonly kmsKeyArn?: string;
-  readonly failOnUnsigned: string;     // 'true'/'false'
-}
-```
+`SignatureVerificationConfig` インターフェース追加
 
-`ScannerCustomResourceProps` に `signatureVerification?: SignatureVerificationConfig` 追加
+#### 8. `src/ecr-scan-verifier.ts` ✅
 
-#### 8. `src/ecr-scan-verifier.ts`
+- `Code.fromAsset()` → `AssetCode.fromAssetImage()` に変更 (コンテナイメージ Lambda)
+- `signatureVerification` プロパティ追加
+- IAM パーミッション追加
 
-- `EcrScanVerifierProps` に `signatureVerification?: SignatureVerification` 追加
-- **`Code.fromAsset()` → `AssetCode.fromAssetImage()` に変更（コンテナイメージ Lambda）**:
+  共通: `ecr:GetAuthorizationToken`, `ecr:BatchGetImage`, `ecr:GetDownloadUrlForLayer`
+  Notation: `signer:GetRevocationStatus`
+  CosignKms: `key.grant()` で `kms:GetPublicKey`, `kms:Verify`
 
-  ```typescript
-  runtime: Runtime.FROM_IMAGE,
-  handler: Handler.FROM_IMAGE,
-  code: AssetCode.fromAssetImage(join(__dirname, '../assets/lambda'), {
-    platform: Platform.LINUX_ARM64,
-    ignoreMode: IgnoreMode.DOCKER,
-  }),
-  ```
+#### 9. `src/index.ts` ✅
 
-- signatureVerification.bind() → Custom Resource props に渡す
-- IAM パーミッション（signatureVerification 有効時のみ）:
+export 追加
 
-  共通:
+#### 10. `assets/lambda/lib/handler.ts` ✅
 
-  ```text
-  ecr:GetAuthorizationToken    (*)
-  ecr:BatchGetImage            (repository ARN)
-  ecr:GetDownloadUrlForLayer   (repository ARN)
-  ```
+スキャン前に署名検証実行。失敗時: SNS 通知 + ロールバック抑制（既存パターン踏襲）
 
-  Notation 追加:
+#### 11. `assets/lambda/test/handler.test.ts` ✅
 
-  ```text
-  signer:GetRevocationStatus   (*)
-  ```
+署名検証 mock + テストケース追加
 
-  Cosign + KMS 追加（bind() 内で `key.grant()` により付与）:
+#### 12. スナップショット更新 ✅
 
-  ```text
-  kms:GetPublicKey             (key.keyArn)
-  kms:Verify                   (key.keyArn)
-  ```
+Docker イメージハッシュ変更により全スナップショット更新
 
-#### 9. `src/index.ts`
+#### 13-14. integ テスト ✅
 
-`export * from './signature-verification'` 追加
+- `test/integ/signature/integ.notation.ts` — Notation (AWS Signer)
+- `test/integ/signature/integ.cosign-kms.ts` — Cosign (KMS)
 
-#### 10. `assets/lambda/lib/handler.ts`
-
-- import `verifySignature`
-- スキャン実行の前に署名検証呼び出し
-- 失敗時: SNS 通知 + ロールバック抑制（既存パターン踏襲）
-
-#### 11. `assets/lambda/test/handler.test.ts`
-
-- `jest.mock('../lib/signature-verification')` 追加
-- 署名検証あり/なしのテストケース
-- 実行順序テスト（署名検証 → スキャン検証）
-
-#### 12. スナップショット更新
-
-`AssetCode.fromAssetImage` + `Runtime.FROM_IMAGE` 変更により全スナップショット更新
-
-#### 13. `test/integ/signature/integ.notation.ts`
-
-Notation (AWS Signer) の integ テスト:
-
-- 事前準備: AWS Signer signing profile 作成 + ECR Managed Signing 有効化
-- CDK context で signing profile ARN を渡す
-- `DockerImageAsset` でイメージ push → 自動署名 → 検証
-
-#### 14. `test/integ/signature/integ.cosign-kms.ts`
-
-Cosign (KMS) の integ テスト:
-
-- 事前準備: KMS key 作成 + cosign CLI で事前署名
-- CDK context で KMS key ARN を渡す
-- `Key.fromKeyArn()` で既存キー参照
-
-#### 15. `.projenrc.ts` / `package.json`
+#### 15. `.projenrc.ts` / `package.json` ✅
 
 `integ:signature` / `integ:signature:update` スクリプト追加
 
-#### 16. `test/integ/README.md`
+#### 16. `test/integ/README.md` ✅
 
-署名検証 integ テストの事前準備・実行手順を追記
+署名検証 integ テストの事前準備・実行手順
 
-#### 17. `README.md`
+#### 17. `README.md` ✅
 
-署名検証機能の紹介セクションを追加:
-- Notation (AWS Signer) と Cosign (Sigstore) 対応
-- 使用例コードスニペット
-- Docker 必須の注意事項
+署名検証機能の紹介セクション
+
+---
+
+## インテグレーションテスト
+
+### Notation (`test/integ/signature/integ.notation.ts`)
+
+```bash
+# 環境変数で signing profile ARN を渡す
+SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
+  --language javascript --test-regex integ.notation.js
+```
+
+前提: ECR Managed Signing を有効化 (`aws ecr put-signing-configuration`)
+
+### Cosign KMS (`test/integ/signature/integ.cosign-kms.ts`)
+
+```bash
+# cdk synth + cdk-assets でイメージ push → cosign sign → integ test
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
+  --language javascript --test-regex integ.cosign-kms.js
+```
+
+### 共通注意事項
+
+- Basic / Enhanced scanning どちらでも動作する
+- integ-runner は `-c` (CDK context) を渡せないため環境変数を使用
+- `--test-regex` は `.js` サフィックスを付けて `.ts` / `.d.ts` を除外
 
 ---
 
@@ -326,5 +216,4 @@ Cosign (KMS) の integ テスト:
 1. `cd assets/lambda && pnpm install && pnpm build` — Lambda ビルド
 2. `npx jest --updateSnapshot` — テスト + スナップショット更新
 3. `pnpm build` — 全体ビルド（jsii + eslint + jest + integ）
-4. Docker 起動状態で `cdk deploy` — Docker ビルド動作確認
-5. `pnpm integ:signature:update` — integ テスト（事前準備必要）
+4. Docker 起動状態で integ test — 実際の署名検証動作確認

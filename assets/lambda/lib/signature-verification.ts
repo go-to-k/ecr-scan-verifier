@@ -102,9 +102,8 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
     ],
   };
 
-  mkdirSync(join(configDir, 'trustpolicy'), { recursive: true });
   writeFileSync(
-    join(configDir, 'trustpolicy', 'trustpolicy.json'),
+    join(configDir, 'trustpolicy.json'),
     JSON.stringify(trustPolicy, null, 2),
   );
 

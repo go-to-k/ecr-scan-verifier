@@ -110,7 +110,7 @@ describe('verifySignature', () => {
 
       // Check that trust policy was written
       expect(writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('trustpolicy.json'),
+        '/tmp/notation-config/trustpolicy.json',
         expect.stringContaining('arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'),
       );
     });

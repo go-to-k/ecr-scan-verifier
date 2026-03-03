@@ -227,7 +227,7 @@ exports[`EcrScanVerifier Snapshot - all options 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:5d032c121065f303b7e8ac91d7c0652b1145ef927fb68306eb800b26e6cd565c",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:6e69bddc00281ba9bd649a5b7ea79a000982d86bf18a5cb2ff87de33bae359f8",
           },
         },
         "LoggingConfig": {
@@ -904,7 +904,7 @@ exports[`EcrScanVerifier Snapshot - minimal options 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:5d032c121065f303b7e8ac91d7c0652b1145ef927fb68306eb800b26e6cd565c",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:6e69bddc00281ba9bd649a5b7ea79a000982d86bf18a5cb2ff87de33bae359f8",
           },
         },
         "PackageType": "Image",

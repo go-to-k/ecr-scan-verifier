@@ -62,6 +62,20 @@ const getRegistryUri = (repositoryName: string, endpoint: string): string => {
   return `${endpoint}/${repositoryName}`;
 };
 
+// Write Docker config.json with embedded credentials.
+// Lambda has no credential helper, so we write auth directly to config.json
+// instead of using `notation login` / `cosign login`.
+const writeDockerConfig = (endpoint: string, username: string, password: string): string => {
+  const dockerConfigDir = '/tmp/.docker';
+  mkdirSync(dockerConfigDir, { recursive: true });
+  const authToken = Buffer.from(`${username}:${password}`).toString('base64');
+  writeFileSync(
+    join(dockerConfigDir, 'config.json'),
+    JSON.stringify({ auths: { [endpoint]: { auth: authToken } } }),
+  );
+  return dockerConfigDir;
+};
+
 // --- Notation ---
 
 const setupNotationConfig = (trustedIdentities: string[]): string => {
@@ -97,20 +111,6 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
   return configDir;
 };
 
-const notationLogin = (
-  endpoint: string,
-  username: string,
-  password: string,
-  notationBin: string,
-  env: Record<string, string>,
-): void => {
-  execFileSync(notationBin, ['login', '--username', username, '--password-stdin', endpoint], {
-    input: password,
-    env: { ...process.env, ...env },
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-};
-
 const notationVerify = (
   imageRef: string,
   notationBin: string,
@@ -124,20 +124,6 @@ const notationVerify = (
 };
 
 // --- Cosign ---
-
-const cosignLogin = (
-  endpoint: string,
-  username: string,
-  password: string,
-  cosignBin: string,
-  env: Record<string, string>,
-): void => {
-  execFileSync(cosignBin, ['login', '--username', username, '--password-stdin', endpoint], {
-    input: password,
-    env: { ...process.env, ...env },
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-};
 
 const cosignVerify = (
   imageRef: string,
@@ -166,6 +152,7 @@ export const verifySignature = async (
     const auth = await getEcrAuthInfo();
     const imageRef = `${getRegistryUri(repositoryName, auth.endpoint)}@${digest}`;
     const binDir = join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'bin');
+    const dockerConfigDir = writeDockerConfig(auth.endpoint, auth.username, auth.password);
 
     console.log(`Verifying signature for ${imageRef} (type: ${config.type})`);
 
@@ -174,23 +161,19 @@ export const verifySignature = async (
       const configDir = setupNotationConfig(config.trustedIdentities!);
       const env: Record<string, string> = {
         HOME: '/tmp',
+        DOCKER_CONFIG: dockerConfigDir,
         NOTATION_CONFIG: configDir,
         NOTATION_LIBEXEC: join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'notation-config'),
         PATH: `${binDir}:${process.env.PATH}`,
       };
 
-      notationLogin(auth.endpoint, auth.username, auth.password, notationBin, env);
       notationVerify(imageRef, notationBin, env);
     } else if (config.type === 'COSIGN') {
       const cosignBin = join(binDir, 'cosign');
-      const dockerConfigDir = '/tmp/.docker';
-      mkdirSync(dockerConfigDir, { recursive: true });
       const env: Record<string, string> = {
         DOCKER_CONFIG: dockerConfigDir,
         PATH: `${binDir}:${process.env.PATH}`,
       };
-
-      cosignLogin(auth.endpoint, auth.username, auth.password, cosignBin, env);
 
       let keyArgs: string[];
       if (config.kmsKeyArn) {

@@ -51,6 +51,35 @@ describe('verifySignature', () => {
     delete process.env.LAMBDA_TASK_ROOT;
   });
 
+  describe('Docker config', () => {
+    test('writes Docker config.json with embedded credentials', async () => {
+      (execFileSync as jest.Mock).mockReturnValue(Buffer.from(''));
+
+      const config: SignatureVerificationConfig = {
+        type: 'NOTATION',
+        trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+        failOnUnsigned: 'true',
+      };
+
+      await verifySignature('my-repo', 'v1.0', config);
+
+      expect(mkdirSync).toHaveBeenCalledWith('/tmp/.docker', { recursive: true });
+      expect(writeFileSync).toHaveBeenCalledWith(
+        '/tmp/.docker/config.json',
+        expect.stringContaining('"auths"'),
+      );
+      // Verify the auth token is base64-encoded username:password
+      const configCall = (writeFileSync as jest.Mock).mock.calls.find(
+        (call: any[]) => call[0] === '/tmp/.docker/config.json',
+      );
+      const configJson = JSON.parse(configCall[1]);
+      const endpoint = '123456789012.dkr.ecr.us-east-1.amazonaws.com';
+      expect(configJson.auths[endpoint].auth).toBe(
+        Buffer.from('AWS:mock-password').toString('base64'),
+      );
+    });
+  });
+
   describe('Notation', () => {
     const notationConfig: SignatureVerificationConfig = {
       type: 'NOTATION',
@@ -66,13 +95,9 @@ describe('verifySignature', () => {
       expect(result.verified).toBe(true);
       expect(result.message).toContain('succeeded');
 
-      // Should call notation login then notation verify
-      expect(execFileSync).toHaveBeenCalledTimes(2);
-      const loginCall = (execFileSync as jest.Mock).mock.calls[0];
-      expect(loginCall[0]).toContain('notation');
-      expect(loginCall[1]).toContain('login');
-
-      const verifyCall = (execFileSync as jest.Mock).mock.calls[1];
+      // Only notation verify (no login - credentials via Docker config.json)
+      expect(execFileSync).toHaveBeenCalledTimes(1);
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
       expect(verifyCall[0]).toContain('notation');
       expect(verifyCall[1]).toContain('verify');
       expect(verifyCall[1][1]).toContain(`@${mockDigest}`);
@@ -106,8 +131,7 @@ describe('verifySignature', () => {
 
     test('throws error when verification fails and failOnUnsigned is true', async () => {
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login succeeds
-        .mockImplementationOnce(() => { throw new Error('signature verification failed'); }); // verify fails
+        .mockImplementationOnce(() => { throw new Error('signature verification failed'); });
 
       await expect(verifySignature('my-repo', 'v1.0', notationConfig))
         .rejects.toThrow('Signature verification failed');
@@ -120,8 +144,7 @@ describe('verifySignature', () => {
       };
 
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login succeeds
-        .mockImplementationOnce(() => { throw new Error('signature verification failed'); }); // verify fails
+        .mockImplementationOnce(() => { throw new Error('signature verification failed'); });
 
       const result = await verifySignature('my-repo', 'v1.0', config);
 
@@ -129,23 +152,15 @@ describe('verifySignature', () => {
       expect(result.message).toContain('failed');
     });
 
-    test('throws error when login fails', async () => {
-      (execFileSync as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('login failed');
-      });
-
-      await expect(verifySignature('my-repo', 'v1.0', notationConfig))
-        .rejects.toThrow('Signature verification failed');
-    });
-
-    test('sets HOME, NOTATION_CONFIG and NOTATION_LIBEXEC environment variables', async () => {
+    test('sets HOME, DOCKER_CONFIG, NOTATION_CONFIG and NOTATION_LIBEXEC environment variables', async () => {
       (execFileSync as jest.Mock).mockReturnValue(Buffer.from(''));
 
       await verifySignature('my-repo', 'v1.0', notationConfig);
 
-      const loginCall = (execFileSync as jest.Mock).mock.calls[0];
-      const env = loginCall[2].env;
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
+      const env = verifyCall[2].env;
       expect(env.HOME).toBe('/tmp');
+      expect(env.DOCKER_CONFIG).toBe('/tmp/.docker');
       expect(env.NOTATION_CONFIG).toBe('/tmp/notation-config');
       expect(env.NOTATION_LIBEXEC).toBe('/var/task/notation-config');
     });
@@ -165,9 +180,9 @@ describe('verifySignature', () => {
 
       expect(result.verified).toBe(true);
 
-      // Should call cosign login then cosign verify
-      expect(execFileSync).toHaveBeenCalledTimes(2);
-      const verifyCall = (execFileSync as jest.Mock).mock.calls[1];
+      // Only cosign verify (no login - credentials via Docker config.json)
+      expect(execFileSync).toHaveBeenCalledTimes(1);
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
       expect(verifyCall[0]).toContain('cosign');
       expect(verifyCall[1]).toContain('verify');
       expect(verifyCall[1]).toContain('--key');
@@ -185,19 +200,17 @@ describe('verifySignature', () => {
       );
     });
 
-    test('sets DOCKER_CONFIG for cosign credential storage', async () => {
+    test('sets DOCKER_CONFIG for registry credential access', async () => {
       (execFileSync as jest.Mock).mockReturnValue(Buffer.from(''));
 
       await verifySignature('my-repo', 'v1.0', cosignPublicKeyConfig);
 
-      expect(mkdirSync).toHaveBeenCalledWith('/tmp/.docker', { recursive: true });
-      const loginCall = (execFileSync as jest.Mock).mock.calls[0];
-      expect(loginCall[2].env.DOCKER_CONFIG).toBe('/tmp/.docker');
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
+      expect(verifyCall[2].env.DOCKER_CONFIG).toBe('/tmp/.docker');
     });
 
     test('throws error when verification fails and failOnUnsigned is true', async () => {
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login
         .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
 
       await expect(verifySignature('my-repo', 'v1.0', cosignPublicKeyConfig))
@@ -211,7 +224,6 @@ describe('verifySignature', () => {
       };
 
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login
         .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
 
       const result = await verifySignature('my-repo', 'v1.0', config);
@@ -234,7 +246,7 @@ describe('verifySignature', () => {
 
       expect(result.verified).toBe(true);
 
-      const verifyCall = (execFileSync as jest.Mock).mock.calls[1];
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
       expect(verifyCall[1]).toContain('--key');
       expect(verifyCall[1]).toContain(
         `awskms:///${cosignKmsConfig.kmsKeyArn}`,
@@ -243,7 +255,6 @@ describe('verifySignature', () => {
 
     test('throws error when verification fails and failOnUnsigned is true', async () => {
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login
         .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
 
       await expect(verifySignature('my-repo', 'v1.0', cosignKmsConfig))
@@ -257,7 +268,6 @@ describe('verifySignature', () => {
       };
 
       (execFileSync as jest.Mock)
-        .mockReturnValueOnce(Buffer.from('')) // login
         .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
 
       const result = await verifySignature('my-repo', 'v1.0', config);
@@ -281,7 +291,7 @@ describe('verifySignature', () => {
       // Should NOT call DescribeImages when digest is provided directly
       expect(ecrMock.commandCalls(DescribeImagesCommand)).toHaveLength(0);
 
-      const verifyCall = (execFileSync as jest.Mock).mock.calls[1];
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
       expect(verifyCall[1][1]).toContain('@sha256:directdigest');
     });
 
@@ -297,7 +307,7 @@ describe('verifySignature', () => {
       await verifySignature('my-repo', 'v1.0', config);
 
       expect(ecrMock.commandCalls(DescribeImagesCommand)).toHaveLength(1);
-      const verifyCall = (execFileSync as jest.Mock).mock.calls[1];
+      const verifyCall = (execFileSync as jest.Mock).mock.calls[0];
       expect(verifyCall[1][1]).toContain(`@${mockDigest}`);
     });
 

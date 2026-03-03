@@ -138,13 +138,14 @@ describe('verifySignature', () => {
         .rejects.toThrow('Signature verification failed');
     });
 
-    test('sets NOTATION_CONFIG and NOTATION_LIBEXEC environment variables', async () => {
+    test('sets HOME, NOTATION_CONFIG and NOTATION_LIBEXEC environment variables', async () => {
       (execFileSync as jest.Mock).mockReturnValue(Buffer.from(''));
 
       await verifySignature('my-repo', 'v1.0', notationConfig);
 
       const loginCall = (execFileSync as jest.Mock).mock.calls[0];
       const env = loginCall[2].env;
+      expect(env.HOME).toBe('/tmp');
       expect(env.NOTATION_CONFIG).toBe('/tmp/notation-config');
       expect(env.NOTATION_LIBEXEC).toBe('/var/task/notation-config');
     });

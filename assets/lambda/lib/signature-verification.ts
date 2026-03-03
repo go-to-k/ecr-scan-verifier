@@ -173,6 +173,7 @@ export const verifySignature = async (
       const notationBin = join(binDir, 'notation');
       const configDir = setupNotationConfig(config.trustedIdentities!);
       const env: Record<string, string> = {
+        HOME: '/tmp',
         NOTATION_CONFIG: configDir,
         NOTATION_LIBEXEC: join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'notation-config'),
         PATH: `${binDir}:${process.env.PATH}`,

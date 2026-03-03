@@ -13,13 +13,30 @@ RUN curl -sLo /tmp/cosign \
 
 FROM public.ecr.aws/lambda/nodejs:24-arm64
 
-# Notation
+# Notation binary
 COPY --from=builder /usr/local/bin/notation /var/task/bin/notation
-COPY --from=builder /opt/com.amazonaws.signer.notation.installer.rpm/notation_libexec /var/task/notation-config/plugins
-COPY --from=builder /opt/com.amazonaws.signer.notation.installer.rpm/notation_config /var/task/notation-config/truststore
+
+# Notation plugin (must be at plugins/<plugin-name>/<binary>)
+COPY --from=builder \
+    /opt/com.amazonaws.signer.notation.installer.rpm/notation_libexec/notation-com.amazonaws.signer.notation.plugin \
+    /var/task/notation-config/plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin
+
+# Notation trust store (must be at truststore/signingAuthority/<store-name>/<certs>)
+COPY --from=builder \
+    /opt/com.amazonaws.signer.notation.installer.rpm/notation_config/aws-signer-notation-root.crt \
+    /var/task/notation-config/truststore/signingAuthority/aws-signer-ts/aws-signer-notation-root.crt
+COPY --from=builder \
+    /opt/com.amazonaws.signer.notation.installer.rpm/notation_config/aws-us-gov-signer-notation-root.crt \
+    /var/task/notation-config/truststore/signingAuthority/aws-signer-ts/aws-us-gov-signer-notation-root.crt
+
+# Fix permissions (RPM installs with root-only 700/600 permissions)
+RUN chmod -R 755 /var/task/notation-config/ && \
+    chmod +x /var/task/bin/notation && \
+    chmod +x /var/task/notation-config/plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin
 
 # Cosign
 COPY --from=builder /tmp/cosign /var/task/bin/cosign
+RUN chmod +x /var/task/bin/cosign
 
 # Lambda handler
 COPY dist/index.js ${LAMBDA_TASK_ROOT}/index.js

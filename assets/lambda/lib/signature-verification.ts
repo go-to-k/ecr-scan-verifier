@@ -68,9 +68,8 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
   const configDir = '/tmp/notation-config';
   mkdirSync(configDir, { recursive: true });
 
-  // Copy trust store from bundled assets
+  // Copy trust store from bundled assets (plugins stay at NOTATION_LIBEXEC path, no copy needed)
   const bundledConfigDir = join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'notation-config');
-  cpSync(join(bundledConfigDir, 'plugins'), join(configDir, 'plugins'), { recursive: true });
   cpSync(join(bundledConfigDir, 'truststore'), join(configDir, 'truststore'), { recursive: true });
 
   // Generate trust policy

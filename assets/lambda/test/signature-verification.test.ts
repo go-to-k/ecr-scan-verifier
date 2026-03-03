@@ -90,16 +90,13 @@ describe('verifySignature', () => {
       );
     });
 
-    test('copies notation config from bundled assets', async () => {
+    test('copies trust store from bundled assets (plugins stay at NOTATION_LIBEXEC)', async () => {
       (execFileSync as jest.Mock).mockReturnValue(Buffer.from(''));
 
       await verifySignature('my-repo', 'v1.0', notationConfig);
 
-      expect(cpSync).toHaveBeenCalledWith(
-        expect.stringContaining('notation-config/plugins'),
-        expect.stringContaining('/tmp/notation-config/plugins'),
-        { recursive: true },
-      );
+      // Only trust store is copied to /tmp (plugins accessed via NOTATION_LIBEXEC)
+      expect(cpSync).toHaveBeenCalledTimes(1);
       expect(cpSync).toHaveBeenCalledWith(
         expect.stringContaining('notation-config/truststore'),
         expect.stringContaining('/tmp/notation-config/truststore'),

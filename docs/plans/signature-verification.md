@@ -119,7 +119,11 @@ Lambda 側の署名検証ロジック。
    - 原因: Lambda コンテナイメージは `HOME` 環境変数が未定義
    - 修正: Notation env に `HOME: '/tmp'` を追加
 
-3. **ディレクトリ構造の不一致**: RPM は flat にインストールするが notation は nested 構造を期待
+3. **credential store required エラー**: `notation login` が credential helper を要求
+   - 原因: Lambda コンテナに Docker credential helper がインストールされていない
+   - 修正: `notation login` / `cosign login` を廃止し、Docker `config.json` にクレデンシャルを直接書き込む方式に変更 (`writeDockerConfig()`)
+
+4. **ディレクトリ構造の不一致**: RPM は flat にインストールするが notation は nested 構造を期待
    - プラグイン: `plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin`
    - trust store: `truststore/signingAuthority/aws-signer-ts/<certs>`
    - 修正: Dockerfile の COPY で正しい構造に配置

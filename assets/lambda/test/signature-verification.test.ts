@@ -182,22 +182,31 @@ describe('verifySignature', () => {
       type: 'COSIGN',
       publicKey: '-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----',
       failOnUnsigned: 'true',
+      cosignIgnoreTlog: 'false', // Rekor verification enabled
     };
 
-    test('verifies signature successfully', async () => {
+    test('verifies signature successfully with Rekor verification', async () => {
       (execFileSync as jest.MockedFunction<typeof execFileSync>).mockReturnValue(Buffer.from(''));
 
       const result = await verifySignature('my-repo', 'v1.0', cosignPublicKeyConfig, createMockLogger());
 
       expect(result.verified).toBe(true);
 
-      // Only cosign verify (no login - credentials via Docker config.json)
-      expect(execFileSync).toHaveBeenCalledTimes(1);
-      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      // cosign initialize + cosign verify (2 calls)
+      expect(execFileSync).toHaveBeenCalledTimes(2);
+
+      // First call: cosign initialize
+      const initCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      expect(initCall[0]).toContain('cosign');
+      expect(initCall[1]!).toContain('initialize');
+
+      // Second call: cosign verify
+      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[1];
       expect(verifyCall[0]).toContain('cosign');
       expect(verifyCall[1]!).toContain('verify');
       expect(verifyCall[1]!).toContain('--key');
       expect(verifyCall[1]!).toContain('/tmp/cosign.pub');
+      expect(verifyCall[1]!).not.toContain('--insecure-ignore-tlog');
     });
 
     test('writes public key to /tmp/cosign.pub', async () => {
@@ -216,13 +225,18 @@ describe('verifySignature', () => {
 
       await verifySignature('my-repo', 'v1.0', cosignPublicKeyConfig, createMockLogger());
 
-      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      // Check DOCKER_CONFIG in both initialize and verify calls
+      const initCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      expect(initCall[2]!.env!.DOCKER_CONFIG).toBe('/tmp/.docker');
+
+      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[1];
       expect(verifyCall[2]!.env!.DOCKER_CONFIG).toBe('/tmp/.docker');
     });
 
     test('throws error when verification fails and failOnUnsigned is true', async () => {
       (execFileSync as jest.MockedFunction<typeof execFileSync>)
-        .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
+        .mockReturnValueOnce(Buffer.from('')) // cosign initialize succeeds
+        .mockImplementationOnce(() => { throw new Error('no matching signatures'); }); // cosign verify fails
 
       await expect(verifySignature('my-repo', 'v1.0', cosignPublicKeyConfig, createMockLogger()))
         .rejects.toThrow('Signature verification failed');
@@ -235,11 +249,32 @@ describe('verifySignature', () => {
       };
 
       (execFileSync as jest.MockedFunction<typeof execFileSync>)
-        .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
+        .mockReturnValueOnce(Buffer.from('')) // cosign initialize succeeds
+        .mockImplementationOnce(() => { throw new Error('no matching signatures'); }); // cosign verify fails
 
       const result = await verifySignature('my-repo', 'v1.0', config, createMockLogger());
 
       expect(result.verified).toBe(false);
+    });
+
+    test('skips TUF initialization when ignoreTlog is true', async () => {
+      const config: SignatureVerificationConfig = {
+        ...cosignPublicKeyConfig,
+        cosignIgnoreTlog: 'true', // Skip Rekor verification
+      };
+
+      (execFileSync as jest.MockedFunction<typeof execFileSync>).mockReturnValue(Buffer.from(''));
+
+      const result = await verifySignature('my-repo', 'v1.0', config, createMockLogger());
+
+      expect(result.verified).toBe(true);
+
+      // Only cosign verify (no initialize)
+      expect(execFileSync).toHaveBeenCalledTimes(1);
+      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      expect(verifyCall[0]).toContain('cosign');
+      expect(verifyCall[1]!).toContain('verify');
+      expect(verifyCall[1]!).toContain('--insecure-ignore-tlog');
     });
   });
 
@@ -248,16 +283,21 @@ describe('verifySignature', () => {
       type: 'COSIGN',
       kmsKeyArn: 'arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012',
       failOnUnsigned: 'true',
+      cosignIgnoreTlog: 'false', // Rekor verification enabled
     };
 
-    test('verifies signature successfully', async () => {
+    test('verifies signature successfully with Rekor verification', async () => {
       (execFileSync as jest.MockedFunction<typeof execFileSync>).mockReturnValue(Buffer.from(''));
 
       const result = await verifySignature('my-repo', 'v1.0', cosignKmsConfig, createMockLogger());
 
       expect(result.verified).toBe(true);
 
-      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[0];
+      // cosign initialize + cosign verify (2 calls)
+      expect(execFileSync).toHaveBeenCalledTimes(2);
+
+      // Second call: cosign verify
+      const verifyCall = (execFileSync as jest.MockedFunction<typeof execFileSync>).mock.calls[1];
       expect(verifyCall[1]!).toContain('--key');
       expect(verifyCall[1]!).toContain(
         `awskms:///${cosignKmsConfig.kmsKeyArn}`,
@@ -266,7 +306,8 @@ describe('verifySignature', () => {
 
     test('throws error when verification fails and failOnUnsigned is true', async () => {
       (execFileSync as jest.MockedFunction<typeof execFileSync>)
-        .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
+        .mockReturnValueOnce(Buffer.from('')) // cosign initialize succeeds
+        .mockImplementationOnce(() => { throw new Error('no matching signatures'); }); // cosign verify fails
 
       await expect(verifySignature('my-repo', 'v1.0', cosignKmsConfig, createMockLogger()))
         .rejects.toThrow('Signature verification failed');
@@ -279,7 +320,8 @@ describe('verifySignature', () => {
       };
 
       (execFileSync as jest.MockedFunction<typeof execFileSync>)
-        .mockImplementationOnce(() => { throw new Error('no matching signatures'); });
+        .mockReturnValueOnce(Buffer.from('')) // cosign initialize succeeds
+        .mockImplementationOnce(() => { throw new Error('no matching signatures'); }); // cosign verify fails
 
       const result = await verifySignature('my-repo', 'v1.0', config, createMockLogger());
 
@@ -333,7 +375,7 @@ describe('verifySignature', () => {
         .mockImplementationOnce(() => { throw new Error('TUF initialization failed'); });
 
       await expect(verifySignature('my-repo', 'v1.0', config, createMockLogger()))
-        .rejects.toThrow('Cosign TUF initialization failed');
+        .rejects.toThrow('Signature verification failed');
     });
 
     test('defaults to Rekor verification when cosignIgnoreTlog is undefined', async () => {

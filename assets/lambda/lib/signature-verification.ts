@@ -151,6 +151,21 @@ const notationVerify = (
 
 // --- Cosign ---
 
+const cosignInitialize = (cosignBin: string, env: Record<string, string>): void => {
+  // Initialize TUF metadata by running `cosign initialize`
+  // This downloads the latest Rekor public keys and TUF metadata
+  try {
+    execFileSync(cosignBin, ['initialize'], {
+      env: { ...process.env, ...env },
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+  } catch (initError: any) {
+    const errorMessage = initError.stderr || initError.stdout || initError.message || String(initError);
+    throw new Error(`Cosign initialize failed: ${errorMessage}`);
+  }
+};
+
 const cosignVerify = (
   imageRef: string,
   keyArgs: string[],
@@ -172,6 +187,9 @@ const cosignVerify = (
     }
     return;
   }
+
+  // Initialize TUF metadata cache for Rekor transparency log verification
+  cosignInitialize(cosignBin, env);
 
   // Verify with Rekor transparency log
   try {
@@ -220,12 +238,18 @@ export const verifySignature = async (
       notationVerify(imageRef, notationBin, env);
     } else if (config.type === 'COSIGN') {
       const cosignBin = join(binDir, 'cosign');
+      const ignoreTlog = config.cosignIgnoreTlog === 'true';
+
       const env: Record<string, string> = {
         HOME: '/tmp',
         DOCKER_CONFIG: dockerConfigDir,
         PATH: `${binDir}:${process.env.PATH}`,
-        SIGSTORE_NO_CACHE: '1',
       };
+
+      // Only disable cache when ignoreTlog is true (no need for TUF metadata)
+      if (ignoreTlog) {
+        env.SIGSTORE_NO_CACHE = '1';
+      }
 
       let keyArgs: string[];
       if (config.kmsKeyArn) {
@@ -238,7 +262,6 @@ export const verifySignature = async (
         throw new Error('Cosign verification requires either publicKey or kmsKeyArn');
       }
 
-      const ignoreTlog = config.cosignIgnoreTlog === 'true';
       cosignVerify(imageRef, keyArgs, cosignBin, env, ignoreTlog);
     } else {
       throw new Error(`Unknown signature verification type: ${config.type}`);

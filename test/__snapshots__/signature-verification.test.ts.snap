@@ -180,7 +180,7 @@ exports[`SignatureVerification Cosign (KMS) Snapshot - cosign KMS verification 1
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:fc45c32757ebfb08543ea0dd68be8bd38b5981207f1d0aedbfaf465dfd27658c",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
           },
         },
         "PackageType": "Image",
@@ -344,6 +344,7 @@ exports[`SignatureVerification Cosign (KMS) Snapshot - cosign KMS verification 1
           "CRITICAL",
         ],
         "signatureVerification": {
+          "cosignIgnoreTlog": "false",
           "failOnUnsigned": "true",
           "kmsKeyArn": {
             "Fn::GetAtt": [
@@ -666,7 +667,7 @@ exports[`SignatureVerification Cosign (publicKey) Snapshot - cosign public key v
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:fc45c32757ebfb08543ea0dd68be8bd38b5981207f1d0aedbfaf465dfd27658c",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
           },
         },
         "PackageType": "Image",
@@ -817,6 +818,7 @@ exports[`SignatureVerification Cosign (publicKey) Snapshot - cosign public key v
           "CRITICAL",
         ],
         "signatureVerification": {
+          "cosignIgnoreTlog": "false",
           "failOnUnsigned": "true",
           "publicKey": "-----BEGIN PUBLIC KEY-----
 test
@@ -1136,7 +1138,7 @@ exports[`SignatureVerification Notation Snapshot - notation verification 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:fc45c32757ebfb08543ea0dd68be8bd38b5981207f1d0aedbfaf465dfd27658c",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
           },
         },
         "PackageType": "Image",

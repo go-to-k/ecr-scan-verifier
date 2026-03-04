@@ -185,8 +185,14 @@ COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth --app 'node test/integ/signatu
 npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
 
 # 4. Sign the pushed image with cosign
+# Get the digest of the test fixture image (not the Lambda function image)
+# The asset hash is the imageTag used in the test
+ASSET_HASH=$(grep -A 10 '"id":.*"DockerImage"' cdk.out/CosignKmsSignatureStack.assets.json | \
+  grep '"imageTag"' | cut -d'"' -f4)
 DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
-  --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
+  --image-ids imageTag="${ASSET_HASH}" \
+  --query 'imageDetails[0].imageDigest' --output text)
+
 aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
 cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 

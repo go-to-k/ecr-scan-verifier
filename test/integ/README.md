@@ -159,7 +159,7 @@ notation sign \
   "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the Notation integ test
-pnpm integ:signature:update --language javascript --test-regex integ.notation.js
+pnpm integ:signature:update --language javascript --test-regex "integ.notation.js$"
 ```
 
 #### Cosign (KMS)
@@ -191,7 +191,7 @@ aws ecr get-login-password | cosign login --username AWS --password-stdin "${REG
 cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
-COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"
 ```
 
 #### Cleanup

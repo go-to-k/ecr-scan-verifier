@@ -182,15 +182,19 @@ export class EcrScanVerifier extends Construct {
     // Signature verification
     const signatureVerificationConfig = props.signatureVerification?.bind(customResourceLambda);
 
-    // ECR scan permissions (not required for SIGNATURE_ONLY)
+    // ECR permissions
+    // DescribeImages is always required (for digest resolution)
+    // DescribeImageScanFindings is only required for scanning modes
+    const ecrActions = ['ecr:DescribeImages'];
     if (scanConfigOutput.scanType !== 'SIGNATURE_ONLY') {
-      customResourceLambda.addToRolePolicy(
-        new PolicyStatement({
-          actions: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
-          resources: [props.repository.repositoryArn],
-        }),
-      );
+      ecrActions.push('ecr:DescribeImageScanFindings');
     }
+    customResourceLambda.addToRolePolicy(
+      new PolicyStatement({
+        actions: ecrActions,
+        resources: [props.repository.repositoryArn],
+      }),
+    );
 
     if (scanConfigOutput.scanType === 'ENHANCED') {
       customResourceLambda.addToRolePolicy(

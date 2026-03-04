@@ -61,6 +61,18 @@ describe('EcrScanVerifier', () => {
     expect(template.toJSON()).toMatchSnapshot();
   });
 
+  test('Snapshot - signature only', () => {
+    const kmsKey = new Key(stack, 'SigningKey');
+    new EcrScanVerifier(stack, 'Scanner', {
+      repository,
+      scanConfig: ScanConfig.signatureOnly(),
+      signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
+    });
+
+    const template = Template.fromStack(stack);
+    expect(template.toJSON()).toMatchSnapshot();
+  });
+
   test('creates Custom Resource with default values', () => {
     new EcrScanVerifier(stack, 'Scanner', {
       repository,
@@ -91,7 +103,7 @@ describe('EcrScanVerifier', () => {
         PolicyDocument: {
           Statement: Match.arrayWith([
             Match.objectLike({
-              Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+              Action: ['ecr:DescribeImages', 'ecr:DescribeImageScanFindings'],
               Effect: 'Allow',
             }),
           ]),
@@ -216,6 +228,51 @@ describe('EcrScanVerifier', () => {
           },
         },
         0,
+      );
+    });
+
+    test('signature only scan has DescribeImages but not DescribeImageScanFindings', () => {
+      const kmsKey = new Key(stack, 'SigningKey');
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.signatureOnly(),
+        signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
+      });
+
+      const template = Template.fromStack(stack);
+
+      // Should NOT have both DescribeImageScanFindings and DescribeImages together
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+
+      // Should have only DescribeImages (as a string, not array, when optimized by CDK)
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:DescribeImages',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        1,
       );
     });
 

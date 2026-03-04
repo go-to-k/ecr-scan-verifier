@@ -1,8 +1,8 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import { App, Stack } from 'aws-cdk-lib';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { ECRDeployment, DockerImageName } from 'cdk-ecr-deployment';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';

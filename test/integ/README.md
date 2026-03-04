@@ -179,9 +179,11 @@ environments. The cryptographic signature is still verified using the KMS key.
 # 1. Install cosign
 brew install cosign  # macOS
 
-# 2. Create a KMS key for signing and capture the ARN
-KMS_KEY_ARN=$(aws kms create-key \
+# 2. Create a KMS key for signing and capture the key ID
+KMS_KEY_ID=$(aws kms create-key \
   --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
+  --query 'KeyMetadata.KeyId' --output text)
+KMS_KEY_ARN=$(aws kms describe-key --key-id "${KMS_KEY_ID}" \
   --query 'KeyMetadata.Arn' --output text)
 
 # 3. Build and synth to publish the Docker image asset only (no deploy)
@@ -192,7 +194,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
+COSIGN_KMS_KEY_ID="${KMS_KEY_ID}" npx cdk synth --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
 npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
 
 # 4. Sign the pushed image with cosign
@@ -215,7 +217,62 @@ curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/
 cosign sign --signing-config /tmp/signing-config.json --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
-COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"
+COSIGN_KMS_KEY_ID="${KMS_KEY_ID}" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"
+```
+
+#### Cosign (Public Key)
+
+**Note on Rekor Transparency Log:**
+This implementation always skips Rekor transparency log verification for reliability in AWS Lambda
+environments. The cryptographic signature is still verified using the public key.
+
+- Sign with: `cosign sign --tlog-upload=false --key cosign.key IMAGE`
+- Verification works offline and in VPC environments without internet access
+- Faster verification without network calls to Rekor service
+- If you require Rekor transparency log verification for compliance, consider using Notation with AWS Signer instead
+
+**Setup:**
+
+```bash
+# 1. Install cosign
+brew install cosign  # macOS
+
+# 2. Generate a key pair
+cosign generate-key-pair
+# This creates cosign.key (private) and cosign.pub (public)
+# Enter a password when prompted (can be empty for testing)
+
+# 3. Build and synth to publish the Docker image asset only (no deploy)
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+REGION=$(aws configure get region)
+REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
+
+pnpm tsc -p tsconfig.dev.json
+cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
+COSIGN_PUBLIC_KEY="$(cat cosign.pub)" npx cdk synth --app 'node test/integ/signature/integ.cosign-publickey.js' -o cdk.out
+npx cdk-assets -p cdk.out/CosignPublicKeySignatureStack.assets.json publish
+
+# 4. Sign the pushed image with cosign
+# Get the digest of the test fixture image (not the Lambda function image)
+# The asset hash is the imageTag used in the test
+ASSET_HASH=$(cat cdk.out/CosignPublicKeySignatureStack.assets.json | tr ',' '\n' | \
+  grep '"imageTag"' | head -1 | cut -d'"' -f4)
+DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
+  --image-ids imageTag="${ASSET_HASH}" \
+  --query 'imageDetails[0].imageDigest' --output text)
+
+aws ecr get-login-password --region ${REGION} | cosign login --username AWS --password-stdin "${REGISTRY}"
+
+# Sign the pushed image WITHOUT Rekor transparency log
+# This matches the Lambda verification behavior (always skips Rekor)
+curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
+  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+
+cosign sign --signing-config /tmp/signing-config.json --key cosign.key "${REGISTRY}/${REPO}@${DIGEST}"
+
+# 5. Run the integ test
+COSIGN_PUBLIC_KEY="$(cat cosign.pub)" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-publickey.js$"
 ```
 
 #### Cleanup
@@ -227,4 +284,7 @@ aws signer cancel-signing-profile --profile-name EcrScanVerifierTest
 # Schedule KMS key deletion (minimum 7-day waiting period)
 KMS_KEY_ID=$(echo "${KMS_KEY_ARN}" | grep -o '[^/]*$')
 aws kms schedule-key-deletion --key-id "${KMS_KEY_ID}" --pending-window-in-days 7
+
+# Remove generated key pair
+rm -f cosign.key cosign.pub
 ```

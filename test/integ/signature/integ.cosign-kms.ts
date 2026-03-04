@@ -29,18 +29,19 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *   Sign with: cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE
  *
  * Run:
- *   COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
+ *   COSIGN_KMS_KEY_ID=<key-id> pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
  */
 
 const app = new App();
 const stack = new Stack(app, 'CosignKmsSignatureStack');
 
-// Get KMS key ARN from environment variable (required for signing)
-const kmsKeyArnFromEnv = process.env.COSIGN_KMS_KEY_ARN;
-if (!kmsKeyArnFromEnv) {
+// Get KMS key ID from environment variable (not full ARN to avoid exposing account ID in snapshot)
+const kmsKeyIdFromEnv = process.env.COSIGN_KMS_KEY_ID;
+if (!kmsKeyIdFromEnv) {
   throw new Error(
-    'Missing required env: COSIGN_KMS_KEY_ARN. ' +
-      'Pass it via: COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update',
+    'Missing required env: COSIGN_KMS_KEY_ID. ' +
+      'Pass key ID only (e.g., 7aabc831-9b9a-45e6-8d25-172fe86efebd): ' +
+      'COSIGN_KMS_KEY_ID=<key-id> pnpm integ:signature:update',
   );
 }
 
@@ -49,7 +50,12 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
   platform: Platform.LINUX_ARM64,
 });
 
-const kmsKey = Key.fromKeyArn(stack, 'CosignKey', kmsKeyArnFromEnv);
+// Build full ARN using Stack's account and region to avoid hardcoding account ID in snapshot
+const kmsKey = Key.fromKeyArn(
+  stack,
+  'CosignKey',
+  `arn:aws:kms:${stack.region}:${stack.account}:key/${kmsKeyIdFromEnv}`,
+);
 
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,

@@ -146,8 +146,8 @@ npx cdk-assets -p cdk.out/NotationSignatureStack.assets.json publish
 # 4. Sign the pushed image with notation
 # Get the digest of the test fixture image (not the Lambda function image)
 # The asset hash is the imageTag used in the test
-ASSET_HASH=$(grep -A 10 '"id":.*"DockerImage"' cdk.out/NotationSignatureStack.assets.json | \
-  grep '"imageTag"' | cut -d'"' -f4)
+ASSET_HASH=$(cat cdk.out/NotationSignatureStack.assets.json | tr ',' '\n' | \
+  grep '"imageTag"' | head -1 | cut -d'"' -f4)
 DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --image-ids imageTag="${ASSET_HASH}" \
   --query 'imageDetails[0].imageDigest' --output text)
@@ -187,8 +187,8 @@ npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
 # 4. Sign the pushed image with cosign
 # Get the digest of the test fixture image (not the Lambda function image)
 # The asset hash is the imageTag used in the test
-ASSET_HASH=$(grep -A 10 '"id":.*"DockerImage"' cdk.out/CosignKmsSignatureStack.assets.json | \
-  grep '"imageTag"' | cut -d'"' -f4)
+ASSET_HASH=$(cat cdk.out/CosignKmsSignatureStack.assets.json | tr ',' '\n' | \
+  grep '"imageTag"' | head -1 | cut -d'"' -f4)
 DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --image-ids imageTag="${ASSET_HASH}" \
   --query 'imageDetails[0].imageDigest' --output text)

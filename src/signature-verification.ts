@@ -234,7 +234,7 @@ class CosignKmsSignatureVerification extends SignatureVerification {
   }
 
   public bind(grantee: IGrantable): SignatureVerificationBindOutput {
-    this.key.grant(grantee, 'kms:GetPublicKey', 'kms:Verify');
+    this.key.grant(grantee, 'kms:DescribeKey', 'kms:GetPublicKey', 'kms:Verify');
 
     return {
       type: 'COSIGN',

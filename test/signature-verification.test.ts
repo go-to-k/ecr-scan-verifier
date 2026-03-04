@@ -325,7 +325,7 @@ describe('SignatureVerification', () => {
         PolicyDocument: {
           Statement: Match.arrayWith([
             Match.objectLike({
-              Action: ['kms:GetPublicKey', 'kms:Verify'],
+              Action: ['kms:DescribeKey', 'kms:GetPublicKey', 'kms:Verify'],
               Effect: 'Allow',
             }),
           ]),

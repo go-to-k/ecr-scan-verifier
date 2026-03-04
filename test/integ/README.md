@@ -126,7 +126,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 PROFILE_ARN=$(aws signer get-signing-profile \
   --profile-name EcrScanVerifierTest --query 'arn' --output text)
 
-tsc -p tsconfig.dev.json
+pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
 SIGNER_PROFILE_ARN="${PROFILE_ARN}" npx cdk synth \
   --app 'node test/integ/signature/integ.notation.js' -o cdk.out
@@ -163,7 +163,7 @@ REGION=$(aws configure get region)
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
 REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
-tsc -p tsconfig.dev.json
+pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
 COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth \
   --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out

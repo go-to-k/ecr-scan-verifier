@@ -81,6 +81,14 @@ for region in us-east-1 us-east-2 us-west-2; do
     --query 'accounts[0].resourceState.ecr.status' \
     --output text)"
 done
+
+# Restore scan-on-push to default (if enabled above)
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+REGION=$(aws configure get region)
+REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
+aws ecr put-image-scanning-configuration \
+  --repository-name "$REPO" \
+  --image-scanning-configuration scanOnPush=false
 ```
 
 ### Enhanced scanning (`enhanced/`)

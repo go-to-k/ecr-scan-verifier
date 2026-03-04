@@ -1,6 +1,6 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
-import { App, Stack, Aws } from 'aws-cdk-lib';
+import { App, Stack } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Key } from 'aws-cdk-lib/aws-kms';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';

@@ -208,7 +208,11 @@ aws ecr get-login-password --region ${REGION} | cosign login --username AWS --pa
 
 # 4. Sign the pushed image WITHOUT Rekor transparency log
 # This matches the Lambda verification behavior (always skips Rekor)
-cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
+# Create signing config without transparency log, then sign
+curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
+  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+
+cosign sign --signing-config /tmp/signing-config.json --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
 COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"

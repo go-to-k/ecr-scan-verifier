@@ -396,7 +396,6 @@ const ecrScanVerifierProps: EcrScanVerifierProps = { ... }
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.failOnVulnerability">failOnVulnerability</a></code> | <code>boolean</code> | Whether to fail the CloudFormation deployment if vulnerabilities are detected above the severity threshold. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.ignoreFindings">ignoreFindings</a></code> | <code>string[]</code> | Finding IDs to ignore during vulnerability evaluation. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.imageTag">imageTag</a></code> | <code>string</code> | Image tag or digest to scan. |
-| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM (Software Bill of Materials) output configuration. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanLogsOutput">scanLogsOutput</a></code> | <code><a href="#ecr-scan-verifier.ScanLogsOutput">ScanLogsOutput</a></code> | Configuration for scan logs output. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.severity">severity</a></code> | <code><a href="#ecr-scan-verifier.Severity">Severity</a>[]</code> | Severity threshold for vulnerability detection. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.signatureVerification">signatureVerification</a></code> | <code><a href="#ecr-scan-verifier.SignatureVerification">SignatureVerification</a></code> | Signature verification configuration for the container image. |
@@ -513,25 +512,6 @@ If the value starts with 'sha256:', it is treated as a digest.
 
 ---
 
-##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.EcrScanVerifierProps.property.sbomOutput"></a>
-
-```typescript
-public readonly sbomOutput: SbomOutput;
-```
-
-- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
-- *Default:* no SBOM output
-
-SBOM (Software Bill of Materials) output configuration.
-
-SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
-and uploads it to S3.
-
-**Note**: SBOM export is only available with Enhanced scanning (Amazon Inspector).
-Using with Basic scanning will throw an error.
-
----
-
 ##### `scanLogsOutput`<sup>Optional</sup> <a name="scanLogsOutput" id="ecr-scan-verifier.EcrScanVerifierProps.property.scanLogsOutput"></a>
 
 ```typescript
@@ -617,6 +597,29 @@ import { EnhancedScanConfigOptions } from 'ecr-scan-verifier'
 const enhancedScanConfigOptions: EnhancedScanConfigOptions = { ... }
 ```
 
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.EnhancedScanConfigOptions.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM (Software Bill of Materials) output configuration. |
+
+---
+
+##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.EnhancedScanConfigOptions.property.sbomOutput"></a>
+
+```typescript
+public readonly sbomOutput: SbomOutput;
+```
+
+- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
+- *Default:* no SBOM output
+
+SBOM (Software Bill of Materials) output configuration.
+
+SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
+and uploads it to S3.
+
+---
 
 ### NotationVerificationOptions <a name="NotationVerificationOptions" id="ecr-scan-verifier.NotationVerificationOptions"></a>
 
@@ -931,8 +934,9 @@ const scanConfigBindOutput: ScanConfigBindOutput = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.scanType">scanType</a></code> | <code>string</code> | The scan type ('BASIC' or 'ENHANCED'). |
+| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.scanType">scanType</a></code> | <code>string</code> | The scan type ('BASIC', 'ENHANCED', or 'SIGNATURE_ONLY'). |
 | <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start an image scan via StartImageScan API. |
+| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM output configuration (Enhanced scanning only). |
 
 ---
 
@@ -944,7 +948,7 @@ public readonly scanType: string;
 
 - *Type:* string
 
-The scan type ('BASIC' or 'ENHANCED').
+The scan type ('BASIC', 'ENHANCED', or 'SIGNATURE_ONLY').
 
 ---
 
@@ -957,6 +961,18 @@ public readonly startScan: boolean;
 - *Type:* boolean
 
 Whether to start an image scan via StartImageScan API.
+
+---
+
+##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.ScanConfigBindOutput.property.sbomOutput"></a>
+
+```typescript
+public readonly sbomOutput: SbomOutput;
+```
+
+- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
+
+SBOM output configuration (Enhanced scanning only).
 
 ---
 
@@ -991,6 +1007,19 @@ public readonly type: ScanLogsOutputType;
 The type of scan logs output.
 
 ---
+
+### SignatureOnlyConfigOptions <a name="SignatureOnlyConfigOptions" id="ecr-scan-verifier.SignatureOnlyConfigOptions"></a>
+
+Options for signature-only verification (no scanning).
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.SignatureOnlyConfigOptions.Initializer"></a>
+
+```typescript
+import { SignatureOnlyConfigOptions } from 'ecr-scan-verifier'
+
+const signatureOnlyConfigOptions: SignatureOnlyConfigOptions = { ... }
+```
+
 
 ### SignatureVerificationBindOutput <a name="SignatureVerificationBindOutput" id="ecr-scan-verifier.SignatureVerificationBindOutput"></a>
 
@@ -1170,7 +1199,8 @@ Output SBOM in SPDX 2.3 JSON format.
 Configuration for ECR image scan type.
 
 Use `ScanConfig.basic()` for ECR native basic scanning,
-or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+`ScanConfig.enhanced()` for Amazon Inspector enhanced scanning,
+or `ScanConfig.signatureOnly()` for signature verification without scanning.
 
 #### Initializers <a name="Initializers" id="ecr-scan-verifier.ScanConfig.Initializer"></a>
 
@@ -1207,6 +1237,7 @@ Returns the scan configuration.
 | --- | --- |
 | <code><a href="#ecr-scan-verifier.ScanConfig.basic">basic</a></code> | Basic scanning using Amazon ECR native scanning. |
 | <code><a href="#ecr-scan-verifier.ScanConfig.enhanced">enhanced</a></code> | Enhanced scanning using Amazon Inspector. |
+| <code><a href="#ecr-scan-verifier.ScanConfig.signatureOnly">signatureOnly</a></code> | Signature verification only (no vulnerability scanning). |
 
 ---
 
@@ -1245,6 +1276,28 @@ Ensure Amazon Inspector is enabled for your registry.
 ###### `options`<sup>Optional</sup> <a name="options" id="ecr-scan-verifier.ScanConfig.enhanced.parameter.options"></a>
 
 - *Type:* <a href="#ecr-scan-verifier.EnhancedScanConfigOptions">EnhancedScanConfigOptions</a>
+
+---
+
+##### `signatureOnly` <a name="signatureOnly" id="ecr-scan-verifier.ScanConfig.signatureOnly"></a>
+
+```typescript
+import { ScanConfig } from 'ecr-scan-verifier'
+
+ScanConfig.signatureOnly(options?: SignatureOnlyConfigOptions)
+```
+
+Signature verification only (no vulnerability scanning).
+
+Verifies the image signature without performing vulnerability scanning.
+This mode skips ECR/Inspector scanning entirely and only validates the image signature.
+
+**Requirements**:
+- `signatureVerification` must be specified in EcrScanVerifierProps
+
+###### `options`<sup>Optional</sup> <a name="options" id="ecr-scan-verifier.ScanConfig.signatureOnly.parameter.options"></a>
+
+- *Type:* <a href="#ecr-scan-verifier.SignatureOnlyConfigOptions">SignatureOnlyConfigOptions</a>
 
 ---
 

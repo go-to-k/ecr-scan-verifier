@@ -47,7 +47,7 @@ const kmsKey = Key.fromKeyArn(stack, 'CosignKey', kmsKeyArnFromEnv);
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.basic(),
+  scanConfig: ScanConfig.signatureOnly(),
   signatureVerification: SignatureVerification.cosignKms({
     key: kmsKey,
   }),

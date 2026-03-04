@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync, cpSync } from 'fs';
+import { mkdirSync, writeFileSync, cpSync, chmodSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import {
   ECRClient,
@@ -92,7 +92,6 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
   cpSync(truststoreSrc, truststoreDest, { recursive: true });
 
   // Fix permissions: ensure Lambda non-root user can read all files
-  const { chmodSync, readdirSync, statSync } = require('fs');
   const fixPermissions = (dir: string): void => {
     chmodSync(dir, 0o755);
     const entries = readdirSync(dir);

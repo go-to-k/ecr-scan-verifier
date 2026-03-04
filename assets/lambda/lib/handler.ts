@@ -94,6 +94,12 @@ export const handler: CdkCustomResourceHandler = async function (event) {
     }
   }
 
+  // Skip scan if signatureOnly mode
+  if (props.scanType === 'SIGNATURE_ONLY') {
+    console.log('Vulnerability scanning skipped (ScanConfig.signatureOnly() mode).');
+    return funcResponse;
+  }
+
   // 1. Execute scan / poll for results
   let scanFindings: ScanFindings;
   if (props.startScan === 'true') {

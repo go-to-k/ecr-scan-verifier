@@ -15,7 +15,6 @@ import { ITopic } from 'aws-cdk-lib/aws-sns';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import { Construct, IConstruct } from 'constructs';
 import { ScannerCustomResourceProps } from './custom-resource-props';
-import { SbomOutput } from './sbom-output';
 import { ScanConfig } from './scan-config';
 import { ScanLogsOutput } from './scan-logs-output';
 import { SignatureVerification } from './signature-verification';
@@ -89,19 +88,6 @@ export interface EcrScanVerifierProps {
    * @default - scan logs output to default log group created by Scanner Lambda.
    */
   readonly scanLogsOutput?: ScanLogsOutput;
-
-  /**
-   * SBOM (Software Bill of Materials) output configuration.
-   *
-   * SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
-   * and uploads it to S3.
-   *
-   * **Note**: SBOM export is only available with Enhanced scanning (Amazon Inspector).
-   * Using with Basic scanning will throw an error.
-   *
-   * @default - no SBOM output
-   */
-  readonly sbomOutput?: SbomOutput;
 
   /**
    * Signature verification configuration for the container image.
@@ -179,28 +165,32 @@ export class EcrScanVerifier extends Construct {
     const imageTag = props.imageTag ?? 'latest';
 
     const scanConfigOutput = props.scanConfig.bind();
-    // Validate: SBOM output requires Enhanced scanning
-    if (props.sbomOutput && scanConfigOutput.scanType === 'BASIC') {
+
+    // Validate: signatureOnly requires signatureVerification
+    if (scanConfigOutput.scanType === 'SIGNATURE_ONLY' && !props.signatureVerification) {
       throw new Error(
-        'SBOM output is only available with Enhanced scanning (ScanConfig.enhanced()). Basic scanning does not support SBOM generation.',
+        'ScanConfig.signatureOnly() requires signatureVerification to be specified. ' +
+          'Use SignatureVerification.notation(), SignatureVerification.cosignPublicKey(), or SignatureVerification.cosignKms().',
       );
     }
 
     const outputOptions = props.scanLogsOutput?.bind(customResourceLambda);
 
-    // SBOM output (independent from scan logs)
-    const sbomConfig = props.sbomOutput?.bind(customResourceLambda);
+    // SBOM output (from scanConfigOutput)
+    const sbomConfig = scanConfigOutput.sbomOutput?.bind(customResourceLambda);
 
     // Signature verification
     const signatureVerificationConfig = props.signatureVerification?.bind(customResourceLambda);
 
-    // ECR scan permissions
-    customResourceLambda.addToRolePolicy(
-      new PolicyStatement({
-        actions: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
-        resources: [props.repository.repositoryArn],
-      }),
-    );
+    // ECR scan permissions (not required for SIGNATURE_ONLY)
+    if (scanConfigOutput.scanType !== 'SIGNATURE_ONLY') {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+          resources: [props.repository.repositoryArn],
+        }),
+      );
+    }
 
     if (scanConfigOutput.scanType === 'ENHANCED') {
       customResourceLambda.addToRolePolicy(

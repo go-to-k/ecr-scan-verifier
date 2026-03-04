@@ -37,7 +37,7 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.basic(),
+  scanConfig: ScanConfig.signatureOnly(),
   signatureVerification: SignatureVerification.notation({
     trustedIdentities: [signerProfileArn],
   }),

@@ -47,9 +47,10 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,
   imageTag: image.assetHash,
-  scanConfig: ScanConfig.enhanced(),
+  scanConfig: ScanConfig.enhanced({
+    sbomOutput: SbomOutput.cycloneDx14({ bucket: sbomBucket, encryptionKey: sbomKey }),
+  }),
   ignoreFindings: IGNORE_FOR_PASSING_TESTS,
-  sbomOutput: SbomOutput.cycloneDx14({ bucket: sbomBucket, encryptionKey: sbomKey }),
 });
 
 const test = new IntegTest(app, 'SbomOutputTest', {

@@ -206,9 +206,9 @@ new EcrScanVerifier(this, 'Scanner2', {
 
 ### SBOM Output
 
-You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API. This is independent from scan logs output.
+You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API.
 
-**Note**: SBOM export is only available with Enhanced scanning. Using with Basic scanning will throw an error.
+**Note**: SBOM export is only available with Enhanced scanning.
 
 ```ts
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';
@@ -218,11 +218,12 @@ const sbomEncryptionKey = new Key(this, 'SbomEncryptionKey');
 
 new EcrScanVerifier(this, 'Scanner', {
   repository,
-  scanConfig: ScanConfig.enhanced(),
-  sbomOutput: SbomOutput.cycloneDx14({
-    bucket: sbomBucket,
-    prefix: 'sbom/', // Optional
-    encryptionKey: sbomEncryptionKey,
+  scanConfig: ScanConfig.enhanced({
+    sbomOutput: SbomOutput.cycloneDx14({
+      bucket: sbomBucket,
+      prefix: 'sbom/', // Optional
+      encryptionKey: sbomEncryptionKey,
+    }),
   }),
 });
 ```
@@ -288,6 +289,35 @@ new EcrScanVerifier(this, 'Scanner', {
 ```
 
 > **Note**: Signature verification works with both Basic and Enhanced scanning modes.
+
+#### Signature Verification Only (No Scanning)
+
+If you only want to verify the image signature without performing vulnerability scanning, use `ScanConfig.signatureOnly()`:
+
+```ts
+import { EcrScanVerifier, ScanConfig, SignatureVerification } from 'ecr-scan-verifier';
+
+new EcrScanVerifier(this, 'SignatureOnlyVerifier', {
+  repository,
+  scanConfig: ScanConfig.signatureOnly(),
+  signatureVerification: SignatureVerification.notation({
+    trustedIdentities: [
+      'arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile',
+    ],
+  }),
+});
+```
+
+**Note**:
+
+- `ScanConfig.signatureOnly()` requires `signatureVerification` to be specified.
+- This mode skips vulnerability scanning entirely, reducing Lambda execution time and IAM permissions.
+
+**Use Cases**:
+
+- **Fast deployments**: When you only need to verify image authenticity without waiting for scan results.
+- **Pre-production environments**: Verify signatures in dev/staging before running full scans in production.
+- **Minimal IAM permissions**: No `ecr:DescribeImageScanFindings` or `inspector2:*` permissions required.
 
 ### SNS Notification for Vulnerabilities
 

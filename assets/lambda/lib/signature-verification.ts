@@ -199,8 +199,10 @@ export const verifySignature = async (
     } else if (config.type === 'COSIGN') {
       const cosignBin = join(binDir, 'cosign');
       const env: Record<string, string> = {
+        HOME: '/tmp',
         DOCKER_CONFIG: dockerConfigDir,
         PATH: `${binDir}:${process.env.PATH}`,
+        SIGSTORE_NO_CACHE: '1',
       };
 
       let keyArgs: string[];

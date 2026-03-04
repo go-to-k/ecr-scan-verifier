@@ -4,17 +4,17 @@
     "id": "App",
     "path": "",
     "children": {
-      "NotationSignatureStack": {
-        "id": "NotationSignatureStack",
-        "path": "NotationSignatureStack",
+      "CosignPublicKeySignatureStack": {
+        "id": "CosignPublicKeySignatureStack",
+        "path": "CosignPublicKeySignatureStack",
         "children": {
           "DockerImage": {
             "id": "DockerImage",
-            "path": "NotationSignatureStack/DockerImage",
+            "path": "CosignPublicKeySignatureStack/DockerImage",
             "children": {
               "Staging": {
                 "id": "Staging",
-                "path": "NotationSignatureStack/DockerImage/Staging",
+                "path": "CosignPublicKeySignatureStack/DockerImage/Staging",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.AssetStaging",
                   "version": "2.178.1"
@@ -22,7 +22,7 @@
               },
               "Repository": {
                 "id": "Repository",
-                "path": "NotationSignatureStack/DockerImage/Repository",
+                "path": "CosignPublicKeySignatureStack/DockerImage/Repository",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.aws_ecr.RepositoryBase",
                   "version": "2.178.1",
@@ -37,11 +37,11 @@
           },
           "Scanner": {
             "id": "Scanner",
-            "path": "NotationSignatureStack/Scanner",
+            "path": "CosignPublicKeySignatureStack/Scanner",
             "children": {
               "CustomResourceLambda": {
                 "id": "CustomResourceLambda",
-                "path": "NotationSignatureStack/Scanner/CustomResourceLambda",
+                "path": "CosignPublicKeySignatureStack/Scanner/CustomResourceLambda",
                 "constructInfo": {
                   "fqn": "aws-cdk-lib.aws_lambda.SingletonFunction",
                   "version": "2.178.1",
@@ -62,19 +62,19 @@
               },
               "Provider": {
                 "id": "Provider",
-                "path": "NotationSignatureStack/Scanner/Provider",
+                "path": "CosignPublicKeySignatureStack/Scanner/Provider",
                 "children": {
                   "framework-onEvent": {
                     "id": "framework-onEvent",
-                    "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent",
+                    "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent",
                     "children": {
                       "ServiceRole": {
                         "id": "ServiceRole",
-                        "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole",
+                        "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole",
                         "children": {
                           "ImportServiceRole": {
                             "id": "ImportServiceRole",
-                            "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole",
+                            "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.Resource",
                               "version": "2.178.1",
@@ -85,7 +85,7 @@
                           },
                           "Resource": {
                             "id": "Resource",
-                            "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource",
+                            "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                               "aws:cdk:cloudformation:props": {
@@ -124,11 +124,11 @@
                           },
                           "DefaultPolicy": {
                             "id": "DefaultPolicy",
-                            "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy",
+                            "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource",
+                                "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                                   "aws:cdk:cloudformation:props": {
@@ -256,11 +256,11 @@
                       },
                       "Code": {
                         "id": "Code",
-                        "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/Code",
+                        "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/Code",
                         "children": {
                           "Stage": {
                             "id": "Stage",
-                            "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/Code/Stage",
+                            "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/Code/Stage",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.AssetStaging",
                               "version": "2.178.1"
@@ -268,7 +268,7 @@
                           },
                           "AssetBucket": {
                             "id": "AssetBucket",
-                            "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/Code/AssetBucket",
+                            "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/Code/AssetBucket",
                             "constructInfo": {
                               "fqn": "aws-cdk-lib.aws_s3.BucketBase",
                               "version": "2.178.1",
@@ -283,7 +283,7 @@
                       },
                       "Resource": {
                         "id": "Resource",
-                        "path": "NotationSignatureStack/Scanner/Provider/framework-onEvent/Resource",
+                        "path": "CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                           "aws:cdk:cloudformation:props": {
@@ -293,7 +293,7 @@
                               },
                               "s3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
                             },
-                            "description": "AWS CDK resource provider framework - onEvent (NotationSignatureStack/Scanner/Provider)",
+                            "description": "AWS CDK resource provider framework - onEvent (CosignPublicKeySignatureStack/Scanner/Provider)",
                             "environment": {
                               "variables": {
                                 "USER_ON_EVENT_FUNCTION_ARN": {
@@ -364,11 +364,11 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "NotationSignatureStack/Scanner/Resource",
+                "path": "CosignPublicKeySignatureStack/Scanner/Resource",
                 "children": {
                   "Default": {
                     "id": "Default",
-                    "path": "NotationSignatureStack/Scanner/Resource/Default",
+                    "path": "CosignPublicKeySignatureStack/Scanner/Resource/Default",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnResource",
                       "version": "2.178.1"
@@ -391,15 +391,15 @@
           },
           "Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": {
             "id": "Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
-            "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
+            "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8",
             "children": {
               "ServiceRole": {
                 "id": "ServiceRole",
-                "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole",
+                "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole",
                 "children": {
                   "ImportServiceRole": {
                     "id": "ImportServiceRole",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.Resource",
                       "version": "2.178.1",
@@ -410,7 +410,7 @@
                   },
                   "Resource": {
                     "id": "Resource",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                       "aws:cdk:cloudformation:props": {
@@ -449,11 +449,11 @@
                   },
                   "DefaultPolicy": {
                     "id": "DefaultPolicy",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource",
+                        "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                           "aws:cdk:cloudformation:props": {
@@ -491,10 +491,7 @@
                                   }
                                 },
                                 {
-                                  "Action": [
-                                    "ecr:GetAuthorizationToken",
-                                    "signer:GetRevocationStatus"
-                                  ],
+                                  "Action": "ecr:GetAuthorizationToken",
                                   "Effect": "Allow",
                                   "Resource": "*"
                                 },
@@ -535,11 +532,6 @@
                         {
                           "attachToRole": [
                             "*"
-                          ]
-                        },
-                        {
-                          "addStatements": [
-                            {}
                           ]
                         },
                         {
@@ -610,22 +602,17 @@
                       "addToPrincipalPolicy": [
                         {}
                       ]
-                    },
-                    {
-                      "addToPrincipalPolicy": [
-                        {}
-                      ]
                     }
                   ]
                 }
               },
               "AssetImage": {
                 "id": "AssetImage",
-                "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage",
+                "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage",
                 "children": {
                   "Staging": {
                     "id": "Staging",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Staging",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Staging",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.AssetStaging",
                       "version": "2.178.1"
@@ -633,7 +620,7 @@
                   },
                   "Repository": {
                     "id": "Repository",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Repository",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Repository",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.aws_ecr.RepositoryBase",
                       "version": "2.178.1",
@@ -648,7 +635,7 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
+                "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                   "aws:cdk:cloudformation:props": {
@@ -677,11 +664,11 @@
               },
               "EventInvokeConfig": {
                 "id": "EventInvokeConfig",
-                "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
+                "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig",
                 "children": {
                   "Resource": {
                     "id": "Resource",
-                    "path": "NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
+                    "path": "CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::Lambda::EventInvokeConfig",
                       "aws:cdk:cloudformation:props": {
@@ -731,7 +718,7 @@
           },
           "LatestNodeRuntimeMap": {
             "id": "LatestNodeRuntimeMap",
-            "path": "NotationSignatureStack/LatestNodeRuntimeMap",
+            "path": "CosignPublicKeySignatureStack/LatestNodeRuntimeMap",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnMapping",
               "version": "2.178.1"
@@ -739,7 +726,7 @@
           },
           "BootstrapVersion": {
             "id": "BootstrapVersion",
-            "path": "NotationSignatureStack/BootstrapVersion",
+            "path": "CosignPublicKeySignatureStack/BootstrapVersion",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnParameter",
               "version": "2.178.1"
@@ -747,7 +734,7 @@
           },
           "CheckBootstrapVersion": {
             "id": "CheckBootstrapVersion",
-            "path": "NotationSignatureStack/CheckBootstrapVersion",
+            "path": "CosignPublicKeySignatureStack/CheckBootstrapVersion",
             "constructInfo": {
               "fqn": "aws-cdk-lib.CfnRule",
               "version": "2.178.1"
@@ -759,17 +746,17 @@
           "version": "2.178.1"
         }
       },
-      "NotationSignatureTest": {
-        "id": "NotationSignatureTest",
-        "path": "NotationSignatureTest",
+      "CosignPublicKeySignatureTest": {
+        "id": "CosignPublicKeySignatureTest",
+        "path": "CosignPublicKeySignatureTest",
         "children": {
           "DefaultTest": {
             "id": "DefaultTest",
-            "path": "NotationSignatureTest/DefaultTest",
+            "path": "CosignPublicKeySignatureTest/DefaultTest",
             "children": {
               "Default": {
                 "id": "Default",
-                "path": "NotationSignatureTest/DefaultTest/Default",
+                "path": "CosignPublicKeySignatureTest/DefaultTest/Default",
                 "constructInfo": {
                   "fqn": "constructs.Construct",
                   "version": "10.5.1"
@@ -777,11 +764,11 @@
               },
               "DeployAssert": {
                 "id": "DeployAssert",
-                "path": "NotationSignatureTest/DefaultTest/DeployAssert",
+                "path": "CosignPublicKeySignatureTest/DefaultTest/DeployAssert",
                 "children": {
                   "BootstrapVersion": {
                     "id": "BootstrapVersion",
-                    "path": "NotationSignatureTest/DefaultTest/DeployAssert/BootstrapVersion",
+                    "path": "CosignPublicKeySignatureTest/DefaultTest/DeployAssert/BootstrapVersion",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnParameter",
                       "version": "2.178.1"
@@ -789,7 +776,7 @@
                   },
                   "CheckBootstrapVersion": {
                     "id": "CheckBootstrapVersion",
-                    "path": "NotationSignatureTest/DefaultTest/DeployAssert/CheckBootstrapVersion",
+                    "path": "CosignPublicKeySignatureTest/DefaultTest/DeployAssert/CheckBootstrapVersion",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.CfnRule",
                       "version": "2.178.1"

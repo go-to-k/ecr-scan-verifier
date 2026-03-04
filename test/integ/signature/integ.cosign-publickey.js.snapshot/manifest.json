@@ -1,28 +1,28 @@
 {
   "version": "39.0.0",
   "artifacts": {
-    "NotationSignatureStack.assets": {
+    "CosignPublicKeySignatureStack.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "NotationSignatureStack.assets.json",
+        "file": "CosignPublicKeySignatureStack.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "NotationSignatureStack": {
+    "CosignPublicKeySignatureStack": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://unknown-account/unknown-region",
       "properties": {
-        "templateFile": "NotationSignatureStack.template.json",
+        "templateFile": "CosignPublicKeySignatureStack.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/22e360aba6dc9390ff39893c4aefba43ec2d6458788d2497036890bf1135635f.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/3c67e5decc8d2f2aa45f99e0d0f5fdccf1765adb51c674175edbcfce61f31d58.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "NotationSignatureStack.assets"
+          "CosignPublicKeySignatureStack.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
@@ -31,10 +31,10 @@
         }
       },
       "dependencies": [
-        "NotationSignatureStack.assets"
+        "CosignPublicKeySignatureStack.assets"
       ],
       "metadata": {
-        "/NotationSignatureStack/Scanner/CustomResourceLambda": [
+        "/CosignPublicKeySignatureStack/Scanner/CustomResourceLambda": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -50,7 +50,7 @@
             }
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -78,7 +78,7 @@
             }
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -126,19 +126,19 @@
             }
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEventServiceRole5EA00D06"
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -176,31 +176,31 @@
             }
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEventServiceRoleDefaultPolicy3BF43B7A"
           }
         ],
-        "/NotationSignatureStack/Scanner/Provider/framework-onEvent/Resource": [
+        "/CosignPublicKeySignatureStack/Scanner/Provider/framework-onEvent/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEvent93283B50"
           }
         ],
-        "/NotationSignatureStack/Scanner/Resource": [
+        "/CosignPublicKeySignatureStack/Scanner/Resource": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/NotationSignatureStack/Scanner/Resource/Default": [
+        "/CosignPublicKeySignatureStack/Scanner/Resource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Scanner1EAEC57B"
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -214,7 +214,7 @@
             }
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -276,29 +276,21 @@
                 {}
               ]
             }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addToPrincipalPolicy": [
-                {}
-              ]
-            }
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB"
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -350,29 +342,21 @@
                 {}
               ]
             }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addStatements": [
-                {}
-              ]
-            }
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleDefaultPolicyFBB05076"
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D"
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -384,46 +368,46 @@
             }
           }
         ],
-        "/NotationSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource": [
+        "/CosignPublicKeySignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8EventInvokeConfig01C00B6E"
           }
         ],
-        "/NotationSignatureStack/LatestNodeRuntimeMap": [
+        "/CosignPublicKeySignatureStack/LatestNodeRuntimeMap": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LatestNodeRuntimeMap"
           }
         ],
-        "/NotationSignatureStack/BootstrapVersion": [
+        "/CosignPublicKeySignatureStack/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/NotationSignatureStack/CheckBootstrapVersion": [
+        "/CosignPublicKeySignatureStack/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "NotationSignatureStack"
+      "displayName": "CosignPublicKeySignatureStack"
     },
-    "NotationSignatureTestDefaultTestDeployAssertA53EF4EB.assets": {
+    "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "NotationSignatureTestDefaultTestDeployAssertA53EF4EB.assets.json",
+        "file": "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "NotationSignatureTestDefaultTestDeployAssertA53EF4EB": {
+    "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://unknown-account/unknown-region",
       "properties": {
-        "templateFile": "NotationSignatureTestDefaultTestDeployAssertA53EF4EB.template.json",
+        "templateFile": "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
@@ -432,7 +416,7 @@
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "NotationSignatureTestDefaultTestDeployAssertA53EF4EB.assets"
+          "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
@@ -441,23 +425,23 @@
         }
       },
       "dependencies": [
-        "NotationSignatureTestDefaultTestDeployAssertA53EF4EB.assets"
+        "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0.assets"
       ],
       "metadata": {
-        "/NotationSignatureTest/DefaultTest/DeployAssert/BootstrapVersion": [
+        "/CosignPublicKeySignatureTest/DefaultTest/DeployAssert/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/NotationSignatureTest/DefaultTest/DeployAssert/CheckBootstrapVersion": [
+        "/CosignPublicKeySignatureTest/DefaultTest/DeployAssert/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "NotationSignatureTest/DefaultTest/DeployAssert"
+      "displayName": "CosignPublicKeySignatureTest/DefaultTest/DeployAssert"
     },
     "Tree": {
       "type": "cdk:tree",

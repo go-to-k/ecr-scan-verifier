@@ -92,7 +92,7 @@
      },
      "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
     },
-    "Description": "AWS CDK resource provider framework - onEvent (NotationSignatureStack/Scanner/Provider)",
+    "Description": "AWS CDK resource provider framework - onEvent (CosignPublicKeySignatureStack/Scanner/Provider)",
     "Environment": {
      "Variables": {
       "USER_ON_EVENT_FUNCTION_ARN": {
@@ -135,7 +135,7 @@
       "Arn"
      ]
     },
-    "addr": "c8ec725bcf12e992566d5b2fefcc3dfa38a7927007",
+    "addr": "c8b85f121001c73290f2c9ceaf5a7d9f618432994d",
     "repositoryName": {
      "Fn::Sub": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}"
     },
@@ -148,25 +148,8 @@
     "failOnVulnerability": "true",
     "ignoreFindings": [],
     "signatureVerification": {
-     "type": "NOTATION",
-     "trustedIdentities": [
-      {
-       "Fn::Join": [
-        "",
-        [
-         "arn:aws:signer:",
-         {
-          "Ref": "AWS::Region"
-         },
-         ":",
-         {
-          "Ref": "AWS::AccountId"
-         },
-         ":/signing-profiles/EcrScanVerifierTest"
-        ]
-       ]
-      }
-     ],
+     "type": "COSIGN",
+     "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEenzz3E9L+M6ycNXiEALB/zd21q1r\nSDoJoyQxHqzoW4MMSsrFCI7hBZxS1J8ZUPYQx2V8BzHTFV5O2jr/8+vCdA==\n-----END PUBLIC KEY-----",
      "failOnUnsigned": "true"
     },
     "suppressErrorOnRollback": "true",
@@ -253,10 +236,7 @@
        }
       },
       {
-       "Action": [
-        "ecr:GetAuthorizationToken",
-        "signer:GetRevocationStatus"
-       ],
+       "Action": "ecr:GetAuthorizationToken",
        "Effect": "Allow",
        "Resource": "*"
       },

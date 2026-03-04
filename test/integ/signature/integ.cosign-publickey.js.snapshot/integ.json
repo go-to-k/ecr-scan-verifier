@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "CosignPublicKeySignatureTest/DefaultTest": {
+      "stacks": [
+        "CosignPublicKeySignatureStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "CosignPublicKeySignatureTest/DefaultTest/DeployAssert",
+      "assertionStackName": "CosignPublicKeySignatureTestDefaultTestDeployAssert5791BFA0"
+    }
+  }
+}

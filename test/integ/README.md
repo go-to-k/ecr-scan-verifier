@@ -115,8 +115,20 @@ aws signer put-signing-profile \
   --platform-id Notation-OCI-SHA384-ECDSA
 
 # 2. Install notation CLI + AWS Signer plugin
-#    https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html
-brew install notation  # macOS
+#    https://docs.aws.amazon.com/signer/latest/developerguide/image-signing-prerequisites.html
+
+# Download and install AWS Signer installer (includes notation + plugin + trust store)
+# For Apple Silicon (arm64) - default for modern Macs:
+curl -o aws-signer-notation-cli.pkg https://d2hvyiie56hcat.cloudfront.net/darwin/arm64/installer/latest/aws-signer-notation-cli_arm64.pkg
+sudo installer -pkg aws-signer-notation-cli.pkg -target /
+
+# For Intel Macs (amd64):
+# curl -o aws-signer-notation-cli.pkg https://d2hvyiie56hcat.cloudfront.net/darwin/amd64/installer/latest/aws-signer-notation-cli_amd64.pkg
+# sudo installer -pkg aws-signer-notation-cli.pkg -target /
+
+# Verify installation
+notation version
+notation plugin ls
 
 # 3. Build and synth to publish the Docker image asset only (no deploy)
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)

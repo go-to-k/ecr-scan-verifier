@@ -22,13 +22,11 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *      (see test/integ/README.md for full commands)
  *
  * Rekor Transparency Log:
- *   By default, this test uses ignoreTlog: false (Rekor verification enabled).
- *   - Sign with: cosign sign --key "awskms:///${KMS_KEY_ARN}" IMAGE
- *   - Requires Lambda to have internet access to Rekor service
+ *   This implementation always skips Rekor transparency log verification for
+ *   reliability in AWS Lambda environments. The cryptographic signature is still
+ *   verified using the KMS key.
  *
- *   To test without Rekor (ignoreTlog: true):
- *   - Change line below to: ignoreTlog: true
- *   - Sign with: cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE
+ *   Sign with: cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE
  *
  * Run:
  *   COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js

@@ -165,22 +165,15 @@ pnpm integ:signature:update --language javascript --test-regex "integ.notation.j
 #### Cosign (KMS)
 
 **Note on Rekor Transparency Log:**
-By default, cosign uploads signatures to the public Rekor transparency log and verification
-requires access to Rekor. You can control this behavior with the `ignoreTlog` option:
+This implementation always skips Rekor transparency log verification for reliability in AWS Lambda
+environments. The cryptographic signature is still verified using the KMS key.
 
-- **`ignoreTlog: false` (default)**: Full Rekor transparency log verification
-  - Sign with: `cosign sign --key "awskms:///${KMS_KEY_ARN}" IMAGE`
-  - Verification requires internet access to Rekor service
-  - Provides timestamped proof that signature was created at a specific time
-  - Best for production and security-critical deployments
+- Sign with: `cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE`
+- Verification works offline and in VPC environments without internet access
+- Faster verification without network calls to Rekor service
+- If you require Rekor transparency log verification for compliance, consider using Notation with AWS Signer instead
 
-- **`ignoreTlog: true`**: Skip Rekor verification, signature-only
-  - Sign with: `cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE`
-  - Verification works offline or in restricted network environments
-  - Faster verification without transparency log overhead
-  - Use for development, air-gapped environments, or when Rekor access is unavailable
-
-**Setup (with default Rekor verification):**
+**Setup:**
 
 ```bash
 # 1. Install cosign
@@ -213,40 +206,13 @@ DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
 
 aws ecr get-login-password --region ${REGION} | cosign login --username AWS --password-stdin "${REGISTRY}"
 
-# IMPORTANT: Cosign version compatibility
-# - Ensure local cosign matches Lambda version (3.0.5)
-# - If you previously signed with a different version, delete old signatures first:
-#   aws ecr batch-delete-image --repository-name "${REPO}" \
-#     --image-ids imageTag=sha256-${DIGEST#sha256:} --region ${REGION}
-
-# For Rekor verification (ignoreTlog: false, default):
-# 1. Ensure local cosign is v3.0.1+ (check with: cosign version)
-brew upgrade cosign  # Update if needed
-cosign version       # Should be v3.0.1 or higher
-
-# 2. Initialize TUF metadata (downloads Rekor v2 public keys)
-cosign initialize
-
-# 3. Sign WITH Rekor transparency log (default, matches ignoreTlog: false)
-cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
-
-# OR: For offline/restricted environments (ignoreTlog: true):
-# - Update integ.cosign-kms.ts to set: ignoreTlog: true
-# - Sign WITHOUT Rekor transparency log:
-# cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
+# 4. Sign the pushed image WITHOUT Rekor transparency log
+# This matches the Lambda verification behavior (always skips Rekor)
+cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
 COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"
 ```
-
-**Troubleshooting:**
-
-If you get `transparency log certificate does not match` error:
-
-1. Check cosign version matches between local (signing) and Lambda (verification)
-2. Ensure `cosign initialize` was run locally before signing
-3. Verify Lambda has internet access to `rekor.sigstore.dev` (for `ignoreTlog: false`)
-4. Or set `ignoreTlog: true` in the test to skip Rekor verification
 
 #### Cleanup
 

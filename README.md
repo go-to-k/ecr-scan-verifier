@@ -260,6 +260,8 @@ new EcrScanVerifier(this, 'Scanner', {
 
 #### Cosign with Public Key
 
+> **Note on Rekor Transparency Log**: Cosign verification always skips Rekor transparency log verification. The Lambda function uses `--insecure-ignore-tlog` flag to verify only the cryptographic signature.
+
 ```ts
 import { readFileSync } from 'fs';
 

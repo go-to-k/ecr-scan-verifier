@@ -5,7 +5,7 @@ import {
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { mockClient } from 'aws-sdk-client-mock';
-import { outputScanLogsToCWLogs } from '../lib/cloudwatch-logs';
+import { outputScanLogsToCWLogs, outputSignatureVerificationLogsToCWLogs } from '../lib/cloudwatch-logs';
 import { ScanLogsOutputType } from '../../../src/scan-logs-output';
 
 const MAX_LOG_EVENT_SIZE = 1048576; // 1 MB in bytes
@@ -114,6 +114,108 @@ describe('cloudwatch-logs', () => {
       logEvents!.forEach((event: any) => {
         expect(event.message).toMatch(/^\[part \d+\/\d+\]/);
       });
+    });
+  });
+
+  describe('outputSignatureVerificationLogsToCWLogs', () => {
+    test('should create log stream and put signature verification result', async () => {
+      cwMock.on(CreateLogStreamCommand).resolves({});
+      cwMock.on(PutLogEventsCommand).resolves({});
+
+      const output = {
+        type: ScanLogsOutputType.CLOUDWATCH_LOGS,
+        logGroupName: '/aws/lambda/test',
+      };
+
+      const verificationResult = {
+        verified: true,
+        message: 'Signature verification succeeded',
+        verificationType: 'NOTATION' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      const result = await outputSignatureVerificationLogsToCWLogs(
+        verificationResult,
+        output,
+        'my-repo',
+        'v1.0',
+      );
+
+      expect(result).toEqual({
+        type: 'cloudwatch',
+        logGroupName: '/aws/lambda/test',
+        logStreamName: 'my-repo_v1.0/signature-verification',
+      });
+
+      const createLogStreamCalls = cwMock.commandCalls(CreateLogStreamCommand);
+      expect(createLogStreamCalls).toHaveLength(1);
+      expect(createLogStreamCalls[0].args[0].input).toEqual({
+        logGroupName: '/aws/lambda/test',
+        logStreamName: 'my-repo_v1.0/signature-verification',
+      });
+
+      const putLogEventsCalls = cwMock.commandCalls(PutLogEventsCommand);
+      expect(putLogEventsCalls).toHaveLength(1);
+      const logEvents = putLogEventsCalls[0].args[0].input.logEvents;
+      expect(logEvents).toHaveLength(1);
+      expect(JSON.parse((logEvents![0] as any).message)).toEqual(verificationResult);
+    });
+
+    test('should sanitize repository name and image tag', async () => {
+      cwMock.on(CreateLogStreamCommand).resolves({});
+      cwMock.on(PutLogEventsCommand).resolves({});
+
+      const output = {
+        type: ScanLogsOutputType.CLOUDWATCH_LOGS,
+        logGroupName: '/aws/lambda/test',
+      };
+
+      const verificationResult = {
+        verified: false,
+        message: 'Signature verification failed',
+        verificationType: 'COSIGN' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      await outputSignatureVerificationLogsToCWLogs(
+        verificationResult,
+        output,
+        'my-org/my-repo',
+        'v1.0:latest',
+      );
+
+      const createLogStreamCalls = cwMock.commandCalls(CreateLogStreamCommand);
+      expect(createLogStreamCalls[0].args[0].input.logStreamName).toBe(
+        'my-org_my-repo_v1.0,latest/signature-verification',
+      );
+    });
+
+    test('should handle existing log stream', async () => {
+      cwMock
+        .on(CreateLogStreamCommand)
+        .rejects(new ResourceAlreadyExistsException({ $metadata: {}, message: 'already exists' }));
+      cwMock.on(PutLogEventsCommand).resolves({});
+      jest.spyOn(console, 'log').mockImplementation();
+
+      const output = {
+        type: ScanLogsOutputType.CLOUDWATCH_LOGS,
+        logGroupName: '/aws/lambda/test',
+      };
+
+      const verificationResult = {
+        verified: true,
+        message: 'Signature verification succeeded',
+        verificationType: 'NOTATION' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      await expect(
+        outputSignatureVerificationLogsToCWLogs(verificationResult, output, 'my-repo', 'v1.0'),
+      ).resolves.not.toThrow();
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Log stream my-repo_v1.0/signature-verification already exists'),
+      );
     });
   });
 });

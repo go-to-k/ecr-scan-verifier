@@ -236,7 +236,9 @@ Available SBOM formats:
 
 You can verify container image signatures before scanning using Notation (AWS Signer) or Cosign (Sigstore).
 
-Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail.
+Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail immediately without scanning. If `failOnUnsigned` is `false`, a warning is logged and the deployment continues to scan for vulnerabilities.
+
+**Signature verification logs**: When `scanLogsOutput` is configured, verification results are automatically written to the same destination (S3 or CloudWatch Logs) alongside scan results. If not configured, results are logged to the Lambda function's default log group.
 
 #### Notation (AWS Signer)
 
@@ -250,6 +252,7 @@ new EcrScanVerifier(this, 'Scanner', {
   scanConfig: ScanConfig.basic(),
   signatureVerification: SignatureVerification.notation({
     trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+    failOnUnsigned: true, // Optional: default is true. Set to false to continue scanning even if verification fails.
   }),
 });
 ```
@@ -283,6 +286,8 @@ new EcrScanVerifier(this, 'Scanner', {
   }),
 });
 ```
+
+> **Note**: Signature verification works with both Basic and Enhanced scanning modes.
 
 ### SNS Notification for Vulnerabilities
 

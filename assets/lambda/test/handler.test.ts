@@ -557,6 +557,76 @@ describe('handler', () => {
 
       expect(callOrder).toEqual(['verifySignature', 'startAndWaitForScan']);
     });
+
+    test('should continue to scan when signature verification fails with failOnUnsigned=false', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockResolvedValue({
+        verified: false,
+        message: 'Signature verification failed: no matching signatures',
+        verificationType: 'NOTATION',
+        timestamp: '2024-01-01T00:00:00.000Z',
+      });
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'false',
+          },
+        },
+      };
+
+      const result = await handler(event, mockContext, mockCallback);
+
+      // Should log warning
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Signature verification failed for image: my-repo:v1.0'),
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Continuing to scan despite unsigned image (failOnUnsigned=false)'),
+      );
+
+      // Should continue to scan
+      expect(ecrScan.startAndWaitForScan).toHaveBeenCalled();
+
+      // Should return successfully
+      expect(result?.PhysicalResourceId).toBe('test-addr');
+    });
+
+    test('should send SNS notification when failOnUnsigned=false and verification fails', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockResolvedValue({
+        verified: false,
+        message: 'Signature verification failed: no matching signatures',
+        verificationType: 'NOTATION',
+        timestamp: '2024-01-01T00:00:00.000Z',
+      });
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          vulnsTopicArn: 'arn:aws:sns:us-east-1:123456789012:test-topic',
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'false',
+          },
+        },
+      };
+
+      await handler(event, mockContext, mockCallback);
+
+      expect(snsNotification.sendVulnsNotification).toHaveBeenCalledWith(
+        'arn:aws:sns:us-east-1:123456789012:test-topic',
+        expect.stringContaining('Signature verification failed for image: my-repo:v1.0'),
+        'my-repo:v1.0',
+        expect.objectContaining({ type: 'default' }),
+      );
+    });
   });
 
   test('should log basic findings for Basic scanning', async () => {

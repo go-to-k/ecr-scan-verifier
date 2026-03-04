@@ -999,30 +999,30 @@
                   ]
                 }
               },
-              "Code": {
-                "id": "Code",
-                "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code",
+              "AssetImage": {
+                "id": "AssetImage",
+                "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage",
                 "children": {
-                  "Stage": {
-                    "id": "Stage",
-                    "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/Stage",
+                  "Staging": {
+                    "id": "Staging",
+                    "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Staging",
                     "constructInfo": {
                       "fqn": "aws-cdk-lib.AssetStaging",
                       "version": "2.178.1"
                     }
                   },
-                  "AssetBucket": {
-                    "id": "AssetBucket",
-                    "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Code/AssetBucket",
+                  "Repository": {
+                    "id": "Repository",
+                    "path": "SbomOutputStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/AssetImage/Repository",
                     "constructInfo": {
-                      "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+                      "fqn": "aws-cdk-lib.aws_ecr.RepositoryBase",
                       "version": "2.178.1",
                       "metadata": []
                     }
                   }
                 },
                 "constructInfo": {
-                  "fqn": "aws-cdk-lib.aws_s3_assets.Asset",
+                  "fqn": "aws-cdk-lib.aws_ecr_assets.DockerImageAsset",
                   "version": "2.178.1"
                 }
               },
@@ -1036,19 +1036,17 @@
                       "arm64"
                     ],
                     "code": {
-                      "s3Bucket": {
-                        "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-                      },
-                      "s3Key": "3e36b166fad48cc252ca8504f8e8a755ed3ff308781a8c1d61beeaddb07324e9.zip"
+                      "imageUri": {
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead"
+                      }
                     },
-                    "handler": "index.handler",
+                    "packageType": "Image",
                     "role": {
                       "Fn::GetAtt": [
                         "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
                         "Arn"
                       ]
                     },
-                    "runtime": "nodejs22.x",
                     "timeout": 900
                   }
                 },

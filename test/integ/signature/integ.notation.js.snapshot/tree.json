@@ -669,7 +669,7 @@
                     ],
                     "code": {
                       "imageUri": {
-                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:e9b16a2caa8eb22e9a57a8036f5046174483a521383fc1ad714a95c726e583b9"
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:c6b8fed2b36ce8b16b856e99cea790d5296bddeb66119fb22b1add7091941b02"
                       }
                     },
                     "packageType": "Image",

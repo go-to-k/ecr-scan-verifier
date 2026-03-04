@@ -14,7 +14,7 @@
         }
       }
     },
-    "bfa055f9a8d9df6511f549862d896fa9d57c206e75df2f29f80cbdb333781bb3": {
+    "19c19a9a4f73e1f2bce6f10ea23917bd17dc05ae3f5834a53ad9154dfbbf3c29": {
       "source": {
         "path": "NotationSignatureStack.template.json",
         "packaging": "file"
@@ -22,7 +22,7 @@
       "destinations": {
         "current_account-current_region": {
           "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
-          "objectKey": "bfa055f9a8d9df6511f549862d896fa9d57c206e75df2f29f80cbdb333781bb3.json",
+          "objectKey": "19c19a9a4f73e1f2bce6f10ea23917bd17dc05ae3f5834a53ad9154dfbbf3c29.json",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }
@@ -42,15 +42,15 @@
         }
       }
     },
-    "e9b16a2caa8eb22e9a57a8036f5046174483a521383fc1ad714a95c726e583b9": {
+    "c6b8fed2b36ce8b16b856e99cea790d5296bddeb66119fb22b1add7091941b02": {
       "source": {
-        "directory": "asset.e9b16a2caa8eb22e9a57a8036f5046174483a521383fc1ad714a95c726e583b9",
+        "directory": "asset.c6b8fed2b36ce8b16b856e99cea790d5296bddeb66119fb22b1add7091941b02",
         "platform": "linux/arm64"
       },
       "destinations": {
         "current_account-current_region": {
           "repositoryName": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}",
-          "imageTag": "e9b16a2caa8eb22e9a57a8036f5046174483a521383fc1ad714a95c726e583b9",
+          "imageTag": "c6b8fed2b36ce8b16b856e99cea790d5296bddeb66119fb22b1add7091941b02",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-image-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }

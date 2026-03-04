@@ -386,19 +386,17 @@
      "arm64"
     ],
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
-     "S3Key": "3e36b166fad48cc252ca8504f8e8a755ed3ff308781a8c1d61beeaddb07324e9.zip"
+     "ImageUri": {
+      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:fc45c32757ebfb08543ea0dd68be8bd38b5981207f1d0aedbfaf465dfd27658c"
+     }
     },
-    "Handler": "index.handler",
+    "PackageType": "Image",
     "Role": {
      "Fn::GetAtt": [
       "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB",
       "Arn"
      ]
     },
-    "Runtime": "nodejs22.x",
     "Timeout": 900
    },
    "DependsOn": [

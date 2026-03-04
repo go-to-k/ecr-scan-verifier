@@ -63,6 +63,8 @@ const project = new awscdk.AwsCdkConstructLibrary({
     '.DS_Store',
     'test/cdk-integ.*.snapshot/**/*',
     '!test/integ/**/integ.*.snapshot/**/*',
+    'cosign.key',
+    'cosign.pub',
   ],
   githubOptions: {
     pullRequestLintOptions: {

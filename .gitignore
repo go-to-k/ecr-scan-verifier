@@ -36,6 +36,8 @@ cdk.out/
 .DS_Store
 test/cdk-integ.*.snapshot/**/*
 !test/integ/**/integ.*.snapshot/**/*
+cosign.key
+cosign.pub
 /test-reports/
 junit.xml
 !/jest.config.json

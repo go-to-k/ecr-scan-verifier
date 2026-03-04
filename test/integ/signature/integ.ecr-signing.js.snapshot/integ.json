@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "EcrSigningTest/DefaultTest": {
+      "stacks": [
+        "EcrSigningStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "EcrSigningTest/DefaultTest/DeployAssert",
+      "assertionStackName": "EcrSigningTestDefaultTestDeployAssertDDFC0648"
+    }
+  }
+}

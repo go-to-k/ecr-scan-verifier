@@ -166,12 +166,19 @@ pnpm integ:signature:update --language javascript --test-regex "integ.notation.j
 
 ECR's managed signing feature (`signing-configuration`) automatically signs images on push using AWS Signer. This test verifies that the construct can verify these automatically-signed images.
 
+**Important:** ECR managed signing ONLY works with direct `docker push` operations. It does NOT work with:
+
+- ECRDeployment (cdk-ecr-deployment)
+- CDK DockerImageAsset copies
+- Any image copy operations via ECR APIs
+
 **Note:** This feature may not be available in all AWS regions yet. Check if your region supports `aws ecr put-signing-configuration` before proceeding.
 
 **Prerequisites:**
 
-- User must have `signer:*` permissions
+- User must have `signer:*` permissions (including `signer:SignPayload`)
 - Same AWS Signer profile as above (`EcrScanVerifierTest`)
+- Docker installed and running locally
 
 ```bash
 # 1. Create a signing profile (if not already created)
@@ -189,7 +196,6 @@ PROFILE_ARN=$(aws signer get-signing-profile \
 aws ecr create-repository --repository-name "${REPO_NAME}" || echo "Repository already exists"
 
 # 3. Enable ECR managed signing (registry-level configuration)
-# Create signing configuration JSON
 cat > /tmp/signing-config.json <<EOF
 {
   "rules": [
@@ -211,21 +217,36 @@ aws ecr put-signing-configuration \
   --signing-configuration file:///tmp/signing-config.json
 
 # Verify signing-configuration is enabled
-aws ecr describe-signing-configuration --region "${REGION}"
+aws ecr get-signing-configuration --region "${REGION}"
 
-# 4. Run the integ test
-# This will:
-#   - Build and push the Docker image to CDK bootstrap repository
-#   - Deploy ECRDeployment which copies the image to signing-enabled repository
-#     (ECR managed signing will automatically sign on push)
-#   - Verify the signature using Notation
+# 4. Build and push a test image using docker (ECR managed signing requires direct docker push)
+cd test/integ/fixtures/docker-image
+docker build --platform linux/arm64 -t test-ecr-signing:latest .
+cd -
+
+# Login to ECR
+aws ecr get-login-password --region ${REGION} | \
+  docker login --username AWS --password-stdin ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com
+
+# Tag and push the image with 'latest' tag (ECR will automatically sign it)
+docker tag test-ecr-signing:latest ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:latest
+docker push ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:latest
+
+# Wait a moment for signing to complete
+sleep 5
+
+# Verify the image was signed
+aws ecr describe-image-signing-status \
+  --repository-name ${REPO_NAME} \
+  --image-id imageTag=latest \
+  --region ${REGION}
+
+# 5. Run the integ test (uses 'latest' tag and CFn pseudo parameters by default)
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-SIGNING_PROFILE_ARN="${PROFILE_ARN}" REPO_NAME="${REPO_NAME}" \
-  pnpm integ:signature:update --language javascript --test-regex "integ.ecr-signing.js$"
+pnpm integ:signature:update --language javascript --test-regex "integ.ecr-signing.js$"
 
-# 5. Cleanup - disable signing-configuration and delete repository
-# Remove signing configuration (set to empty rules)
+# 6. Cleanup - disable signing-configuration and delete repository
 cat > /tmp/signing-config-empty.json <<EOF
 {
   "rules": []

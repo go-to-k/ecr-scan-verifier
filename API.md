@@ -275,6 +275,13 @@ The log group to output scan logs.
 
 Options for Cosign signature verification using an AWS KMS key.
 
+**Note on Rekor Transparency Log:**
+This implementation skips Rekor transparency log verification and verifies only
+the cryptographic signature using the KMS key.
+The Lambda function always uses the `--insecure-ignore-tlog` flag when running cosign verify.
+
+> [https://docs.sigstore.dev/cosign/key_management/overview/](https://docs.sigstore.dev/cosign/key_management/overview/)
+
 #### Initializer <a name="Initializer" id="ecr-scan-verifier.CosignKmsVerificationOptions.Initializer"></a>
 
 ```typescript
@@ -289,7 +296,6 @@ const cosignKmsVerificationOptions: CosignKmsVerificationOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.key">key</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | AWS KMS key used to verify the image signature. |
 | <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
-| <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.ignoreTlog">ignoreTlog</a></code> | <code>boolean</code> | Whether to skip Rekor transparency log verification. |
 
 ---
 
@@ -303,8 +309,8 @@ public readonly key: IKey;
 
 AWS KMS key used to verify the image signature.
 
-The Lambda function is automatically granted `kms:GetPublicKey` and `kms:Verify`
-permissions on this key.
+The Lambda function is automatically granted `kms:DescribeKey`, `kms:GetPublicKey`,
+and `kms:Verify` permissions on this key.
 
 ---
 
@@ -321,32 +327,16 @@ Whether to fail the deployment if the image is unsigned or signature verificatio
 
 ---
 
-##### `ignoreTlog`<sup>Optional</sup> <a name="ignoreTlog" id="ecr-scan-verifier.CosignKmsVerificationOptions.property.ignoreTlog"></a>
-
-```typescript
-public readonly ignoreTlog: boolean;
-```
-
-- *Type:* boolean
-- *Default:* false - Rekor verification is enabled by default for better security
-
-Whether to skip Rekor transparency log verification.
-
-When false (default), cosign will verify the signature against the Rekor transparency log,
-providing additional assurance that the signature was created at a specific time.
-This requires network access to the Rekor service and TUF metadata initialization.
-
-When true, only the cryptographic signature is verified using the KMS key,
-skipping Rekor transparency log verification. Use this if:
-- The image was signed with `cosign sign --tlog-upload=false`
-- Network access to Rekor is restricted
-- You prefer faster verification without transparency log overhead
-
----
-
 ### CosignPublicKeyVerificationOptions <a name="CosignPublicKeyVerificationOptions" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions"></a>
 
 Options for Cosign signature verification using a public key.
+
+**Note on Rekor Transparency Log:**
+This implementation skips Rekor transparency log verification and verifies only
+the cryptographic signature using the public key.
+The Lambda function always uses the `--insecure-ignore-tlog` flag when running cosign verify.
+
+> [https://docs.sigstore.dev/cosign/key_management/overview/](https://docs.sigstore.dev/cosign/key_management/overview/)
 
 #### Initializer <a name="Initializer" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.Initializer"></a>
 
@@ -362,7 +352,6 @@ const cosignPublicKeyVerificationOptions: CosignPublicKeyVerificationOptions = {
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey">publicKey</a></code> | <code>string</code> | The PEM-encoded public key content used to verify the image signature. |
 | <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
-| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.ignoreTlog">ignoreTlog</a></code> | <code>boolean</code> | Whether to skip Rekor transparency log verification. |
 
 ---
 
@@ -395,29 +384,6 @@ public readonly failOnUnsigned: boolean;
 - *Default:* true
 
 Whether to fail the deployment if the image is unsigned or signature verification fails.
-
----
-
-##### `ignoreTlog`<sup>Optional</sup> <a name="ignoreTlog" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.ignoreTlog"></a>
-
-```typescript
-public readonly ignoreTlog: boolean;
-```
-
-- *Type:* boolean
-- *Default:* false - Rekor verification is enabled by default for better security
-
-Whether to skip Rekor transparency log verification.
-
-When false (default), cosign will verify the signature against the Rekor transparency log,
-providing additional assurance that the signature was created at a specific time.
-This requires network access to the Rekor service and TUF metadata initialization.
-
-When true, only the cryptographic signature is verified using the public key,
-skipping Rekor transparency log verification. Use this if:
-- The image was signed with `cosign sign --tlog-upload=false`
-- Network access to Rekor is restricted
-- You prefer faster verification without transparency log overhead
 
 ---
 
@@ -1087,7 +1053,6 @@ const signatureVerificationBindOutput: SignatureVerificationBindOutput = { ... }
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment on unsigned images. |
 | <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.type">type</a></code> | <code>string</code> | The verification type. |
-| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.cosignIgnoreTlog">cosignIgnoreTlog</a></code> | <code>boolean</code> | Whether to skip Rekor transparency log verification (Cosign only). |
 | <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.kmsKeyArn">kmsKeyArn</a></code> | <code>string</code> | KMS key ARN (Cosign KMS only). |
 | <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.publicKey">publicKey</a></code> | <code>string</code> | Public key content (Cosign public key only). |
 | <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.trustedIdentities">trustedIdentities</a></code> | <code>string[]</code> | Trusted signing profile ARNs (Notation only). |
@@ -1115,18 +1080,6 @@ public readonly type: string;
 - *Type:* string
 
 The verification type.
-
----
-
-##### `cosignIgnoreTlog`<sup>Optional</sup> <a name="cosignIgnoreTlog" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.cosignIgnoreTlog"></a>
-
-```typescript
-public readonly cosignIgnoreTlog: boolean;
-```
-
-- *Type:* boolean
-
-Whether to skip Rekor transparency log verification (Cosign only).
 
 ---
 
@@ -1515,7 +1468,18 @@ SignatureVerification.cosignKms(options: CosignKmsVerificationOptions)
 
 Verify image signature using Cosign with an AWS KMS key.
 
+**Important:** Cosign verification skips Rekor transparency log verification
+for reliability in AWS Lambda environments. The cryptographic signature is
+still verified using the KMS key.
+
+Sign your images with:
+```bash
+cosign sign --tlog-upload=false --key awskms:///KMS_KEY_ARN IMAGE
+```
+
 The Lambda function is automatically granted the required KMS permissions.
+
+> [{@link CosignKmsVerificationOptions }]({@link CosignKmsVerificationOptions })
 
 ###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.cosignKms.parameter.options"></a>
 
@@ -1533,7 +1497,18 @@ SignatureVerification.cosignPublicKey(options: CosignPublicKeyVerificationOption
 
 Verify image signature using Cosign with a public key.
 
+**Important:** Cosign verification skips Rekor transparency log verification
+for reliability in AWS Lambda environments. The cryptographic signature is
+still verified using the public key.
+
+Sign your images with:
+```bash
+cosign sign --tlog-upload=false --key cosign.pub IMAGE
+```
+
 The public key content is passed to the Lambda function as a Custom Resource property.
+
+> [{@link CosignPublicKeyVerificationOptions }]({@link CosignPublicKeyVerificationOptions })
 
 ###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.cosignPublicKey.parameter.options"></a>
 

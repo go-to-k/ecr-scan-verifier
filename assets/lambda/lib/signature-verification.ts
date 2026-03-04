@@ -7,6 +7,7 @@ import {
   GetAuthorizationTokenCommand,
 } from '@aws-sdk/client-ecr';
 import { SignatureVerificationConfig } from '../../../src/custom-resource-props';
+import { Logger } from './logger';
 
 const ecrClient = new ECRClient();
 
@@ -169,6 +170,7 @@ export const verifySignature = async (
   repositoryName: string,
   imageTag: string,
   config: SignatureVerificationConfig,
+  logger: Logger,
 ): Promise<SignatureVerificationResult> => {
   const failOnUnsigned = config.failOnUnsigned === 'true';
   const timestamp = new Date().toISOString();
@@ -180,7 +182,7 @@ export const verifySignature = async (
     const binDir = join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'bin');
     const dockerConfigDir = writeDockerConfig(auth.endpoint, auth.username, auth.password);
 
-    console.log(`Verifying signature for ${imageRef} (type: ${config.type})`);
+    logger.log(`Verifying signature for ${imageRef} (type: ${config.type})`);
 
     if (config.type === 'NOTATION') {
       const notationBin = join(binDir, 'notation');

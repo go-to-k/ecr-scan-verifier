@@ -7,6 +7,7 @@ import {
   ImageScanFinding,
   EnhancedImageScanFinding,
 } from '@aws-sdk/client-ecr';
+import { Logger } from './logger';
 
 const ecrClient = new ECRClient();
 
@@ -34,10 +35,11 @@ export const startAndWaitForScan = async (
   scanType: string,
   pollingIntervalSeconds: number,
   pollingMaxRetries: number,
+  logger: Logger,
 ): Promise<ScanFindings> => {
   const imageIdentifier = buildImageIdentifier(imageTag);
 
-  console.log(`Starting image scan for ${repositoryName}...`);
+  logger.log(`Starting image scan for ${repositoryName}...`);
   try {
     await ecrClient.send(
       new StartImageScanCommand({
@@ -45,13 +47,13 @@ export const startAndWaitForScan = async (
         imageId: imageIdentifier,
       }),
     );
-    console.log('Image scan started successfully.');
+    logger.log('Image scan started successfully.');
   } catch (error: any) {
     if (
       error.name === 'LimitExceededException' ||
       (error.message && error.message.includes('scan frequency limit'))
     ) {
-      console.log('Scan already in progress or recently completed, polling for results...');
+      logger.log('Scan already in progress or recently completed, polling for results...');
     } else if (
       error.name === 'ValidationException' &&
       error.message && error.message.includes('This feature is disabled')
@@ -71,6 +73,7 @@ export const startAndWaitForScan = async (
     scanType,
     pollingIntervalSeconds,
     pollingMaxRetries,
+    logger,
   );
 };
 
@@ -80,18 +83,19 @@ export const waitForScanResults = async (
   _scanType: string,
   pollingIntervalSeconds: number,
   pollingMaxRetries: number,
+  logger: Logger,
 ): Promise<ScanFindings> => {
   const imageIdentifier = buildImageIdentifier(imageTag);
 
   for (let attempt = 0; attempt < pollingMaxRetries; attempt++) {
-    console.log(`Polling scan results (attempt ${attempt + 1}/${pollingMaxRetries})...`);
+    logger.log(`Polling scan results (attempt ${attempt + 1}/${pollingMaxRetries})...`);
 
     try {
       const result = await getAllFindings(repositoryName, imageIdentifier);
       const status = result.rawResponse.imageScanStatus?.status;
 
       if (status === 'COMPLETE' || status === 'ACTIVE') {
-        console.log(`Scan completed with status: ${status}`);
+        logger.log(`Scan completed with status: ${status}`);
         return result;
       }
 
@@ -107,11 +111,11 @@ export const waitForScanResults = async (
         );
       }
 
-      console.log(`Scan status: ${status}, waiting ${pollingIntervalSeconds}s...`);
+      logger.log(`Scan status: ${status}, waiting ${pollingIntervalSeconds}s...`);
     } catch (error: any) {
       if (error.name === 'ScanNotFoundException') {
         if (attempt < pollingMaxRetries - 1) {
-          console.log(
+          logger.log(
             `Scan not found yet (attempt ${attempt + 1}/${pollingMaxRetries}), ` +
               `waiting ${pollingIntervalSeconds}s before retrying...`,
           );

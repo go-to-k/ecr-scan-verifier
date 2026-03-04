@@ -128,6 +128,7 @@ describe('handler', () => {
       'BASIC',
       5,
       60,
+      expect.any(Object), // logger
     );
   });
 
@@ -405,7 +406,7 @@ describe('handler', () => {
     await handler(event, mockContext, mockCallback);
 
     const findingsLog = (console.log as jest.Mock).mock.calls.find(
-      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('findings:'),
     );
     expect(findingsLog).toBeDefined();
     expect(findingsLog![0]).toContain('CVE-2024-0001');
@@ -436,6 +437,7 @@ describe('handler', () => {
         'my-repo',
         'v1.0',
         expect.objectContaining({ type: 'NOTATION' }),
+        expect.any(Object), // logger
       );
       // Scan should still run after successful verification
       expect(ecrScan.startAndWaitForScan).toHaveBeenCalled();
@@ -654,7 +656,7 @@ describe('handler', () => {
     await handler(baseEvent, mockContext, mockCallback);
 
     const findingsLog = (console.log as jest.Mock).mock.calls.find(
-      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('findings:'),
     );
     expect(findingsLog).toBeDefined();
     expect(findingsLog![0]).toContain('CVE-2024-0002');

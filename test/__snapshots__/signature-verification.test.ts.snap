@@ -180,7 +180,7 @@ exports[`SignatureVerification Cosign (KMS) Snapshot - cosign KMS verification 1
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead",
           },
         },
         "PackageType": "Image",
@@ -210,6 +210,7 @@ exports[`SignatureVerification Cosign (KMS) Snapshot - cosign KMS verification 1
           "Statement": [
             {
               "Action": [
+                "kms:DescribeKey",
                 "kms:GetPublicKey",
                 "kms:Verify",
               ],
@@ -344,7 +345,6 @@ exports[`SignatureVerification Cosign (KMS) Snapshot - cosign KMS verification 1
           "CRITICAL",
         ],
         "signatureVerification": {
-          "cosignIgnoreTlog": "false",
           "failOnUnsigned": "true",
           "kmsKeyArn": {
             "Fn::GetAtt": [
@@ -667,7 +667,7 @@ exports[`SignatureVerification Cosign (publicKey) Snapshot - cosign public key v
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead",
           },
         },
         "PackageType": "Image",
@@ -818,7 +818,6 @@ exports[`SignatureVerification Cosign (publicKey) Snapshot - cosign public key v
           "CRITICAL",
         ],
         "signatureVerification": {
-          "cosignIgnoreTlog": "false",
           "failOnUnsigned": "true",
           "publicKey": "-----BEGIN PUBLIC KEY-----
 test
@@ -1138,7 +1137,7 @@ exports[`SignatureVerification Notation Snapshot - notation verification 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:9449b5721c0db16d9bb28ee5c82816c44a5dab2ee23aa983c314362237355acb",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead",
           },
         },
         "PackageType": "Image",

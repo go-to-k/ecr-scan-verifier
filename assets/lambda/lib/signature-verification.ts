@@ -13,6 +13,8 @@ const ecrClient = new ECRClient();
 export interface SignatureVerificationResult {
   readonly verified: boolean;
   readonly message: string;
+  readonly verificationType: 'NOTATION' | 'COSIGN';
+  readonly timestamp: string;
 }
 
 interface EcrAuthInfo {
@@ -170,6 +172,7 @@ export const verifySignature = async (
   config: SignatureVerificationConfig,
 ): Promise<SignatureVerificationResult> => {
   const failOnUnsigned = config.failOnUnsigned === 'true';
+  const timestamp = new Date().toISOString();
 
   try {
     const digest = await getImageDigest(repositoryName, imageTag);
@@ -215,16 +218,24 @@ export const verifySignature = async (
       throw new Error(`Unknown signature verification type: ${config.type}`);
     }
 
-    console.log(`Signature verification succeeded for ${imageRef}`);
-    return { verified: true, message: 'Signature verification succeeded' };
+    return {
+      verified: true,
+      message: 'Signature verification succeeded',
+      verificationType: config.type as 'NOTATION' | 'COSIGN',
+      timestamp,
+    };
   } catch (error: any) {
     const message = `Signature verification failed: ${error.message || error}`;
-    console.error(message);
 
     if (failOnUnsigned) {
       throw new Error(message);
     }
 
-    return { verified: false, message };
+    return {
+      verified: false,
+      message,
+      verificationType: config.type as 'NOTATION' | 'COSIGN',
+      timestamp,
+    };
   }
 };

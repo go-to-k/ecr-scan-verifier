@@ -8,13 +8,13 @@ import {
 } from '../../../src/scan-logs-output';
 import { startAndWaitForScan, waitForScanResults, ScanFindings } from './ecr-scan';
 import { evaluateFindings, formatScanSummary } from './findings-evaluator';
-import { outputScanLogsToCWLogs } from './cloudwatch-logs';
-import { outputScanLogsToS3, SbomContent } from './s3-output';
+import { outputScanLogsToCWLogs, outputSignatureVerificationLogsToCWLogs } from './cloudwatch-logs';
+import { outputScanLogsToS3, outputSignatureVerificationLogsToS3, SbomContent } from './s3-output';
 import { sendVulnsNotification } from './sns-notification';
 import { isRollbackInProgress } from './cloudformation-utils';
 import { exportSbom } from './sbom-export';
-import { verifySignature } from './signature-verification';
-import { ScanLogsDetails } from './types';
+import { verifySignature, SignatureVerificationResult } from './signature-verification';
+import { ScanLogsDetails, SignatureVerificationLogsDetails } from './types';
 
 export const handler: CdkCustomResourceHandler = async function (event) {
   const requestType = event.RequestType;
@@ -40,7 +40,37 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   // 0. Signature verification (before scan)
   if (props.signatureVerification) {
     try {
-      await verifySignature(props.repositoryName, props.imageTag, props.signatureVerification);
+      const verificationResult = await verifySignature(
+        props.repositoryName,
+        props.imageTag,
+        props.signatureVerification,
+      );
+      await outputSignatureVerificationLogs(
+        verificationResult,
+        props.repositoryName,
+        props.imageTag,
+        props.output,
+        props.defaultLogGroupName,
+      );
+
+      // If signature verification failed (failOnUnsigned=false), log warning and continue to scan
+      if (!verificationResult.verified) {
+        const warningMessage =
+          `Signature verification failed for image: ${imageIdentifier}\n` +
+          `${verificationResult.message}\n` +
+          `Continuing to scan despite unsigned image (failOnUnsigned=false).`;
+
+        console.warn(warningMessage);
+
+        if (props.vulnsTopicArn) {
+          await sendVulnsNotification(props.vulnsTopicArn, warningMessage, imageIdentifier, {
+            type: 'default',
+            logGroupName: props.defaultLogGroupName,
+          });
+        }
+
+        // Continue to scan
+      }
     } catch (error: any) {
       const errorMessage =
         `Signature verification failed for image: ${imageIdentifier}\n` +
@@ -186,6 +216,37 @@ const outputScanLogs = async (
     default:
       console.log('summary:\n' + summaryText);
       console.log('findings:\n' + findingsJson);
+      return {
+        type: 'default',
+        logGroupName: defaultLogGroupName,
+      };
+  }
+};
+
+const outputSignatureVerificationLogs = async (
+  verificationResult: SignatureVerificationResult,
+  repositoryName: string,
+  imageTag: string,
+  output: ScanLogsOutputOptions | undefined,
+  defaultLogGroupName: string,
+): Promise<SignatureVerificationLogsDetails> => {
+  switch (output?.type) {
+    case ScanLogsOutputType.CLOUDWATCH_LOGS:
+      return await outputSignatureVerificationLogsToCWLogs(
+        verificationResult,
+        output as CloudWatchLogsOutputOptions,
+        repositoryName,
+        imageTag,
+      );
+    case ScanLogsOutputType.S3:
+      return await outputSignatureVerificationLogsToS3(
+        verificationResult,
+        output as S3OutputOptions,
+        repositoryName,
+        imageTag,
+      );
+    default:
+      console.log('Signature verification result:\n' + JSON.stringify(verificationResult, null, 2));
       return {
         type: 'default',
         logGroupName: defaultLogGroupName,

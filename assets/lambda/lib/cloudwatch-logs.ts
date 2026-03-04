@@ -6,7 +6,8 @@ import {
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { CloudWatchLogsOutputOptions } from '../../../src/scan-logs-output';
-import { CloudWatchLogsDetails } from './types';
+import { CloudWatchLogsDetails, SignatureVerificationCloudWatchLogsDetails } from './types';
+import { SignatureVerificationResult } from './signature-verification';
 
 const cwClient = new CloudWatchLogsClient();
 
@@ -119,4 +120,34 @@ const createLogStreamAndPutEvents = async (
   };
   const command = new PutLogEventsCommand(input);
   await cwClient.send(command);
+};
+
+export const outputSignatureVerificationLogsToCWLogs = async (
+  verificationResult: SignatureVerificationResult,
+  output: CloudWatchLogsOutputOptions,
+  repositoryName: string,
+  imageTag: string,
+): Promise<SignatureVerificationCloudWatchLogsDetails> => {
+  const sanitized = `${repositoryName}/${imageTag}`.replace(/:/g, ',').replace(/\//g, '_');
+  const logStreamName = `${sanitized}/signature-verification`;
+
+  const timestamp = new Date().getTime();
+  const message = JSON.stringify(verificationResult, null, 2);
+
+  await createLogStreamAndPutEvents(
+    output.logGroupName,
+    logStreamName,
+    timestamp,
+    message,
+  );
+
+  console.log(
+    `Signature verification result output to the log group: ${output.logGroupName}\n  stream: ${logStreamName}`,
+  );
+
+  return {
+    type: 'cloudwatch',
+    logGroupName: output.logGroupName,
+    logStreamName,
+  };
 };

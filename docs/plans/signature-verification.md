@@ -190,6 +190,38 @@ Docker イメージハッシュ変更により全スナップショット更新
 
 署名検証機能の紹介セクション
 
+#### 18. 署名検証結果のログ出力（追加機能）✅
+
+**背景:**
+
+現在、署名検証結果はデフォルトログ（console.log）のみに出力され、スキャンログの出力先（S3 / CloudWatch Logs）とは別。監査証跡の観点から、署名検証結果もスキャンログと同じ出力先に記録する。
+
+**実装方針:**
+
+スキャン結果と同じパターン（XOR）を踏襲:
+
+- `scanLogsOutput` が**指定されている場合**: S3 / CloudWatch Logs に出力、`console.log` はしない（出力先のパス表示のみ）
+- `scanLogsOutput` が**未指定の場合**: `console.log` で JSON を出力
+
+**実装完了:**
+
+1. `assets/lambda/lib/signature-verification.ts` ✅
+   - `SignatureVerificationResult` に `verificationType` と `timestamp` を追加
+
+2. `assets/lambda/lib/handler.ts` ✅
+   - `outputSignatureVerificationLogs()` 関数を追加（`outputScanLogs` と同様のパターン）
+   - 署名検証成功時に `outputSignatureVerificationLogs()` を呼び出し
+
+3. `assets/lambda/lib/s3-output.ts` ✅
+   - `outputSignatureVerificationLogsToS3()` を追加
+   - S3 key: `signature-verification/{repositoryName}/{imageTag}/{timestamp}.json`
+   - 内容: `SignatureVerificationResult` の JSON
+
+4. `assets/lambda/lib/cloudwatch-logs.ts` ✅
+   - `outputSignatureVerificationLogsToCWLogs()` を追加
+   - log stream: `{repositoryName}_{imageTag}_signature-verification`
+   - log event: `SignatureVerificationResult` の JSON
+
 ---
 
 ## インテグレーションテスト

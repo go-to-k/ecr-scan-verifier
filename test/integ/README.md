@@ -34,6 +34,23 @@ done
 
 Requires Enhanced scanning to be **DISABLED** in all regions.
 
+#### Scan-on-push (`integ.scan-on-push`)
+
+This test additionally requires scan-on-push to be enabled on the CDK assets repository:
+
+```bash
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+REGION=$(aws configure get region)
+REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
+
+# Enable scan-on-push before deploying
+aws ecr put-image-scanning-configuration \
+  --repository-name "$REPO" \
+  --image-scanning-configuration scanOnPush=true
+```
+
+#### Running
+
 ```bash
 # If currently ENABLED, disable first
 for region in us-east-1 us-east-2 us-west-2; do

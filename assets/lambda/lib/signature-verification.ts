@@ -106,6 +106,11 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
   };
   fixPermissions(truststoreDest);
 
+  // Detect AWS partition from region and select appropriate trust store
+  const region = process.env.AWS_REGION || 'us-east-1';
+  const isGovCloud = region.startsWith('us-gov-');
+  const trustStoreName = isGovCloud ? 'aws-us-gov-signer-ts' : 'aws-signer-ts';
+
   // Generate trust policy
   const trustPolicy = {
     version: '1.0',
@@ -116,7 +121,7 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
         signatureVerification: {
           level: 'strict',
         },
-        trustStores: ['signingAuthority:aws-signer-ts'],
+        trustStores: [`signingAuthority:${trustStoreName}`],
         trustedIdentities: trustedIdentities,
       },
     ],

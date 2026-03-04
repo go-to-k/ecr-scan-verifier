@@ -22,17 +22,20 @@ COPY --from=builder \
     /var/task/notation-config/plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin
 
 # Notation trust store (must be at truststore/x509/signingAuthority/<store-name>/<certs>)
+# Commercial regions
 COPY --from=builder \
     /opt/com.amazonaws.signer.notation.installer.rpm/notation_config/aws-signer-notation-root.crt \
     /var/task/notation-config/truststore/x509/signingAuthority/aws-signer-ts/aws-signer-notation-root.crt
+# GovCloud regions
 COPY --from=builder \
     /opt/com.amazonaws.signer.notation.installer.rpm/notation_config/aws-us-gov-signer-notation-root.crt \
-    /var/task/notation-config/truststore/x509/signingAuthority/aws-signer-ts/aws-us-gov-signer-notation-root.crt
+    /var/task/notation-config/truststore/x509/signingAuthority/aws-us-gov-signer-ts/aws-us-gov-signer-notation-root.crt
 
 # Fix permissions (RPM installs with root-only 700/600 permissions)
 # Lambda base image doesn't have 'find', so use chmod -R and then fix executables
 RUN chmod -R 755 /var/task/notation-config && \
     chmod 644 /var/task/notation-config/truststore/x509/signingAuthority/aws-signer-ts/*.crt && \
+    chmod 644 /var/task/notation-config/truststore/x509/signingAuthority/aws-us-gov-signer-ts/*.crt && \
     chmod +x /var/task/bin/notation && \
     chmod +x /var/task/notation-config/plugins/com.amazonaws.signer.notation.plugin/notation-com.amazonaws.signer.notation.plugin
 

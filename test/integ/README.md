@@ -181,7 +181,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-npx cdk synth --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
 npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
 
 # 4. Sign the pushed image with cosign

@@ -243,7 +243,13 @@
           "spawn": "eslint"
         },
         {
-          "exec": "pnpm integ"
+          "exec": "pnpm integ:basic"
+        },
+        {
+          "exec": "pnpm integ:enhanced"
+        },
+        {
+          "exec": "pnpm integ:signature:notation"
         }
       ]
     },

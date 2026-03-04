@@ -36,7 +36,8 @@
     "integ:enhanced": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/enhanced",
     "integ:enhanced:update": "pnpm integ:enhanced --update-on-failed",
     "integ:signature": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/signature",
-    "integ:signature:update": "pnpm integ:signature --update-on-failed"
+    "integ:signature:update": "pnpm integ:signature --update-on-failed",
+    "integ:signature:notation": "tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --test-regex \"integ.notation.js$\""
   },
   "author": {
     "name": "go-to-k",

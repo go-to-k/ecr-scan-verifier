@@ -111,9 +111,17 @@ project.setScript(
   'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --directory test/integ/signature',
 );
 project.setScript('integ:signature:update', 'pnpm integ:signature --update-on-failed');
+project.setScript(
+  'integ:signature:notation',
+  'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --test-regex "integ.notation.js$"',
+);
 project.projectBuild.compileTask.prependExec('pnpm install --frozen-lockfile && pnpm build', {
   cwd: 'assets/lambda',
 });
-project.projectBuild.testTask.exec('pnpm integ');
+// Run basic, enhanced, and signature:notation (CI-safe) tests
+// Other signature tests require manual setup with environment variables
+project.projectBuild.testTask.exec('pnpm integ:basic');
+project.projectBuild.testTask.exec('pnpm integ:enhanced');
+project.projectBuild.testTask.exec('pnpm integ:signature:notation');
 
 project.synth();

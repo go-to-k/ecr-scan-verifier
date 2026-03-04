@@ -156,12 +156,34 @@ const cosignVerify = (
   keyArgs: string[],
   cosignBin: string,
   env: Record<string, string>,
+  ignoreTlog: boolean,
 ): void => {
-  execFileSync(cosignBin, ['verify', ...keyArgs, imageRef], {
-    env: { ...process.env, ...env },
-    stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: 120_000,
-  });
+  if (ignoreTlog) {
+    // Skip Rekor transparency log verification (user explicitly requested)
+    try {
+      execFileSync(cosignBin, ['verify', '--insecure-ignore-tlog', ...keyArgs, imageRef], {
+        env: { ...process.env, ...env },
+        encoding: 'utf8',
+        timeout: 120_000,
+      });
+    } catch (verifyError: any) {
+      const errorMessage = verifyError.stderr || verifyError.stdout || verifyError.message || String(verifyError);
+      throw new Error(`Cosign verify (ignoreTlog=true) failed: ${errorMessage}`);
+    }
+    return;
+  }
+
+  // Verify with Rekor transparency log
+  try {
+    execFileSync(cosignBin, ['verify', ...keyArgs, imageRef], {
+      env: { ...process.env, ...env },
+      encoding: 'utf8',
+      timeout: 120_000,
+    });
+  } catch (verifyError: any) {
+    const errorMessage = verifyError.stderr || verifyError.stdout || verifyError.message || String(verifyError);
+    throw new Error(`Cosign verify failed: ${errorMessage}`);
+  }
 };
 
 // --- Main ---
@@ -216,7 +238,8 @@ export const verifySignature = async (
         throw new Error('Cosign verification requires either publicKey or kmsKeyArn');
       }
 
-      cosignVerify(imageRef, keyArgs, cosignBin, env);
+      const ignoreTlog = config.cosignIgnoreTlog === 'true';
+      cosignVerify(imageRef, keyArgs, cosignBin, env, ignoreTlog);
     } else {
       throw new Error(`Unknown signature verification type: ${config.type}`);
     }

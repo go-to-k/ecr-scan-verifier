@@ -233,6 +233,43 @@ describe('SignatureVerification', () => {
         0,
       );
     });
+
+    test('ignoreTlog defaults to false (Rekor verification enabled)', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        signatureVerification: SignatureVerification.cosignPublicKey({
+          publicKey: MOCK_PUBLIC_KEY,
+        }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        signatureVerification: Match.objectLike({
+          type: 'COSIGN',
+          cosignIgnoreTlog: 'false',
+        }),
+      });
+    });
+
+    test('ignoreTlog can be set to true', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        signatureVerification: SignatureVerification.cosignPublicKey({
+          publicKey: MOCK_PUBLIC_KEY,
+          ignoreTlog: true,
+        }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        signatureVerification: Match.objectLike({
+          type: 'COSIGN',
+          cosignIgnoreTlog: 'true',
+        }),
+      });
+    });
   });
 
   describe('Cosign (KMS)', () => {
@@ -293,6 +330,68 @@ describe('SignatureVerification', () => {
             }),
           ]),
         },
+      });
+    });
+
+    test('ignoreTlog defaults to false (Rekor verification enabled)', () => {
+      const key = new Key(stack, 'CosignKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        signatureVerification: SignatureVerification.cosignKms({
+          key,
+        }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        signatureVerification: Match.objectLike({
+          type: 'COSIGN',
+          cosignIgnoreTlog: 'false',
+        }),
+      });
+    });
+
+    test('ignoreTlog can be set to true', () => {
+      const key = new Key(stack, 'CosignKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        signatureVerification: SignatureVerification.cosignKms({
+          key,
+          ignoreTlog: true,
+        }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        signatureVerification: Match.objectLike({
+          type: 'COSIGN',
+          cosignIgnoreTlog: 'true',
+        }),
+      });
+    });
+
+    test('ignoreTlog can be set to false explicitly', () => {
+      const key = new Key(stack, 'CosignKey');
+
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        signatureVerification: SignatureVerification.cosignKms({
+          key,
+          ignoreTlog: false,
+        }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        signatureVerification: Match.objectLike({
+          type: 'COSIGN',
+          cosignIgnoreTlog: 'false',
+        }),
       });
     });
   });

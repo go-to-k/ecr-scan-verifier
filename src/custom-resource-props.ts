@@ -10,6 +10,7 @@ export interface SignatureVerificationConfig {
   readonly publicKey?: string;
   readonly kmsKeyArn?: string;
   readonly failOnUnsigned: string;
+  readonly cosignIgnoreTlog?: string;
 }
 
 /**

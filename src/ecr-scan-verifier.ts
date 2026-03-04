@@ -301,6 +301,9 @@ export class EcrScanVerifier extends Construct {
             publicKey: signatureVerificationConfig.publicKey,
             kmsKeyArn: signatureVerificationConfig.kmsKeyArn,
             failOnUnsigned: String(signatureVerificationConfig.failOnUnsigned),
+            cosignIgnoreTlog: signatureVerificationConfig.cosignIgnoreTlog !== undefined
+              ? String(signatureVerificationConfig.cosignIgnoreTlog)
+              : undefined,
           }
         : undefined,
       suppressErrorOnRollback: String(suppressErrorOnRollback),

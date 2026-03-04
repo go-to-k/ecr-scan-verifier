@@ -39,6 +39,23 @@ export interface CosignPublicKeyVerificationOptions {
    * @default true
    */
   readonly failOnUnsigned?: boolean;
+
+  /**
+   * Whether to skip Rekor transparency log verification.
+   *
+   * When false (default), cosign will verify the signature against the Rekor transparency log,
+   * providing additional assurance that the signature was created at a specific time.
+   * This requires network access to the Rekor service and TUF metadata initialization.
+   *
+   * When true, only the cryptographic signature is verified using the public key,
+   * skipping Rekor transparency log verification. Use this if:
+   * - The image was signed with `cosign sign --tlog-upload=false`
+   * - Network access to Rekor is restricted
+   * - You prefer faster verification without transparency log overhead
+   *
+   * @default false - Rekor verification is enabled by default for better security
+   */
+  readonly ignoreTlog?: boolean;
 }
 
 /**
@@ -59,6 +76,23 @@ export interface CosignKmsVerificationOptions {
    * @default true
    */
   readonly failOnUnsigned?: boolean;
+
+  /**
+   * Whether to skip Rekor transparency log verification.
+   *
+   * When false (default), cosign will verify the signature against the Rekor transparency log,
+   * providing additional assurance that the signature was created at a specific time.
+   * This requires network access to the Rekor service and TUF metadata initialization.
+   *
+   * When true, only the cryptographic signature is verified using the KMS key,
+   * skipping Rekor transparency log verification. Use this if:
+   * - The image was signed with `cosign sign --tlog-upload=false`
+   * - Network access to Rekor is restricted
+   * - You prefer faster verification without transparency log overhead
+   *
+   * @default false - Rekor verification is enabled by default for better security
+   */
+  readonly ignoreTlog?: boolean;
 }
 
 /**
@@ -89,6 +123,11 @@ export interface SignatureVerificationBindOutput {
    * Whether to fail the deployment on unsigned images.
    */
   readonly failOnUnsigned: boolean;
+
+  /**
+   * Whether to skip Rekor transparency log verification (Cosign only).
+   */
+  readonly cosignIgnoreTlog?: boolean;
 }
 
 /**
@@ -161,12 +200,14 @@ class NotationSignatureVerification extends SignatureVerification {
 class CosignPublicKeySignatureVerification extends SignatureVerification {
   private readonly publicKey: string;
   private readonly failOnUnsigned: boolean;
+  private readonly ignoreTlog: boolean;
 
   constructor(options: CosignPublicKeyVerificationOptions) {
     super();
 
     this.publicKey = options.publicKey;
     this.failOnUnsigned = options.failOnUnsigned ?? true;
+    this.ignoreTlog = options.ignoreTlog ?? false;
   }
 
   public bind(_grantee: IGrantable): SignatureVerificationBindOutput {
@@ -174,6 +215,7 @@ class CosignPublicKeySignatureVerification extends SignatureVerification {
       type: 'COSIGN',
       publicKey: this.publicKey,
       failOnUnsigned: this.failOnUnsigned,
+      cosignIgnoreTlog: this.ignoreTlog,
     };
   }
 }
@@ -181,12 +223,14 @@ class CosignPublicKeySignatureVerification extends SignatureVerification {
 class CosignKmsSignatureVerification extends SignatureVerification {
   private readonly key: IKey;
   private readonly failOnUnsigned: boolean;
+  private readonly ignoreTlog: boolean;
 
   constructor(options: CosignKmsVerificationOptions) {
     super();
 
     this.key = options.key;
     this.failOnUnsigned = options.failOnUnsigned ?? true;
+    this.ignoreTlog = options.ignoreTlog ?? false;
   }
 
   public bind(grantee: IGrantable): SignatureVerificationBindOutput {
@@ -196,6 +240,7 @@ class CosignKmsSignatureVerification extends SignatureVerification {
       type: 'COSIGN',
       kmsKeyArn: this.key.keyArn,
       failOnUnsigned: this.failOnUnsigned,
+      cosignIgnoreTlog: this.ignoreTlog,
     };
   }
 }

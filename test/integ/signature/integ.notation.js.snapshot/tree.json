@@ -462,10 +462,8 @@
                                 {
                                   "Action": [
                                     "ecr:BatchGetImage",
-                                    "ecr:DescribeImageScanFindings",
                                     "ecr:DescribeImages",
-                                    "ecr:GetDownloadUrlForLayer",
-                                    "ecr:StartImageScan"
+                                    "ecr:GetDownloadUrlForLayer"
                                   ],
                                   "Effect": "Allow",
                                   "Resource": {
@@ -563,11 +561,6 @@
                           "addStatements": [
                             {}
                           ]
-                        },
-                        {
-                          "addStatements": [
-                            {}
-                          ]
                         }
                       ]
                     }
@@ -601,11 +594,6 @@
                     {
                       "attachInlinePolicy": [
                         "*"
-                      ]
-                    },
-                    {
-                      "addToPrincipalPolicy": [
-                        {}
                       ]
                     },
                     {
@@ -669,7 +657,7 @@
                     ],
                     "code": {
                       "imageUri": {
-                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:c6b8fed2b36ce8b16b856e99cea790d5296bddeb66119fb22b1add7091941b02"
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:fc45c32757ebfb08543ea0dd68be8bd38b5981207f1d0aedbfaf465dfd27658c"
                       }
                     },
                     "packageType": "Image",

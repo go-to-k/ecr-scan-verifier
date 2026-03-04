@@ -3,6 +3,7 @@ import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import { App, Stack } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { DockerImageName, ECRDeployment } from 'cdk-ecr-deployment';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';
 
 /**
@@ -31,11 +32,17 @@ const repoNameFromEnv = process.env.REPO_NAME || 'ecr-scan-verifier-integ-ecr-si
 // Reference the existing repository (created via CLI with signing-configuration enabled)
 const repository = Repository.fromRepositoryName(stack, 'TestRepository', repoNameFromEnv);
 
-// Create a DockerImageAsset that will be pushed to the signing-enabled repository
-// This will use the existing repository instead of creating a new one
+// Create a DockerImageAsset (pushes to CDK bootstrap repository)
 const image = new DockerImageAsset(stack, 'TestImage', {
   directory: resolve(__dirname, '../fixtures/docker-image'),
   platform: Platform.LINUX_ARM64,
+});
+
+// Copy image from CDK bootstrap repository to signing-enabled repository
+// ECR managed signing will automatically sign the image on push
+const ecrDeployment = new ECRDeployment(stack, 'DeployImage', {
+  src: new DockerImageName(image.imageUri),
+  dest: new DockerImageName(`${repository.repositoryUri}:${image.assetHash}`),
 });
 
 // Get signing profile ARN from environment variable
@@ -47,7 +54,7 @@ if (!signingProfileArnFromEnv) {
   );
 }
 
-new EcrScanVerifier(stack, 'Scanner', {
+const verifier = new EcrScanVerifier(stack, 'Scanner', {
   repository: repository,
   imageTag: image.assetHash,
   scanConfig: ScanConfig.signatureOnly(),
@@ -55,6 +62,9 @@ new EcrScanVerifier(stack, 'Scanner', {
     trustedIdentities: [signingProfileArnFromEnv],
   }),
 });
+
+// Ensure image is deployed before verifier tries to verify signature
+verifier.node.addDependency(ecrDeployment);
 
 new IntegTest(app, 'EcrSigningTest', {
   testCases: [stack],

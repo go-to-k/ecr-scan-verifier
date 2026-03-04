@@ -166,6 +166,8 @@ pnpm integ:signature:update --language javascript --test-regex "integ.notation.j
 
 ECR's managed signing feature (`signing-configuration`) automatically signs images on push using AWS Signer. This test verifies that the construct can verify these automatically-signed images.
 
+**Note:** This feature may not be available in all AWS regions yet. Check if your region supports `aws ecr put-signing-configuration` before proceeding.
+
 **Prerequisites:**
 
 - User must have `signer:*` permissions
@@ -186,50 +188,54 @@ PROFILE_ARN=$(aws signer get-signing-profile \
 
 aws ecr create-repository --repository-name "${REPO_NAME}" || echo "Repository already exists"
 
-# 3. Enable ECR managed signing on the repository
+# 3. Enable ECR managed signing (registry-level configuration)
+# Create signing configuration JSON
+cat > /tmp/signing-config.json <<EOF
+{
+  "rules": [
+    {
+      "signingProfileArn": "${PROFILE_ARN}",
+      "repositoryFilters": [
+        {
+          "filter": "${REPO_NAME}",
+          "filterType": "WILDCARD_MATCH"
+        }
+      ]
+    }
+  ]
+}
+EOF
+
 aws ecr put-signing-configuration \
-  --repository-name "${REPO_NAME}" \
-  --signing-configuration "signingProfileArn=${PROFILE_ARN}"
+  --region "${REGION}" \
+  --signing-configuration file:///tmp/signing-config.json
 
 # Verify signing-configuration is enabled
-aws ecr get-signing-configuration --repository-name "${REPO_NAME}"
+aws ecr describe-signing-configuration --region "${REGION}"
 
-# 4. Build, synth, and publish the Docker image (will be automatically signed)
+# 4. Run the integ test
+# This will:
+#   - Build and push the Docker image to CDK bootstrap repository
+#   - Deploy ECRDeployment which copies the image to signing-enabled repository
+#     (ECR managed signing will automatically sign on push)
+#   - Verify the signature using Notation
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-SIGNING_PROFILE_ARN="${PROFILE_ARN}" npx cdk synth --app 'node test/integ/signature/integ.ecr-signing.js' -o cdk.out
-
-# Publish the Docker image asset to the signing-enabled repository
-# Note: cdk-assets will push to the CDK bootstrap repository by default
-# We need to manually retag and push to our signing-enabled repository
-ASSET_HASH=$(cat cdk.out/EcrSigningStack.assets.json | tr ',' '\n' | \
-  grep '"imageTag"' | head -1 | cut -d'"' -f4)
-BOOTSTRAP_REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
-
-# First publish to bootstrap repo
-npx cdk-assets -p cdk.out/EcrSigningStack.assets.json publish
-
-# Get the digest from bootstrap repo
-DIGEST=$(aws ecr describe-images --repository-name "${BOOTSTRAP_REPO}" \
-  --image-ids imageTag="${ASSET_HASH}" \
-  --query 'imageDetails[0].imageDigest' --output text)
-
-# Retag and push to signing-enabled repository
-aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin "${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
-docker pull "${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${BOOTSTRAP_REPO}@${DIGEST}"
-docker tag "${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${BOOTSTRAP_REPO}@${DIGEST}" \
-  "${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${ASSET_HASH}"
-docker push "${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${ASSET_HASH}"
-
-# Wait a moment for signing to complete
-sleep 10
-
-# 5. Run the integ test
-SIGNING_PROFILE_ARN="${PROFILE_ARN}" \
+SIGNING_PROFILE_ARN="${PROFILE_ARN}" REPO_NAME="${REPO_NAME}" \
   pnpm integ:signature:update --language javascript --test-regex "integ.ecr-signing.js$"
 
-# 6. Cleanup - disable signing-configuration and delete repository
-aws ecr delete-signing-configuration --repository-name "${REPO_NAME}"
+# 5. Cleanup - disable signing-configuration and delete repository
+# Remove signing configuration (set to empty rules)
+cat > /tmp/signing-config-empty.json <<EOF
+{
+  "rules": []
+}
+EOF
+
+aws ecr put-signing-configuration \
+  --region "${REGION}" \
+  --signing-configuration file:///tmp/signing-config-empty.json
+
 aws ecr delete-repository --repository-name "${REPO_NAME}" --force
 ```
 

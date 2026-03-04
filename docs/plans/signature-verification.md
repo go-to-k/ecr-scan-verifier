@@ -222,6 +222,16 @@ Docker イメージハッシュ変更により全スナップショット更新
    - log stream: `{repositoryName}_{imageTag}_signature-verification`
    - log event: `SignatureVerificationResult` の JSON
 
+5. `assets/lambda/lib/types.ts` ✅
+   - 署名検証専用の型定義を追加（`ScanLogsDetails` とは別）
+   - `SignatureVerificationCloudWatchLogsDetails`, `SignatureVerificationS3LogsDetails`, `SignatureVerificationDefaultLogsDetails`
+
+**ログ出力の重複解消:**
+
+- `verifySignature` 関数内の `console.log` / `console.error` を削除
+- handler 側の `outputSignatureVerificationLogs` で一元管理
+- 理由: handler 側でコンテキスト（imageIdentifier など）を含めた詳細なログを出力できるため
+
 ---
 
 ## インテグレーションテスト

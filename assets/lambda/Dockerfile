@@ -6,7 +6,7 @@ RUN curl -sLo /tmp/signer.rpm \
     && rpm -ivh /tmp/signer.rpm && rm /tmp/signer.rpm
 
 # Cosign for ARM64 (Sigstore)
-ARG COSIGN_VERSION=2.4.1
+ARG COSIGN_VERSION=3.0.5
 RUN curl -sLo /tmp/cosign \
     "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-arm64" \
     && chmod +x /tmp/cosign

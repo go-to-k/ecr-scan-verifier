@@ -1,6 +1,6 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
-import { App, Stack } from 'aws-cdk-lib';
+import { App, Stack, Aws } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';
 
@@ -20,20 +20,14 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *      (see test/integ/README.md for full commands)
  *
  * Run:
- *   SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
- *     --language javascript --test-regex integ.notation.js
+ *   pnpm integ:signature:update --language javascript --test-regex integ.notation.js
  */
 
 const app = new App();
 const stack = new Stack(app, 'NotationSignatureStack');
 
-const signerProfileArn = process.env.SIGNER_PROFILE_ARN;
-if (!signerProfileArn) {
-  throw new Error(
-    'Missing required env: SIGNER_PROFILE_ARN. ' +
-      'Pass it via: SIGNER_PROFILE_ARN=arn:aws:signer:... pnpm integ:signature:update',
-  );
-}
+// Use CFn pseudo parameters to avoid hardcoding account ID in snapshots
+const signerProfileArn = `arn:aws:signer:${Aws.REGION}:${Aws.ACCOUNT_ID}:/signing-profiles/EcrScanVerifierTest`;
 
 const image = new DockerImageAsset(stack, 'DockerImage', {
   directory: resolve(__dirname, '../fixtures/docker-image'),

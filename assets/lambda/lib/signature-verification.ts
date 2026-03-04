@@ -84,7 +84,27 @@ const setupNotationConfig = (trustedIdentities: string[]): string => {
 
   // Copy trust store from bundled assets (plugins stay at NOTATION_LIBEXEC path, no copy needed)
   const bundledConfigDir = join(process.env.LAMBDA_TASK_ROOT ?? '/var/task', 'notation-config');
-  cpSync(join(bundledConfigDir, 'truststore'), join(configDir, 'truststore'), { recursive: true });
+  const truststoreSrc = join(bundledConfigDir, 'truststore');
+  const truststoreDest = join(configDir, 'truststore');
+
+  cpSync(truststoreSrc, truststoreDest, { recursive: true });
+
+  // Fix permissions: ensure Lambda non-root user can read all files
+  const { chmodSync, readdirSync, statSync } = require('fs');
+  const fixPermissions = (dir: string): void => {
+    chmodSync(dir, 0o755);
+    const entries = readdirSync(dir);
+    entries.forEach((entry: string) => {
+      const path = join(dir, entry);
+      const stat = statSync(path);
+      if (stat.isDirectory()) {
+        fixPermissions(path);
+      } else {
+        chmodSync(path, 0o644);
+      }
+    });
+  };
+  fixPermissions(truststoreDest);
 
   // Generate trust policy
   const trustPolicy = {

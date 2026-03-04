@@ -1,6 +1,6 @@
 import { resolve } from 'path';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
-import { App, Stack } from 'aws-cdk-lib';
+import { App, Stack, Aws } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Key } from 'aws-cdk-lib/aws-kms';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';
@@ -18,33 +18,19 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *       --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
  *       --query 'KeyMetadata.Arn' --output text)
  *
- *   3. Build, synth, and publish the Docker image asset only (no deploy):
- *     tsc -p tsconfig.dev.json
- *     cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
- *     COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth \
- *       --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
- *     npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
- *
- *   4. Sign the pushed image with cosign:
- *     ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
- *     REGION=$(aws configure get region)
- *     REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
- *     REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
- *     DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
- *       --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
- *     aws ecr get-login-password | cosign login --username AWS --password-stdin "${REGISTRY}"
- *     cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
+ *   3. Build, synth, and publish the Docker image asset, then sign it
+ *      (see test/integ/README.md for full commands)
  *
  * Run:
- *   COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
- *     --language javascript --test-regex integ.cosign-kms.js
+ *   COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
  */
 
 const app = new App();
 const stack = new Stack(app, 'CosignKmsSignatureStack');
 
-const cosignKmsKeyArn = process.env.COSIGN_KMS_KEY_ARN;
-if (!cosignKmsKeyArn) {
+// Get KMS key ARN from environment variable (required for signing)
+const kmsKeyArnFromEnv = process.env.COSIGN_KMS_KEY_ARN;
+if (!kmsKeyArnFromEnv) {
   throw new Error(
     'Missing required env: COSIGN_KMS_KEY_ARN. ' +
       'Pass it via: COSIGN_KMS_KEY_ARN=arn:aws:kms:... pnpm integ:signature:update',
@@ -56,7 +42,7 @@ const image = new DockerImageAsset(stack, 'DockerImage', {
   platform: Platform.LINUX_ARM64,
 });
 
-const kmsKey = Key.fromKeyArn(stack, 'CosignKey', cosignKmsKeyArn);
+const kmsKey = Key.fromKeyArn(stack, 'CosignKey', kmsKeyArnFromEnv);
 
 new EcrScanVerifier(stack, 'Scanner', {
   repository: image.repository,

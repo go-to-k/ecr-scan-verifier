@@ -140,13 +140,18 @@ PROFILE_ARN=$(aws signer get-signing-profile \
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-SIGNER_PROFILE_ARN="${PROFILE_ARN}" npx cdk synth \
-  --app 'node test/integ/signature/integ.notation.js' -o cdk.out
+npx cdk synth --app 'node test/integ/signature/integ.notation.js' -o cdk.out
 npx cdk-assets -p cdk.out/NotationSignatureStack.assets.json publish
 
 # 4. Sign the pushed image with notation
+# Get the digest of the test fixture image (not the Lambda function image)
+# The asset hash is the imageTag used in the test
+ASSET_HASH=$(grep -A 10 '"id":.*"DockerImage"' cdk.out/NotationSignatureStack.assets.json | \
+  grep '"imageTag"' | cut -d'"' -f4)
 DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
-  --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageDigest' --output text)
+  --image-ids imageTag="${ASSET_HASH}" \
+  --query 'imageDetails[0].imageDigest' --output text)
+
 aws ecr get-login-password | notation login --username AWS --password-stdin "${REGISTRY}"
 notation sign \
   --plugin com.amazonaws.signer.notation.plugin \
@@ -154,8 +159,7 @@ notation sign \
   "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the Notation integ test
-SIGNER_PROFILE_ARN="${PROFILE_ARN}" pnpm integ:signature:update \
-  --language javascript --test-regex integ.notation.js
+pnpm integ:signature:update --language javascript --test-regex integ.notation.js
 ```
 
 #### Cosign (KMS)
@@ -177,8 +181,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" npx cdk synth \
-  --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
+npx cdk synth --app 'node test/integ/signature/integ.cosign-kms.js' -o cdk.out
 npx cdk-assets -p cdk.out/CosignKmsSignatureStack.assets.json publish
 
 # 4. Sign the pushed image with cosign
@@ -188,8 +191,7 @@ aws ecr get-login-password | cosign login --username AWS --password-stdin "${REG
 cosign sign --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
-COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update \
-  --language javascript --test-regex integ.cosign-kms.js
+COSIGN_KMS_KEY_ARN="${KMS_KEY_ARN}" pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
 ```
 
 #### Cleanup

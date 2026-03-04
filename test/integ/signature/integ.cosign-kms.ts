@@ -3,6 +3,7 @@ import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 import { App, Stack } from 'aws-cdk-lib';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Key } from 'aws-cdk-lib/aws-kms';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src';
 
 /**
@@ -13,10 +14,13 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *     brew install cosign   # macOS
  *     # or see https://docs.sigstore.dev/cosign/system_config/installation/
  *
- *   2. Create a KMS key for signing (or reuse an existing one):
- *     KMS_KEY_ARN=$(aws kms create-key \
+ *   2. Create a KMS key for signing and store key ID in SSM Parameter Store:
+ *     KMS_KEY_ID=$(aws kms create-key \
  *       --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
- *       --query 'KeyMetadata.Arn' --output text)
+ *       --query 'KeyMetadata.KeyId' --output text)
+ *     aws ssm put-parameter \
+ *       --name /ecr-scan-verifier/cosign-kms-key-id \
+ *       --value "${KMS_KEY_ID}" --type String --overwrite
  *
  *   3. Build, synth, and publish the Docker image asset, then sign it
  *      (see test/integ/README.md for full commands)
@@ -29,32 +33,27 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *   Sign with: cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE
  *
  * Run:
- *   COSIGN_KMS_KEY_ID=<key-id> pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
+ *   pnpm integ:signature:update --language javascript --test-regex integ.cosign-kms.js
  */
+
+const COSIGN_KMS_KEY_ID_PARAMETER = '/ecr-scan-verifier/cosign-kms-key-id';
 
 const app = new App();
 const stack = new Stack(app, 'CosignKmsSignatureStack');
-
-// Get KMS key ID from environment variable (not full ARN to avoid exposing account ID in snapshot)
-const kmsKeyIdFromEnv = process.env.COSIGN_KMS_KEY_ID;
-if (!kmsKeyIdFromEnv) {
-  throw new Error(
-    'Missing required env: COSIGN_KMS_KEY_ID. ' +
-      'Pass key ID only (e.g., 7aabc831-9b9a-45e6-8d25-172fe86efebd): ' +
-      'COSIGN_KMS_KEY_ID=<key-id> pnpm integ:signature:update',
-  );
-}
 
 const image = new DockerImageAsset(stack, 'DockerImage', {
   directory: resolve(__dirname, '../fixtures/docker-image'),
   platform: Platform.LINUX_ARM64,
 });
 
-// Build full ARN using Stack's account and region to avoid hardcoding account ID in snapshot
+// Look up KMS key ID from SSM Parameter Store to avoid environment variables.
+// CloudFormation resolves the parameter at deploy time, so the IAM policy
+// uses the actual key ARN (not an alias ARN).
+const kmsKeyId = StringParameter.valueForStringParameter(stack, COSIGN_KMS_KEY_ID_PARAMETER);
 const kmsKey = Key.fromKeyArn(
   stack,
   'CosignKey',
-  `arn:aws:kms:${stack.region}:${stack.account}:key/${kmsKeyIdFromEnv}`,
+  `arn:aws:kms:${stack.region}:${stack.account}:key/${kmsKeyId}`,
 );
 
 new EcrScanVerifier(stack, 'Scanner', {

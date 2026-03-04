@@ -253,6 +253,9 @@
         },
         {
           "exec": "pnpm integ:signature:ecr-signing"
+        },
+        {
+          "exec": "pnpm integ:signature:cosign-kms"
         }
       ]
     },

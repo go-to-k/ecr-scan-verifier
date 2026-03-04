@@ -119,14 +119,19 @@ project.setScript(
   'integ:signature:ecr-signing',
   'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --test-regex "integ.ecr-signing.js$"',
 );
+project.setScript(
+  'integ:signature:cosign-kms',
+  'tsc -p tsconfig.dev.json && cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd - && integ-runner --test-regex "integ.cosign-kms.js$"',
+);
 project.projectBuild.compileTask.prependExec('pnpm install --frozen-lockfile && pnpm build', {
   cwd: 'assets/lambda',
 });
-// Run basic, enhanced, signature:notation, and signature:ecr-signing (CI-safe) tests
-// Other signature tests (cosign-kms, cosign-publickey) require manual setup with environment variables
+// Run basic, enhanced, and signature (CI-safe) tests
+// cosign-publickey requires manual setup with environment variables
 project.projectBuild.testTask.exec('pnpm integ:basic');
 project.projectBuild.testTask.exec('pnpm integ:enhanced');
 project.projectBuild.testTask.exec('pnpm integ:signature:notation');
 project.projectBuild.testTask.exec('pnpm integ:signature:ecr-signing');
+project.projectBuild.testTask.exec('pnpm integ:signature:cosign-kms');
 
 project.synth();

@@ -1,4 +1,15 @@
 {
+ "Parameters": {
+  "SsmParameterValueecrscanverifiercosignkmskeyidC96584B6F00A464EAD1953AFF4B05118Parameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/ecr-scan-verifier/cosign-kms-key-id"
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
  "Resources": {
   "ScannerProviderframeworkonEventServiceRole5EA00D06": {
    "Type": "AWS::IAM::Role",
@@ -161,7 +172,10 @@
         {
          "Ref": "AWS::AccountId"
         },
-        ":key/7aabc831-9b9a-45e6-8d25-172fe86efebd"
+        ":key/",
+        {
+         "Ref": "SsmParameterValueecrscanverifiercosignkmskeyidC96584B6F00A464EAD1953AFF4B05118Parameter"
+        }
        ]
       ]
      },
@@ -238,7 +252,10 @@
           {
            "Ref": "AWS::AccountId"
           },
-          ":key/7aabc831-9b9a-45e6-8d25-172fe86efebd"
+          ":key/",
+          {
+           "Ref": "SsmParameterValueecrscanverifiercosignkmskeyidC96584B6F00A464EAD1953AFF4B05118Parameter"
+          }
          ]
         ]
        }
@@ -305,7 +322,7 @@
     ],
     "Code": {
      "ImageUri": {
-      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead"
+      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:33e863130a006e281f007da3e3aacad337e5ef16f1547d86685c371ffd0f6251"
      }
     },
     "PackageType": "Image",
@@ -455,13 +472,6 @@
    "us-west-2": {
     "value": "nodejs20.x"
    }
-  }
- },
- "Parameters": {
-  "BootstrapVersion": {
-   "Type": "AWS::SSM::Parameter::Value<String>",
-   "Default": "/cdk-bootstrap/hnb659fds/version",
-   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
   }
  },
  "Rules": {

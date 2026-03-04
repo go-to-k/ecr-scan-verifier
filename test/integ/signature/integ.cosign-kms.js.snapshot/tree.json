@@ -35,6 +35,23 @@
               "version": "2.178.1"
             }
           },
+          "SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": {
+            "id": "SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter",
+            "path": "CosignKmsSignatureStack/SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnParameter",
+              "version": "2.178.1"
+            }
+          },
+          "SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118": {
+            "id": "SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118",
+            "path": "CosignKmsSignatureStack/SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.Resource",
+              "version": "2.178.1",
+              "metadata": []
+            }
+          },
           "CosignKey": {
             "id": "CosignKey",
             "path": "CosignKmsSignatureStack/CosignKey",
@@ -487,7 +504,10 @@
                                         {
                                           "Ref": "AWS::AccountId"
                                         },
-                                        ":key/7aabc831-9b9a-45e6-8d25-172fe86efebd"
+                                        ":key/",
+                                        {
+                                          "Ref": "SsmParameterValueecrscanverifiercosignkmskeyidC96584B6F00A464EAD1953AFF4B05118Parameter"
+                                        }
                                       ]
                                     ]
                                   }
@@ -687,7 +707,7 @@
                     ],
                     "code": {
                       "imageUri": {
-                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead"
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:33e863130a006e281f007da3e3aacad337e5ef16f1547d86685c371ffd0f6251"
                       }
                     },
                     "packageType": "Image",

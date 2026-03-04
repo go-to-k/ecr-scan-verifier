@@ -114,9 +114,6 @@ project.setScript('integ:signature:update', 'pnpm integ:signature --update-on-fa
 project.projectBuild.compileTask.prependExec('pnpm install --frozen-lockfile && pnpm build', {
   cwd: 'assets/lambda',
 });
-// Run basic, enhanced, and signature (CI-safe) tests
-project.projectBuild.testTask.exec('pnpm integ:basic');
-project.projectBuild.testTask.exec('pnpm integ:enhanced');
-project.projectBuild.testTask.exec('pnpm integ:signature');
+project.projectBuild.testTask.exec('pnpm integ');
 
 project.synth();

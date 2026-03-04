@@ -250,6 +250,9 @@
         },
         {
           "exec": "pnpm integ:signature:notation"
+        },
+        {
+          "exec": "pnpm integ:signature:ecr-signing"
         }
       ]
     },

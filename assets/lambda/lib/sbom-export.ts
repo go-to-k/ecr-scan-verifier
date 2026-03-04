@@ -5,6 +5,7 @@ import {
   SbomReportFormat,
 } from '@aws-sdk/client-inspector2';
 import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { Logger } from './logger';
 
 const inspectorClient = new Inspector2Client();
 const s3Client = new S3Client();
@@ -22,11 +23,12 @@ export const exportSbom = async (
   sbomFormat: string,
   s3BucketName: string,
   kmsKeyArn: string,
+  logger: Logger,
 ): Promise<SbomExportResult> => {
   const reportFormat =
     sbomFormat === 'SPDX_2_3' ? SbomReportFormat.SPDX_2_3 : SbomReportFormat.CYCLONEDX_1_4;
 
-  console.log(`Starting SBOM export for ${repositoryName} with format ${sbomFormat}...`);
+  logger.log(`Starting SBOM export for ${repositoryName} with format ${sbomFormat}...`);
 
   // Build resource filter for the specific ECR image
   const resourceFilterCriteria = {
@@ -53,7 +55,7 @@ export const exportSbom = async (
     throw new Error('CreateSbomExport did not return a reportId.');
   }
 
-  console.log(`SBOM export started with reportId: ${reportId}`);
+  logger.log(`SBOM export started with reportId: ${reportId}`);
 
   // Poll for completion
   const maxRetries = 60;
@@ -65,7 +67,7 @@ export const exportSbom = async (
     );
 
     const status = getResponse.status;
-    console.log(`SBOM export status: ${status} (attempt ${attempt + 1}/${maxRetries})`);
+    logger.log(`SBOM export status: ${status} (attempt ${attempt + 1}/${maxRetries})`);
 
     if (status === 'SUCCEEDED') {
       const s3Key = getResponse.s3Destination?.keyPrefix;

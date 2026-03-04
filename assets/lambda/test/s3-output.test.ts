@@ -2,8 +2,10 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { mockClient } from 'aws-sdk-client-mock';
 import { outputScanLogsToS3, outputSignatureVerificationLogsToS3 } from '../lib/s3-output';
 import { ScanLogsOutputType } from '../../../src/scan-logs-output';
+import { Logger } from '../lib/logger';
 
 const s3Mock = mockClient(S3Client);
+const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'v1.0' });
 
 describe('s3-output', () => {
   beforeEach(() => {
@@ -30,6 +32,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.type).toBe('s3');
@@ -53,6 +57,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.type).toBe('s3');
@@ -73,6 +79,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(2);
@@ -112,6 +120,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.findingsKey).not.toMatch(/^\//);
@@ -137,6 +147,7 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         sbomContent,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(3);
@@ -172,6 +183,7 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         sbomContent,
+        mockLogger,
       );
 
       expect(result.sbomKey).toBeDefined();
@@ -192,6 +204,7 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         undefined,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(2);
@@ -220,6 +233,7 @@ describe('s3-output', () => {
         output,
         'my-repo',
         'v1.0',
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(1);
@@ -259,6 +273,7 @@ describe('s3-output', () => {
         output,
         'my-repo',
         'v1.0',
+        mockLogger,
       );
 
       expect(result.key).toMatch(/^logs\/signature-verification\//);
@@ -286,6 +301,7 @@ describe('s3-output', () => {
         output,
         'my-repo',
         'v1.0',
+        mockLogger,
       );
 
       expect(result.key).toMatch(/^logs\/signature-verification\//);

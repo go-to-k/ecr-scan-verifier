@@ -228,6 +228,7 @@ describe('handler', () => {
       expect.stringContaining('ECR Image Scan found vulnerabilities.'),
       'my-repo:v1.0',
       expect.objectContaining({ type: 'default' }),
+      expect.anything(),
     );
   });
 
@@ -313,6 +314,7 @@ describe('handler', () => {
       'CYCLONEDX_1_4',
       'sbom-bucket',
       undefined,
+      expect.anything(),
     );
     expect(s3Output.outputScanLogsToS3).toHaveBeenCalledWith(
       expect.any(String),
@@ -320,6 +322,7 @@ describe('handler', () => {
       expect.objectContaining({ type: ScanLogsOutputType.S3 }),
       'my-repo:v1.0',
       { content: '{"bomFormat": "CycloneDX"}', format: 'CYCLONEDX_1_4' },
+      expect.anything(),
     );
   });
 
@@ -528,6 +531,7 @@ describe('handler', () => {
         expect.stringContaining('Signature verification failed'),
         'my-repo:v1.0',
         expect.objectContaining({ type: 'default' }),
+        expect.anything(),
       );
     });
 
@@ -627,6 +631,7 @@ describe('handler', () => {
         expect.stringContaining('Signature verification failed for image: my-repo:v1.0'),
         'my-repo:v1.0',
         expect.objectContaining({ type: 'default' }),
+        expect.anything(),
       );
     });
   });

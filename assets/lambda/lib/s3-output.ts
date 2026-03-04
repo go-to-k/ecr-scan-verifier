@@ -3,6 +3,7 @@ import { S3OutputOptions } from '../../../src/scan-logs-output';
 import { SbomFormat } from '../../../src/types';
 import { S3LogsDetails, SignatureVerificationS3LogsDetails } from './types';
 import { SignatureVerificationResult } from './signature-verification';
+import { Logger } from './logger';
 
 const s3Client = new S3Client();
 
@@ -16,7 +17,8 @@ export const outputScanLogsToS3 = async (
   summaryText: string,
   output: S3OutputOptions,
   imageIdentifier: string,
-  sbomContent?: SbomContent,
+  sbomContent: SbomContent | undefined,
+  logger: Logger,
 ): Promise<S3LogsDetails> => {
   const timestamp = new Date().toISOString();
   const sanitized = imageIdentifier.replace(/:/g, '/').replace(/\//g, '_');
@@ -71,11 +73,11 @@ export const outputScanLogsToS3 = async (
   await Promise.all(uploads);
 
   if (sbomKey) {
-    console.log(
+    logger.log(
       `Scan logs and SBOM output to S3:\n  findings: s3://${output.bucketName}/${findingsKey}\n  summary: s3://${output.bucketName}/${summaryKey}\n  SBOM: s3://${output.bucketName}/${sbomKey}`,
     );
   } else {
-    console.log(
+    logger.log(
       `Scan logs output to S3:\n  findings: s3://${output.bucketName}/${findingsKey}\n  summary: s3://${output.bucketName}/${summaryKey}`,
     );
   }
@@ -94,6 +96,7 @@ export const outputSignatureVerificationLogsToS3 = async (
   output: S3OutputOptions,
   repositoryName: string,
   imageTag: string,
+  logger: Logger,
 ): Promise<SignatureVerificationS3LogsDetails> => {
   const prefix = output.prefix
     ? output.prefix.endsWith('/')
@@ -112,7 +115,7 @@ export const outputSignatureVerificationLogsToS3 = async (
     }),
   );
 
-  console.log(`Signature verification result output to S3: s3://${output.bucketName}/${key}`);
+  logger.log(`Signature verification result output to S3: s3://${output.bucketName}/${key}`);
 
   return {
     type: 's3',

@@ -1,5 +1,6 @@
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { ScanLogsDetails } from './types';
+import { Logger } from './logger';
 
 const snsClient = new SNSClient();
 
@@ -8,6 +9,7 @@ export const sendVulnsNotification = async (
   errorMessage: string,
   imageIdentifier: string,
   logsDetails: ScanLogsDetails,
+  logger: Logger,
 ) => {
   let scanLogsLocation = '';
   let awsCliCommand = '';
@@ -56,8 +58,8 @@ export const sendVulnsNotification = async (
         MessageStructure: 'json',
       }),
     );
-    console.log(`Vulnerability notification sent to SNS topic: ${topicArn}`);
+    logger.log(`Vulnerability notification sent to SNS topic: ${topicArn}`);
   } catch (error) {
-    console.error(`Failed to send vulnerability notification to SNS: ${error}`);
+    logger.error(`Failed to send vulnerability notification to SNS: ${error}`);
   }
 };

@@ -75,7 +75,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
           await sendVulnsNotification(props.vulnsTopicArn, warningMessage, imageIdentifier, {
             type: 'default',
             logGroupName: props.defaultLogGroupName,
-          });
+          }, logger);
         }
 
         // Continue to scan
@@ -89,7 +89,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
         await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, {
           type: 'default',
           logGroupName: props.defaultLogGroupName,
-        });
+        }, logger);
       }
 
       if (props.suppressErrorOnRollback === 'true' && (await isRollbackInProgress(event.StackId))) {
@@ -144,6 +144,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
         props.sbom.format,
         props.sbom.bucketName,
         props.sbom.kmsKeyArn,
+        logger,
       );
       sbomContent = {
         content: sbomResult.sbomContent,
@@ -190,7 +191,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
     `See scan logs for details.`;
 
   if (props.vulnsTopicArn) {
-    await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, logsDetails);
+    await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, logsDetails, logger);
   }
 
   if (props.failOnVulnerability === 'false') {
@@ -223,6 +224,7 @@ const outputScanLogs = async (
         summaryText,
         output as CloudWatchLogsOutputOptions,
         imageIdentifier,
+        logger,
       );
     case ScanLogsOutputType.S3:
       return await outputScanLogsToS3(
@@ -231,6 +233,7 @@ const outputScanLogs = async (
         output as S3OutputOptions,
         imageIdentifier,
         sbomContent,
+        logger,
       );
     default:
       logger.log('summary:\n' + summaryText);
@@ -257,6 +260,7 @@ const outputSignatureVerificationLogs = async (
         output as CloudWatchLogsOutputOptions,
         repositoryName,
         imageTag,
+        logger,
       );
     case ScanLogsOutputType.S3:
       return await outputSignatureVerificationLogsToS3(
@@ -264,6 +268,7 @@ const outputSignatureVerificationLogs = async (
         output as S3OutputOptions,
         repositoryName,
         imageTag,
+        logger,
       );
     default:
       logger.log('Signature verification result:\n' + JSON.stringify(verificationResult, null, 2));

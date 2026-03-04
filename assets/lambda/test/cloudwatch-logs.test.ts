@@ -7,10 +7,12 @@ import {
 import { mockClient } from 'aws-sdk-client-mock';
 import { outputScanLogsToCWLogs, outputSignatureVerificationLogsToCWLogs } from '../lib/cloudwatch-logs';
 import { ScanLogsOutputType } from '../../../src/scan-logs-output';
+import { Logger } from '../lib/logger';
 
 const MAX_LOG_EVENT_SIZE = 1048576; // 1 MB in bytes
 
 const cwMock = mockClient(CloudWatchLogsClient);
+const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'v1.0' });
 
 describe('cloudwatch-logs', () => {
   beforeEach(() => {
@@ -37,6 +39,7 @@ describe('cloudwatch-logs', () => {
         'No vulnerabilities found.',
         output,
         'my-repo:v1.0',
+        mockLogger,
       );
 
       expect(result).toEqual({
@@ -61,6 +64,7 @@ describe('cloudwatch-logs', () => {
         'summary',
         output,
         'my-repo',
+        mockLogger,
       );
 
       expect(result.findingsLogStreamName).toBe('my-repo/findings');
@@ -82,7 +86,7 @@ describe('cloudwatch-logs', () => {
       };
 
       await expect(
-        outputScanLogsToCWLogs('{}', 'summary', output, 'my-repo:v1.0'),
+        outputScanLogsToCWLogs('{}', 'summary', output, 'my-repo:v1.0', mockLogger),
       ).resolves.not.toThrow();
 
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('already exists'));
@@ -98,7 +102,7 @@ describe('cloudwatch-logs', () => {
         logGroupName: '/aws/lambda/test',
       };
 
-      await outputScanLogsToCWLogs(largeFindingsJson, 'summary', output, 'my-repo:v1.0');
+      await outputScanLogsToCWLogs(largeFindingsJson, 'summary', output, 'my-repo:v1.0', mockLogger);
 
       const putLogEventsCalls = cwMock.commandCalls(PutLogEventsCommand);
       expect(putLogEventsCalls.length).toBe(2); // findings + summary
@@ -139,6 +143,7 @@ describe('cloudwatch-logs', () => {
         output,
         'my-repo',
         'v1.0',
+        mockLogger,
       );
 
       expect(result).toEqual({
@@ -182,6 +187,7 @@ describe('cloudwatch-logs', () => {
         output,
         'my-org/my-repo',
         'v1.0:latest',
+        mockLogger,
       );
 
       const createLogStreamCalls = cwMock.commandCalls(CreateLogStreamCommand);
@@ -210,7 +216,7 @@ describe('cloudwatch-logs', () => {
       };
 
       await expect(
-        outputSignatureVerificationLogsToCWLogs(verificationResult, output, 'my-repo', 'v1.0'),
+        outputSignatureVerificationLogsToCWLogs(verificationResult, output, 'my-repo', 'v1.0', mockLogger),
       ).resolves.not.toThrow();
 
       expect(console.log).toHaveBeenCalledWith(

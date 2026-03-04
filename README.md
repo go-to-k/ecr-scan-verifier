@@ -238,8 +238,6 @@ You can verify container image signatures before scanning using Notation (AWS Si
 
 Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail.
 
-> **Note**: This feature requires Docker to be available at deploy time, as the Lambda function is built via `AssetCode.fromAssetImage()` to bundle the Notation and Cosign CLI binaries.
-
 #### Notation (AWS Signer)
 
 Images must be signed with [AWS Signer](https://docs.aws.amazon.com/signer/latest/developerguide/Welcome.html) before deployment. You can sign images using the [Notation CLI](https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html) or [ECR Managed Signing](https://docs.aws.amazon.com/AmazonECR/latest/userguide/managed-signing.html).

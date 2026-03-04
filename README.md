@@ -317,7 +317,7 @@ new EcrScanVerifier(this, 'SignatureOnlyVerifier', {
 
 - **Fast deployments**: When you only need to verify image authenticity without waiting for scan results.
 - **Pre-production environments**: Verify signatures in dev/staging before running full scans in production.
-- **Minimal IAM permissions**: No `ecr:DescribeImageScanFindings` or `inspector2:*` permissions required.
+- **Minimal IAM permissions**: Only `ecr:DescribeImages` (for digest resolution), `ecr:GetAuthorizationToken`, and `ecr:BatchGetImage` are required. No `ecr:DescribeImageScanFindings` or `inspector2:*` permissions needed.
 
 ### SNS Notification for Vulnerabilities
 

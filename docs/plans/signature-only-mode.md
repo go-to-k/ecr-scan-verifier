@@ -310,15 +310,19 @@ const sbomConfig = scanConfigOutput.sbomOutput?.bind(customResourceLambda);
 // Signature verification
 const signatureVerificationConfig = props.signatureVerification?.bind(customResourceLambda);
 
-// ECR scan permissions (SIGNATURE_ONLY の場合は不要)
+// ECR permissions
+// DescribeImages is always required (for digest resolution)
+// DescribeImageScanFindings is only required for scanning modes
+const ecrActions = ['ecr:DescribeImages'];
 if (scanConfigOutput.scanType !== 'SIGNATURE_ONLY') {
-  customResourceLambda.addToRolePolicy(
-    new PolicyStatement({
-      actions: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
-      resources: [props.repository.repositoryArn],
-    }),
-  );
+  ecrActions.push('ecr:DescribeImageScanFindings');
 }
+customResourceLambda.addToRolePolicy(
+  new PolicyStatement({
+    actions: ecrActions,
+    resources: [props.repository.repositoryArn],
+  }),
+);
 
 // Inspector permissions (Enhanced のみ)
 if (scanConfigOutput.scanType === 'ENHANCED') {
@@ -584,46 +588,52 @@ describe('EcrScanVerifier', () => {
   });
 
   describe('IAM permissions', () => {
-    test('signatureOnly does not grant scan-related permissions', () => {
+    test('signature only scan has DescribeImages but not DescribeImageScanFindings', () => {
       const stack = new Stack();
       const repository = Repository.fromRepositoryName(stack, 'Repo', 'test-repo');
+      const kmsKey = new Key(stack, 'SigningKey');
 
-      new EcrScanVerifier(stack, 'Verifier', {
+      new EcrScanVerifier(stack, 'Scanner', {
         repository,
         scanConfig: ScanConfig.signatureOnly(),
-        signatureVerification: SignatureVerification.notation({
-          trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/test'],
-        }),
+        signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
       });
 
       const template = Template.fromStack(stack);
 
-      // ECR DescribeImageScanFindings が付与されていないことを確認
-      template.hasResourceProperties('AWS::IAM::Policy', {
-        PolicyDocument: {
-          Statement: Match.not(
-            Match.arrayWith([
-              Match.objectLike({
-                Action: Match.arrayWith(['ecr:DescribeImageScanFindings']),
-              }),
+      // Should NOT have both DescribeImageScanFindings and DescribeImages together
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('Repo'), 'Arn'] },
+              },
             ]),
-          ),
+          },
         },
-      });
+        0,
+      );
 
-      // 署名検証用の権限は付与されていることを確認
-      template.hasResourceProperties('AWS::IAM::Policy', {
-        PolicyDocument: {
-          Statement: Match.arrayWith([
-            Match.objectLike({
-              Action: Match.arrayWith(['ecr:GetAuthorizationToken']),
-            }),
-            Match.objectLike({
-              Action: Match.arrayWith(['signer:GetRevocationStatus']),
-            }),
-          ]),
+      // Should have only DescribeImages (as a string, not array, when optimized by CDK)
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:DescribeImages',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('Repo'), 'Arn'] },
+              },
+            ]),
+          },
         },
-      });
+        1,
+      );
     });
   });
 });

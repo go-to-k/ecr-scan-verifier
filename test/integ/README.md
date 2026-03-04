@@ -309,10 +309,13 @@ environments. The cryptographic signature is still verified using the public key
 # 1. Install cosign
 brew install cosign  # macOS
 
-# 2. Generate a key pair
+# 2. Generate a key pair and store the public key in SSM Parameter Store
 cosign generate-key-pair
 # This creates cosign.key (private) and cosign.pub (public)
 # Enter a password when prompted (can be empty for testing)
+aws ssm put-parameter \
+  --name /ecr-scan-verifier/cosign-public-key \
+  --value "$(cat cosign.pub)" --type String --overwrite
 
 # 3. Build and synth to publish the Docker image asset only (no deploy)
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -322,7 +325,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
-COSIGN_PUBLIC_KEY="$(cat cosign.pub)" npx cdk synth --app 'node test/integ/signature/integ.cosign-publickey.js' -o cdk.out
+npx cdk synth --app 'node test/integ/signature/integ.cosign-publickey.js' -o cdk.out
 npx cdk-assets -p cdk.out/CosignPublicKeySignatureStack.assets.json publish
 
 # 4. Sign the pushed image with cosign
@@ -344,7 +347,7 @@ curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/
 cosign sign --signing-config /tmp/signing-config.json --key cosign.key "${REGISTRY}/${REPO}@${DIGEST}"
 
 # 5. Run the integ test
-COSIGN_PUBLIC_KEY="$(cat cosign.pub)" pnpm integ:signature:update --language javascript --test-regex "integ.cosign-publickey.js$"
+pnpm integ:signature:update --language javascript --test-regex "integ.cosign-publickey.js$"
 ```
 
 #### Cleanup
@@ -353,8 +356,9 @@ COSIGN_PUBLIC_KEY="$(cat cosign.pub)" pnpm integ:signature:update --language jav
 # Cancel the signing profile (cannot be deleted, but can be revoked)
 aws signer cancel-signing-profile --profile-name EcrScanVerifierTest
 
-# Delete SSM parameter and schedule KMS key deletion (minimum 7-day waiting period)
+# Delete SSM parameters and schedule KMS key deletion (minimum 7-day waiting period)
 aws ssm delete-parameter --name /ecr-scan-verifier/cosign-kms-key-id
+aws ssm delete-parameter --name /ecr-scan-verifier/cosign-public-key
 KMS_KEY_ID=$(echo "${KMS_KEY_ARN}" | grep -o '[^/]*$')
 aws kms schedule-key-deletion --key-id "${KMS_KEY_ID}" --pending-window-in-days 7
 

@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/3c67e5decc8d2f2aa45f99e0d0f5fdccf1765adb51c674175edbcfce61f31d58.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/11acdba915fc32ab4511714ee0fea889ed21b61d53eb792e185c6fe53fc0aacf.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -34,6 +34,12 @@
         "CosignPublicKeySignatureStack.assets"
       ],
       "metadata": {
+        "/CosignPublicKeySignatureStack/SsmParameterValue:--ecr-scan-verifier--cosign-public-key:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SsmParameterValueecrscanverifiercosignpublickeyC96584B6F00A464EAD1953AFF4B05118Parameter"
+          }
+        ],
         "/CosignPublicKeySignatureStack/Scanner/CustomResourceLambda": [
           {
             "type": "aws:cdk:analytics:construct",

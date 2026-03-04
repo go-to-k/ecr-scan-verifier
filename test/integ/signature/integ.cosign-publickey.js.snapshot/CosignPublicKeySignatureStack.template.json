@@ -1,4 +1,15 @@
 {
+ "Parameters": {
+  "SsmParameterValueecrscanverifiercosignpublickeyC96584B6F00A464EAD1953AFF4B05118Parameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/ecr-scan-verifier/cosign-public-key"
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
  "Resources": {
   "ScannerProviderframeworkonEventServiceRole5EA00D06": {
    "Type": "AWS::IAM::Role",
@@ -149,7 +160,9 @@
     "ignoreFindings": [],
     "signatureVerification": {
      "type": "COSIGN",
-     "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEenzz3E9L+M6ycNXiEALB/zd21q1r\nSDoJoyQxHqzoW4MMSsrFCI7hBZxS1J8ZUPYQx2V8BzHTFV5O2jr/8+vCdA==\n-----END PUBLIC KEY-----",
+     "publicKey": {
+      "Ref": "SsmParameterValueecrscanverifiercosignpublickeyC96584B6F00A464EAD1953AFF4B05118Parameter"
+     },
      "failOnUnsigned": "true"
     },
     "suppressErrorOnRollback": "true",
@@ -266,7 +279,7 @@
     ],
     "Code": {
      "ImageUri": {
-      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:ff272ab590ec5574dd1d226dfd80fc7565745cd1b74350346907660133e61ead"
+      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:33e863130a006e281f007da3e3aacad337e5ef16f1547d86685c371ffd0f6251"
      }
     },
     "PackageType": "Image",
@@ -416,13 +429,6 @@
    "us-west-2": {
     "value": "nodejs20.x"
    }
-  }
- },
- "Parameters": {
-  "BootstrapVersion": {
-   "Type": "AWS::SSM::Parameter::Value<String>",
-   "Default": "/cdk-bootstrap/hnb659fds/version",
-   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
   }
  },
  "Rules": {

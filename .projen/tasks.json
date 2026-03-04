@@ -249,13 +249,7 @@
           "exec": "pnpm integ:enhanced"
         },
         {
-          "exec": "pnpm integ:signature:notation"
-        },
-        {
-          "exec": "pnpm integ:signature:ecr-signing"
-        },
-        {
-          "exec": "pnpm integ:signature:cosign-kms"
+          "exec": "pnpm integ:signature"
         }
       ]
     },

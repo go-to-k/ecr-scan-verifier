@@ -322,9 +322,6 @@ public readonly key: IKey;
 
 AWS KMS key used to verify the image signature.
 
-The Lambda function is automatically granted `kms:DescribeKey`, `kms:GetPublicKey`,
-and `kms:Verify` permissions on this key.
-
 ---
 
 ### CosignPublicKeyVerificationOptions <a name="CosignPublicKeyVerificationOptions" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions"></a>

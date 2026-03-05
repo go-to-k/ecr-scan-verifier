@@ -59,9 +59,6 @@ export interface CosignPublicKeyVerificationOptions extends VerificationOptions 
 export interface CosignKmsVerificationOptions extends VerificationOptions {
   /**
    * AWS KMS key used to verify the image signature.
-   *
-   * The Lambda function is automatically granted `kms:DescribeKey`, `kms:GetPublicKey`,
-   * and `kms:Verify` permissions on this key.
    */
   readonly key: IKey;
 }

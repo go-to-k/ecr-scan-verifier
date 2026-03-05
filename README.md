@@ -215,9 +215,9 @@ new EcrScanVerifier(this, 'Scanner2', {
 
 ### SBOM Output
 
-You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API. This is independent from scan logs output.
+You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API.
 
-**Note**: SBOM export is only available with Enhanced scanning. Using with Basic scanning will throw an error.
+**Note**: SBOM export is only available with Enhanced scanning.
 
 ```ts
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';

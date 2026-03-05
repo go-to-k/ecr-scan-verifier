@@ -116,7 +116,6 @@ export abstract class SignatureVerification {
    * Verify image signature using Notation (AWS Signer).
    *
    * Requires the image to be signed with AWS Signer.
-   * The Lambda function uses the Notation CLI to perform cryptographic verification.
    */
   public static notation(options: NotationVerificationOptions): SignatureVerification {
     return new NotationSignatureVerification(options);
@@ -125,18 +124,12 @@ export abstract class SignatureVerification {
   /**
    * Verify image signature using Cosign with a public key.
    *
-   * **Important:** Cosign verification skips Rekor transparency log verification
-   * for reliability in AWS Lambda environments. The cryptographic signature is
-   * still verified using the public key.
+   * **Important:** Cosign verification skips Rekor transparency log verification.
    *
    * Sign your images with:
    * ```bash
    * cosign sign --tlog-upload=false --key cosign.pub IMAGE
    * ```
-   *
-   * The public key content is passed to the Lambda function as a Custom Resource property.
-   *
-   * @see {@link CosignPublicKeyVerificationOptions}
    */
   public static cosignPublicKey(
     options: CosignPublicKeyVerificationOptions,
@@ -147,18 +140,12 @@ export abstract class SignatureVerification {
   /**
    * Verify image signature using Cosign with an AWS KMS key.
    *
-   * **Important:** Cosign verification skips Rekor transparency log verification
-   * for reliability in AWS Lambda environments. The cryptographic signature is
-   * still verified using the KMS key.
+   * **Important:** Cosign verification skips Rekor transparency log verification.
    *
    * Sign your images with:
    * ```bash
    * cosign sign --tlog-upload=false --key awskms:///KMS_KEY_ARN IMAGE
    * ```
-   *
-   * The Lambda function is automatically granted the required KMS permissions.
-   *
-   * @see {@link CosignKmsVerificationOptions}
    */
   public static cosignKms(options: CosignKmsVerificationOptions): SignatureVerification {
     return new CosignKmsSignatureVerification(options);

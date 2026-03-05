@@ -1,8 +1,8 @@
 # ecr-scan-verifier
 
-An AWS CDK Construct that **blocks deployments** to ECS, Lambda, and other services when **ECR Image Scanning detects vulnerabilities**.
+An AWS CDK Construct that **blocks deployments when ECR Image Scanning detects vulnerabilities**, and optionally **verifies container image signatures**.
 
-It scans a specified container image during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning.
+It scans container images during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning, and can verify image signatures with Notation (AWS Signer) or Cosign (Sigstore).
 
 - **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Signature verification** — verify image signatures with Notation (AWS Signer) or Cosign (Sigstore) before scanning
@@ -12,22 +12,31 @@ It scans a specified container image during CDK deployment using Basic or Enhanc
 
 ## Scanning Modes
 
-This construct supports two scanning modes. With Basic scanning, the construct starts a scan via API during deployment, or checks existing scan-on-push results. Enhanced scanning (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+This construct supports three scanning modes.
 
-| Feature | Basic Scanning | Enhanced Scanning |
-|---|---|---|
-| Start scan via API | ✅ (`startScan: true`) | — |
-| Check scan-on-push results | ✅ (`startScan: false`) | ✅ |
-| SBOM generation | — | ✅ |
+With **Basic scanning**, the construct starts a scan via API during deployment, or checks existing scan-on-push results.
+
+**Enhanced scanning** (Amazon Inspector) only supports scan-on-push, but additionally enables SBOM generation.
+
+**Signature Only mode** skips vulnerability scanning entirely and only verifies image signatures.
+
+| Feature | Basic Scanning | Enhanced Scanning | Signature Only |
+| --- | --- | --- | --- |
+| Start scan via API | ✅ (`startScan: true`) | — | — |
+| Check scan-on-push results | ✅ (`startScan: false`) | ✅ | — |
+| SBOM generation | — | ✅ | — |
+| Signature verification | ✅ (optional) | ✅ (optional) | ✅ (required) |
 
 ### Prerequisites
 
 When using `ScanConfig.basic({ startScan: true })` (the default), the construct starts a scan via the ECR `StartImageScan` API during deployment — no additional ECR configuration is required.
 
-For all other modes, **scan-on-push must be enabled** on your ECR repository or account before deployment:
+For the following modes, **scan-on-push must be enabled** on your ECR repository or account before deployment:
 
 - **`ScanConfig.basic({ startScan: false })`** — requires Basic scan-on-push to be enabled on the repository
 - **`ScanConfig.enhanced()`** — requires Enhanced scanning (Amazon Inspector) to be enabled on the account, with the repository included in Inspector's coverage
+
+`ScanConfig.signatureOnly()` does not require scan-on-push, as it only verifies image signatures without scanning.
 
 If scan-on-push is not configured and no prior scan results exist, the deployment will fail with an error.
 
@@ -206,9 +215,9 @@ new EcrScanVerifier(this, 'Scanner2', {
 
 ### SBOM Output
 
-You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API.
+You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API. This is independent from scan logs output.
 
-**Note**: SBOM export is only available with Enhanced scanning.
+**Note**: SBOM export is only available with Enhanced scanning. Using with Basic scanning will throw an error.
 
 ```ts
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';
@@ -218,12 +227,11 @@ const sbomEncryptionKey = new Key(this, 'SbomEncryptionKey');
 
 new EcrScanVerifier(this, 'Scanner', {
   repository,
-  scanConfig: ScanConfig.enhanced({
-    sbomOutput: SbomOutput.cycloneDx14({
-      bucket: sbomBucket,
-      prefix: 'sbom/', // Optional
-      encryptionKey: sbomEncryptionKey,
-    }),
+  scanConfig: ScanConfig.enhanced(),
+  sbomOutput: SbomOutput.cycloneDx14({
+    bucket: sbomBucket,
+    prefix: 'sbom/', // Optional
+    encryptionKey: sbomEncryptionKey,
   }),
 });
 ```
@@ -237,13 +245,11 @@ Available SBOM formats:
 
 You can verify container image signatures before scanning using Notation (AWS Signer) or Cosign (Sigstore).
 
-Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail immediately without scanning. If `failOnUnsigned` is `false`, a warning is logged and the deployment continues to scan for vulnerabilities.
+Signature verification is performed before the vulnerability scan during deployment. If verification fails and `failOnUnsigned` is `true` (the default), the deployment will fail.
 
-**Signature verification logs**: When `scanLogsOutput` is configured, verification results are automatically written to the same destination (S3 or CloudWatch Logs) alongside scan results. If not configured, results are logged to the Lambda function's default log group.
+> **Note**: This feature requires Docker to be available at deploy time, as the Lambda function is built via `AssetCode.fromAssetImage()` to bundle the Notation and Cosign CLI binaries.
 
 #### Notation (AWS Signer)
-
-Images must be signed with [AWS Signer](https://docs.aws.amazon.com/signer/latest/developerguide/Welcome.html) before deployment. You can sign images using the [Notation CLI](https://docs.aws.amazon.com/signer/latest/developerguide/install-notation-client.html) or [ECR Managed Signing](https://docs.aws.amazon.com/AmazonECR/latest/userguide/managed-signing.html).
 
 ```ts
 import { SignatureVerification, ScanConfig } from 'ecr-scan-verifier';
@@ -253,14 +259,11 @@ new EcrScanVerifier(this, 'Scanner', {
   scanConfig: ScanConfig.basic(),
   signatureVerification: SignatureVerification.notation({
     trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
-    failOnUnsigned: true, // Optional: default is true. Set to false to continue scanning even if verification fails.
   }),
 });
 ```
 
 #### Cosign with Public Key
-
-> **Note on Rekor Transparency Log**: Cosign verification always skips Rekor transparency log verification. The Lambda function uses `--insecure-ignore-tlog` flag to verify only the cryptographic signature.
 
 ```ts
 import { readFileSync } from 'fs';
@@ -289,37 +292,6 @@ new EcrScanVerifier(this, 'Scanner', {
   }),
 });
 ```
-
-> **Note**: Signature verification works with both Basic and Enhanced scanning modes.
-
-#### Signature Verification Only (No Scanning)
-
-If you only want to verify the image signature without performing vulnerability scanning, use `ScanConfig.signatureOnly()`:
-
-```ts
-import { EcrScanVerifier, ScanConfig, SignatureVerification } from 'ecr-scan-verifier';
-
-new EcrScanVerifier(this, 'SignatureOnlyVerifier', {
-  repository,
-  scanConfig: ScanConfig.signatureOnly(),
-  signatureVerification: SignatureVerification.notation({
-    trustedIdentities: [
-      'arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile',
-    ],
-  }),
-});
-```
-
-**Note**:
-
-- `ScanConfig.signatureOnly()` requires `signatureVerification` to be specified.
-- This mode skips vulnerability scanning entirely, reducing Lambda execution time and IAM permissions.
-
-**Use Cases**:
-
-- **Fast deployments**: When you only need to verify image authenticity without waiting for scan results.
-- **Pre-production environments**: Verify signatures in dev/staging before running full scans in production.
-- **Minimal IAM permissions**: Only `ecr:DescribeImages` (for digest resolution), `ecr:GetAuthorizationToken`, and `ecr:BatchGetImage` are required. No `ecr:DescribeImageScanFindings` or `inspector2:*` permissions needed.
 
 ### SNS Notification for Vulnerabilities
 

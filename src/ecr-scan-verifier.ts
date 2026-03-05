@@ -93,7 +93,6 @@ export interface EcrScanVerifierProps {
    * Signature verification configuration for the container image.
    *
    * Verifies the image signature before scanning using Notation (AWS Signer) or Cosign (Sigstore).
-   * Requires Docker to be available at deploy time for building the Lambda function.
    *
    * @default - no signature verification
    */
@@ -168,10 +167,7 @@ export class EcrScanVerifier extends Construct {
 
     // Validate: signatureOnly requires signatureVerification
     if (scanConfigOutput.scanType === 'SIGNATURE_ONLY' && !props.signatureVerification) {
-      throw new Error(
-        'ScanConfig.signatureOnly() requires signatureVerification to be specified. ' +
-          'Use SignatureVerification.notation(), SignatureVerification.cosignPublicKey(), or SignatureVerification.cosignKms().',
-      );
+      throw new Error('ScanConfig.signatureOnly() requires signatureVerification to be specified.');
     }
 
     const outputOptions = props.scanLogsOutput?.bind(customResourceLambda);

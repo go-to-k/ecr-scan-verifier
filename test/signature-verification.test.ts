@@ -102,37 +102,23 @@ describe('SignatureVerification', () => {
       }).toThrow('trustedIdentities must contain at least one signing profile ARN.');
     });
 
-    test('failOnUnsigned defaults to true', () => {
+    test.each([
+      [undefined, 'true'],
+      [false, 'false'],
+    ])('failOnUnsigned %s resolves to %s', (input, expected) => {
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
         scanConfig: ScanConfig.basic(),
         signatureVerification: SignatureVerification.notation({
           trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+          failOnUnsigned: input,
         }),
       });
 
       const template = Template.fromStack(stack);
       template.hasResourceProperties('Custom::EcrScanVerifier', {
         signatureVerification: Match.objectLike({
-          failOnUnsigned: 'true',
-        }),
-      });
-    });
-
-    test('failOnUnsigned can be set to false', () => {
-      new EcrScanVerifier(stack, 'Scanner', {
-        repository,
-        scanConfig: ScanConfig.basic(),
-        signatureVerification: SignatureVerification.notation({
-          trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
-          failOnUnsigned: false,
-        }),
-      });
-
-      const template = Template.fromStack(stack);
-      template.hasResourceProperties('Custom::EcrScanVerifier', {
-        signatureVerification: Match.objectLike({
-          failOnUnsigned: 'false',
+          failOnUnsigned: expected,
         }),
       });
     });

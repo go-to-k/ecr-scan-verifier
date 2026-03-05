@@ -1,8 +1,10 @@
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { mockClient } from 'aws-sdk-client-mock';
 import { sendVulnsNotification } from '../lib/sns-notification';
+import { Logger } from '../lib/logger';
 
 const snsMock = mockClient(SNSClient);
+const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'latest' });
 
 describe('sns-notification', () => {
   beforeEach(() => {
@@ -28,7 +30,7 @@ describe('sns-notification', () => {
         logGroupName: '/aws/lambda/default-log-group',
       };
 
-      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails);
+      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails, mockLogger);
 
       const call = snsMock.call(0);
       const messageStructure = JSON.parse((call.args[0] as PublishCommand).input.Message!);
@@ -48,7 +50,7 @@ describe('sns-notification', () => {
         summaryLogStreamName: 'my-repo,latest/summary',
       };
 
-      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails);
+      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails, mockLogger);
 
       const call = snsMock.call(0);
       const messageStructure = JSON.parse((call.args[0] as PublishCommand).input.Message!);
@@ -71,7 +73,7 @@ describe('sns-notification', () => {
         summaryKey: 'scan-logs/my-repo/latest/2024-01-01T00:00:00.000Z/summary.txt',
       };
 
-      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails);
+      await sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails, mockLogger);
 
       const call = snsMock.call(0);
       const messageStructure = JSON.parse((call.args[0] as PublishCommand).input.Message!);
@@ -93,7 +95,7 @@ describe('sns-notification', () => {
       };
 
       await expect(
-        sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails),
+        sendVulnsNotification(topicArn, errorMessage, imageIdentifier, logsDetails, mockLogger),
       ).resolves.not.toThrow();
     });
   });

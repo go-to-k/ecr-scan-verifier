@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "NotationSignatureTest/DefaultTest": {
+      "stacks": [
+        "NotationSignatureStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "NotationSignatureTest/DefaultTest/DeployAssert",
+      "assertionStackName": "NotationSignatureTestDefaultTestDeployAssertA53EF4EB"
+    }
+  }
+}

@@ -8,12 +8,14 @@ import {
 } from '../../../src/scan-logs-output';
 import { startAndWaitForScan, waitForScanResults, ScanFindings } from './ecr-scan';
 import { evaluateFindings, formatScanSummary } from './findings-evaluator';
-import { outputScanLogsToCWLogs } from './cloudwatch-logs';
-import { outputScanLogsToS3, SbomContent } from './s3-output';
+import { outputScanLogsToCWLogs, outputSignatureVerificationLogsToCWLogs } from './cloudwatch-logs';
+import { outputScanLogsToS3, outputSignatureVerificationLogsToS3, SbomContent } from './s3-output';
 import { sendVulnsNotification } from './sns-notification';
 import { isRollbackInProgress } from './cloudformation-utils';
 import { exportSbom } from './sbom-export';
-import { ScanLogsDetails } from './types';
+import { verifySignature, SignatureVerificationResult } from './signature-verification';
+import { ScanLogsDetails, SignatureVerificationLogsDetails } from './types';
+import { Logger } from './logger';
 
 export const handler: CdkCustomResourceHandler = async function (event) {
   const requestType = event.RequestType;
@@ -36,6 +38,77 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   const pollingMaxRetries = 60;
   const imageIdentifier = `${props.repositoryName}:${props.imageTag}`;
 
+  // Create logger with context
+  const logger = new Logger({
+    repositoryName: props.repositoryName,
+    imageTag: props.imageTag,
+  });
+
+  // 0. Signature verification (before scan)
+  if (props.signatureVerification) {
+    try {
+      const verificationResult = await verifySignature(
+        props.repositoryName,
+        props.imageTag,
+        props.signatureVerification,
+        logger,
+      );
+      await outputSignatureVerificationLogs(
+        verificationResult,
+        props.repositoryName,
+        props.imageTag,
+        props.output,
+        props.defaultLogGroupName,
+        logger,
+      );
+
+      // If signature verification failed (failOnUnsigned=false), log warning and continue to scan
+      if (!verificationResult.verified) {
+        const warningMessage =
+          `Signature verification failed for image: ${imageIdentifier}\n` +
+          `${verificationResult.message}\n` +
+          `Continuing to scan despite unsigned image (failOnUnsigned=false).`;
+
+        logger.warn(warningMessage);
+
+        if (props.vulnsTopicArn) {
+          await sendVulnsNotification(props.vulnsTopicArn, warningMessage, imageIdentifier, {
+            type: 'default',
+            logGroupName: props.defaultLogGroupName,
+          }, logger);
+        }
+
+        // Continue to scan
+      }
+    } catch (error: any) {
+      const errorMessage =
+        `Signature verification failed for image: ${imageIdentifier}\n` +
+        `${error.message || error}`;
+
+      if (props.vulnsTopicArn) {
+        await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, {
+          type: 'default',
+          logGroupName: props.defaultLogGroupName,
+        }, logger);
+      }
+
+      if (props.suppressErrorOnRollback === 'true' && (await isRollbackInProgress(event.StackId))) {
+        logger.log(
+          `Signature verification failed, but suppressing errors during rollback.\n${errorMessage}`,
+        );
+        return funcResponse;
+      }
+
+      throw new Error(errorMessage);
+    }
+  }
+
+  // Skip scan if signatureOnly mode
+  if (props.scanType === 'SIGNATURE_ONLY') {
+    logger.log('Vulnerability scanning skipped (ScanConfig.signatureOnly() mode).');
+    return funcResponse;
+  }
+
   // 1. Execute scan / poll for results
   let scanFindings: ScanFindings;
   if (props.startScan === 'true') {
@@ -45,6 +118,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
       props.scanType,
       pollingIntervalSeconds,
       pollingMaxRetries,
+      logger,
     );
   } else {
     scanFindings = await waitForScanResults(
@@ -53,6 +127,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
       props.scanType,
       pollingIntervalSeconds,
       pollingMaxRetries,
+      logger,
     );
   }
 
@@ -69,13 +144,14 @@ export const handler: CdkCustomResourceHandler = async function (event) {
         props.sbom.format,
         props.sbom.bucketName,
         props.sbom.kmsKeyArn,
+        logger,
       );
       sbomContent = {
         content: sbomResult.sbomContent,
         format: sbomResult.format,
       };
     } else {
-      console.log('SBOM export is only available with Enhanced scanning. Skipping SBOM generation.');
+      logger.log('SBOM export is only available with Enhanced scanning. Skipping SBOM generation.');
     }
   }
 
@@ -98,6 +174,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
     props.output,
     props.defaultLogGroupName,
     sbomContent,
+    logger,
   );
 
   // 5. If no vulnerabilities, return success
@@ -114,7 +191,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
     `See scan logs for details.`;
 
   if (props.vulnsTopicArn) {
-    await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, logsDetails);
+    await sendVulnsNotification(props.vulnsTopicArn, errorMessage, imageIdentifier, logsDetails, logger);
   }
 
   if (props.failOnVulnerability === 'false') {
@@ -122,7 +199,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   }
 
   if (props.suppressErrorOnRollback === 'true' && (await isRollbackInProgress(event.StackId))) {
-    console.log(
+    logger.log(
       `Vulnerabilities detected, but suppressing errors during rollback (suppressErrorOnRollback=true).\n${errorMessage}`,
     );
     return funcResponse;
@@ -137,7 +214,8 @@ const outputScanLogs = async (
   imageIdentifier: string,
   output: ScanLogsOutputOptions | undefined,
   defaultLogGroupName: string,
-  sbomContent?: SbomContent,
+  sbomContent: SbomContent | undefined,
+  logger: Logger,
 ): Promise<ScanLogsDetails> => {
   switch (output?.type) {
     case ScanLogsOutputType.CLOUDWATCH_LOGS:
@@ -146,6 +224,7 @@ const outputScanLogs = async (
         summaryText,
         output as CloudWatchLogsOutputOptions,
         imageIdentifier,
+        logger,
       );
     case ScanLogsOutputType.S3:
       return await outputScanLogsToS3(
@@ -154,10 +233,45 @@ const outputScanLogs = async (
         output as S3OutputOptions,
         imageIdentifier,
         sbomContent,
+        logger,
       );
     default:
-      console.log('summary:\n' + summaryText);
-      console.log('findings:\n' + findingsJson);
+      logger.log('summary:\n' + summaryText);
+      logger.log('findings:\n' + findingsJson);
+      return {
+        type: 'default',
+        logGroupName: defaultLogGroupName,
+      };
+  }
+};
+
+const outputSignatureVerificationLogs = async (
+  verificationResult: SignatureVerificationResult,
+  repositoryName: string,
+  imageTag: string,
+  output: ScanLogsOutputOptions | undefined,
+  defaultLogGroupName: string,
+  logger: Logger,
+): Promise<SignatureVerificationLogsDetails> => {
+  switch (output?.type) {
+    case ScanLogsOutputType.CLOUDWATCH_LOGS:
+      return await outputSignatureVerificationLogsToCWLogs(
+        verificationResult,
+        output as CloudWatchLogsOutputOptions,
+        repositoryName,
+        imageTag,
+        logger,
+      );
+    case ScanLogsOutputType.S3:
+      return await outputSignatureVerificationLogsToS3(
+        verificationResult,
+        output as S3OutputOptions,
+        repositoryName,
+        imageTag,
+        logger,
+      );
+    default:
+      logger.log('Signature verification result:\n' + JSON.stringify(verificationResult, null, 2));
       return {
         type: 'default',
         logGroupName: defaultLogGroupName,

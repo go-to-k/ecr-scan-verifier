@@ -8,9 +8,11 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
 import { sdkStreamMixin } from '@smithy/util-stream';
 import { exportSbom } from '../lib/sbom-export';
+import { Logger } from '../lib/logger';
 
 const inspectorMock = mockClient(Inspector2Client);
 const s3Mock = mockClient(S3Client);
+const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'v1.0' });
 
 const createMockStream = (content: string) => {
   const stream = new Readable();
@@ -58,6 +60,7 @@ describe('sbom-export', () => {
         'CYCLONEDX_1_4',
         'test-bucket',
         'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        mockLogger,
       );
 
       expect(result.format).toBe('CYCLONEDX_1_4');
@@ -92,6 +95,7 @@ describe('sbom-export', () => {
         'SPDX_2_3',
         'test-bucket',
         'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        mockLogger,
       );
 
       expect(result.format).toBe('SPDX_2_3');
@@ -118,7 +122,7 @@ describe('sbom-export', () => {
         Body: createMockStream('{}'),
       });
 
-      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key');
+      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger);
 
       const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
       expect(createCall.args[0].input.resourceFilterCriteria?.ecrImageTags).toEqual([
@@ -144,7 +148,7 @@ describe('sbom-export', () => {
         Body: createMockStream('{}'),
       });
 
-      await exportSbom('my-repo', 'sha256:abc', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key');
+      await exportSbom('my-repo', 'sha256:abc', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger);
 
       const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
       expect(createCall.args[0].input.resourceFilterCriteria?.ecrImageTags).toEqual([
@@ -156,7 +160,7 @@ describe('sbom-export', () => {
       inspectorMock.on(CreateSbomExportCommand).resolves({});
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key'),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
       ).rejects.toThrow('CreateSbomExport did not return a reportId.');
     });
 
@@ -169,7 +173,7 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key'),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
       ).rejects.toThrow('SBOM export failed.');
     });
 
@@ -182,7 +186,7 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key'),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
       ).rejects.toThrow('SBOM export was cancelled.');
     });
 
@@ -213,6 +217,7 @@ describe('sbom-export', () => {
         'CYCLONEDX_1_4',
         'test-bucket',
         'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        mockLogger,
       );
 
       // Advance past the sleep between polls
@@ -234,7 +239,7 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key'),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
       ).rejects.toThrow('SBOM export succeeded but S3 destination is missing.');
     });
   });

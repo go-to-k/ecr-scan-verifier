@@ -6,7 +6,9 @@ import {
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { CloudWatchLogsOutputOptions } from '../../../src/scan-logs-output';
-import { CloudWatchLogsDetails } from './types';
+import { CloudWatchLogsDetails, SignatureVerificationCloudWatchLogsDetails } from './types';
+import { SignatureVerificationResult } from './signature-verification';
+import { Logger } from './logger';
 
 const cwClient = new CloudWatchLogsClient();
 
@@ -15,6 +17,7 @@ export const outputScanLogsToCWLogs = async (
   summaryText: string,
   output: CloudWatchLogsOutputOptions,
   imageIdentifier: string,
+  logger: Logger,
 ): Promise<CloudWatchLogsDetails> => {
   const sanitized = imageIdentifier.replace(/:/g, ',').replace(/\//g, '_');
   const findingsLogStreamName = `${sanitized}/findings`;
@@ -27,6 +30,7 @@ export const outputScanLogsToCWLogs = async (
     findingsLogStreamName,
     timestamp,
     findingsJson,
+    logger,
   );
 
   await createLogStreamAndPutEvents(
@@ -34,9 +38,10 @@ export const outputScanLogsToCWLogs = async (
     summaryLogStreamName,
     timestamp,
     summaryText,
+    logger,
   );
 
-  console.log(
+  logger.log(
     `Scan logs output to the log group: ${output.logGroupName}\n  findings stream: ${findingsLogStreamName}\n  summary stream: ${summaryLogStreamName}`,
   );
 
@@ -84,6 +89,7 @@ const createLogStreamAndPutEvents = async (
   logStreamName: string,
   timestamp: number,
   message: string,
+  logger: Logger,
 ) => {
   try {
     await cwClient.send(
@@ -94,7 +100,7 @@ const createLogStreamAndPutEvents = async (
     );
   } catch (e) {
     if (e instanceof ResourceAlreadyExistsException) {
-      console.log(`Log stream ${logStreamName} already exists in log group ${logGroupName}.`);
+      logger.log(`Log stream ${logStreamName} already exists in log group ${logGroupName}.`);
     } else {
       throw e;
     }
@@ -104,7 +110,7 @@ const createLogStreamAndPutEvents = async (
   const totalChunks = chunks.length;
 
   if (totalChunks > 1) {
-    console.log(`Message size exceeds 1 MB limit. Splitting into ${totalChunks} chunks.`);
+    logger.log(`Message size exceeds 1 MB limit. Splitting into ${totalChunks} chunks.`);
   }
 
   const logEvents = chunks.map((chunk, index) => ({
@@ -119,4 +125,36 @@ const createLogStreamAndPutEvents = async (
   };
   const command = new PutLogEventsCommand(input);
   await cwClient.send(command);
+};
+
+export const outputSignatureVerificationLogsToCWLogs = async (
+  verificationResult: SignatureVerificationResult,
+  output: CloudWatchLogsOutputOptions,
+  repositoryName: string,
+  imageTag: string,
+  logger: Logger,
+): Promise<SignatureVerificationCloudWatchLogsDetails> => {
+  const sanitized = `${repositoryName}/${imageTag}`.replace(/:/g, ',').replace(/\//g, '_');
+  const logStreamName = `${sanitized}/signature-verification`;
+
+  const timestamp = new Date().getTime();
+  const message = JSON.stringify(verificationResult, null, 2);
+
+  await createLogStreamAndPutEvents(
+    output.logGroupName,
+    logStreamName,
+    timestamp,
+    message,
+    logger,
+  );
+
+  logger.log(
+    `Signature verification result output to the log group: ${output.logGroupName}\n  stream: ${logStreamName}`,
+  );
+
+  return {
+    type: 'cloudwatch',
+    logGroupName: output.logGroupName,
+    logStreamName,
+  };
 };

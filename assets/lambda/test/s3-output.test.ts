@@ -1,9 +1,11 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { mockClient } from 'aws-sdk-client-mock';
-import { outputScanLogsToS3 } from '../lib/s3-output';
+import { outputScanLogsToS3, outputSignatureVerificationLogsToS3 } from '../lib/s3-output';
 import { ScanLogsOutputType } from '../../../src/scan-logs-output';
+import { Logger } from '../lib/logger';
 
 const s3Mock = mockClient(S3Client);
+const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'v1.0' });
 
 describe('s3-output', () => {
   beforeEach(() => {
@@ -30,6 +32,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.type).toBe('s3');
@@ -53,6 +57,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.type).toBe('s3');
@@ -73,6 +79,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(2);
@@ -112,6 +120,8 @@ describe('s3-output', () => {
         'summary text',
         output,
         'my-repo:v1.0',
+        undefined,
+        mockLogger,
       );
 
       expect(result.findingsKey).not.toMatch(/^\//);
@@ -137,6 +147,7 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         sbomContent,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(3);
@@ -172,6 +183,7 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         sbomContent,
+        mockLogger,
       );
 
       expect(result.sbomKey).toBeDefined();
@@ -192,10 +204,108 @@ describe('s3-output', () => {
         output,
         'my-repo:v1.0',
         undefined,
+        mockLogger,
       );
 
       expect(s3Mock.calls()).toHaveLength(2);
       expect(result.sbomKey).toBeUndefined();
+    });
+  });
+
+  describe('outputSignatureVerificationLogsToS3', () => {
+    test('should upload signature verification result to S3', async () => {
+      s3Mock.on(PutObjectCommand).resolves({});
+
+      const output = {
+        type: ScanLogsOutputType.S3,
+        bucketName: 'test-bucket',
+      };
+
+      const verificationResult = {
+        verified: true,
+        message: 'Signature verification succeeded',
+        verificationType: 'NOTATION' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      const result = await outputSignatureVerificationLogsToS3(
+        verificationResult,
+        output,
+        'my-repo',
+        'v1.0',
+        mockLogger,
+      );
+
+      expect(s3Mock.calls()).toHaveLength(1);
+      const call = s3Mock.calls()[0];
+      const input = (call.args[0] as PutObjectCommand).input;
+
+      expect(input.Bucket).toBe('test-bucket');
+      expect(input.Key).toMatch(/^signature-verification\/my-repo\/v1.0\/2024-01-01T00:00:00.000Z\.json$/);
+      expect(input.ContentType).toBe('application/json');
+      expect(JSON.parse(input.Body as string)).toEqual(verificationResult);
+
+      expect(result).toEqual({
+        type: 's3',
+        bucketName: 'test-bucket',
+        key: expect.stringMatching(/^signature-verification\/my-repo\/v1.0\/2024-01-01T00:00:00.000Z\.json$/),
+      });
+    });
+
+    test('should handle prefix with trailing slash', async () => {
+      s3Mock.on(PutObjectCommand).resolves({});
+
+      const output = {
+        type: ScanLogsOutputType.S3,
+        bucketName: 'test-bucket',
+        prefix: 'logs/',
+      };
+
+      const verificationResult = {
+        verified: false,
+        message: 'Signature verification failed',
+        verificationType: 'COSIGN' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      const result = await outputSignatureVerificationLogsToS3(
+        verificationResult,
+        output,
+        'my-repo',
+        'v1.0',
+        mockLogger,
+      );
+
+      expect(result.key).toMatch(/^logs\/signature-verification\//);
+      expect(result.key).not.toMatch(/^logs\/\/signature-verification\//);
+    });
+
+    test('should handle prefix without trailing slash', async () => {
+      s3Mock.on(PutObjectCommand).resolves({});
+
+      const output = {
+        type: ScanLogsOutputType.S3,
+        bucketName: 'test-bucket',
+        prefix: 'logs',
+      };
+
+      const verificationResult = {
+        verified: true,
+        message: 'Signature verification succeeded',
+        verificationType: 'NOTATION' as const,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      };
+
+      const result = await outputSignatureVerificationLogsToS3(
+        verificationResult,
+        output,
+        'my-repo',
+        'v1.0',
+        mockLogger,
+      );
+
+      expect(result.key).toMatch(/^logs\/signature-verification\//);
+      expect(result.key).not.toMatch(/^logs\/\/signature-verification\//);
     });
   });
 });

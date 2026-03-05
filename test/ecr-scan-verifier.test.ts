@@ -5,7 +5,14 @@ import { Key } from 'aws-cdk-lib/aws-kms';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Topic } from 'aws-cdk-lib/aws-sns';
-import { EcrScanVerifier, ScanConfig, Severity, ScanLogsOutput, SbomOutput } from '../src';
+import {
+  EcrScanVerifier,
+  ScanConfig,
+  Severity,
+  ScanLogsOutput,
+  SbomOutput,
+  SignatureVerification,
+} from '../src';
 
 describe('EcrScanVerifier', () => {
   let app: App;
@@ -37,16 +44,29 @@ describe('EcrScanVerifier', () => {
     new EcrScanVerifier(stack, 'Scanner', {
       repository,
       imageTag: 'v1.0',
-      scanConfig: ScanConfig.enhanced(),
+      scanConfig: ScanConfig.enhanced({
+        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: new Key(stack, 'SbomKey') }),
+      }),
       severity: [Severity.CRITICAL, Severity.HIGH],
       failOnVulnerability: true,
       ignoreFindings: ['CVE-2023-37920'],
       scanLogsOutput: ScanLogsOutput.s3({ bucket, prefix: 'scan-logs' }),
-      sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: new Key(stack, 'SbomKey') }),
       defaultLogGroup: logGroup,
       suppressErrorOnRollback: true,
       vulnsNotificationTopic: topic,
       blockConstructs: [blockedConstruct],
+    });
+
+    const template = Template.fromStack(stack);
+    expect(template.toJSON()).toMatchSnapshot();
+  });
+
+  test('Snapshot - signature only', () => {
+    const kmsKey = new Key(stack, 'SigningKey');
+    new EcrScanVerifier(stack, 'Scanner', {
+      repository,
+      scanConfig: ScanConfig.signatureOnly(),
+      signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
     });
 
     const template = Template.fromStack(stack);
@@ -83,7 +103,7 @@ describe('EcrScanVerifier', () => {
         PolicyDocument: {
           Statement: Match.arrayWith([
             Match.objectLike({
-              Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+              Action: ['ecr:DescribeImages', 'ecr:DescribeImageScanFindings'],
               Effect: 'Allow',
             }),
           ]),
@@ -211,6 +231,51 @@ describe('EcrScanVerifier', () => {
       );
     });
 
+    test('signature only scan has DescribeImages but not DescribeImageScanFindings', () => {
+      const kmsKey = new Key(stack, 'SigningKey');
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.signatureOnly(),
+        signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
+      });
+
+      const template = Template.fromStack(stack);
+
+      // Should NOT have both DescribeImageScanFindings and DescribeImages together
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: ['ecr:DescribeImageScanFindings', 'ecr:DescribeImages'],
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+
+      // Should have only DescribeImages (as a string, not array, when optimized by CDK)
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:DescribeImages',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
     test('CloudFormation DescribeStacks permission', () => {
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
@@ -317,8 +382,9 @@ describe('EcrScanVerifier', () => {
 
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
-        scanConfig: ScanConfig.enhanced(),
-        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        scanConfig: ScanConfig.enhanced({
+          sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        }),
       });
 
       const template = Template.fromStack(stack);
@@ -369,8 +435,9 @@ describe('EcrScanVerifier', () => {
 
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
-        scanConfig: ScanConfig.enhanced(),
-        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        scanConfig: ScanConfig.enhanced({
+          sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        }),
       });
 
       const template = Template.fromStack(stack);
@@ -410,8 +477,9 @@ describe('EcrScanVerifier', () => {
 
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
-        scanConfig: ScanConfig.enhanced(),
-        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        scanConfig: ScanConfig.enhanced({
+          sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        }),
       });
 
       const template = Template.fromStack(stack);
@@ -523,8 +591,9 @@ describe('EcrScanVerifier', () => {
 
     new EcrScanVerifier(stack, 'Scanner', {
       repository,
-      scanConfig: ScanConfig.enhanced(),
-      sbomOutput: SbomOutput.spdx23({ bucket, encryptionKey: key }),
+      scanConfig: ScanConfig.enhanced({
+        sbomOutput: SbomOutput.spdx23({ bucket, encryptionKey: key }),
+      }),
     });
 
     const template = Template.fromStack(stack);
@@ -535,16 +604,12 @@ describe('EcrScanVerifier', () => {
     });
   });
 
-  test('throws error when sbomOutput is used with basic scanning', () => {
-    const bucket = new Bucket(stack, 'SbomBucket');
-    const key = new Key(stack, 'SbomKey');
-
+  test('throws error when ScanConfig.signatureOnly() without signatureVerification', () => {
     expect(() => {
-      new EcrScanVerifier(stack, 'Scanner', {
+      new EcrScanVerifier(stack, 'Verifier', {
         repository,
-        scanConfig: ScanConfig.basic(),
-        sbomOutput: SbomOutput.cycloneDx14({ bucket, encryptionKey: key }),
+        scanConfig: ScanConfig.signatureOnly(),
       });
-    }).toThrow(/SBOM output is only available with Enhanced scanning/);
+    }).toThrow(/signatureOnly.*requires signatureVerification/);
   });
 });

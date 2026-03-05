@@ -7,6 +7,7 @@ import * as s3Output from '../lib/s3-output';
 import * as snsNotification from '../lib/sns-notification';
 import * as cloudformationUtils from '../lib/cloudformation-utils';
 import * as sbomExport from '../lib/sbom-export';
+import * as signatureVerification from '../lib/signature-verification';
 import { ScanLogsOutputType } from '../../../src/scan-logs-output';
 
 jest.mock('../lib/ecr-scan');
@@ -16,6 +17,7 @@ jest.mock('../lib/s3-output');
 jest.mock('../lib/sns-notification');
 jest.mock('../lib/cloudformation-utils');
 jest.mock('../lib/sbom-export');
+jest.mock('../lib/signature-verification');
 
 describe('handler', () => {
   const mockContext = {} as Context;
@@ -126,6 +128,7 @@ describe('handler', () => {
       'BASIC',
       5,
       60,
+      expect.any(Object), // logger
     );
   });
 
@@ -225,6 +228,7 @@ describe('handler', () => {
       expect.stringContaining('ECR Image Scan found vulnerabilities.'),
       'my-repo:v1.0',
       expect.objectContaining({ type: 'default' }),
+      expect.anything(),
     );
   });
 
@@ -310,6 +314,7 @@ describe('handler', () => {
       'CYCLONEDX_1_4',
       'sbom-bucket',
       undefined,
+      expect.anything(),
     );
     expect(s3Output.outputScanLogsToS3).toHaveBeenCalledWith(
       expect.any(String),
@@ -317,6 +322,7 @@ describe('handler', () => {
       expect.objectContaining({ type: ScanLogsOutputType.S3 }),
       'my-repo:v1.0',
       { content: '{"bomFormat": "CycloneDX"}', format: 'CYCLONEDX_1_4' },
+      expect.anything(),
     );
   });
 
@@ -403,10 +409,231 @@ describe('handler', () => {
     await handler(event, mockContext, mockCallback);
 
     const findingsLog = (console.log as jest.Mock).mock.calls.find(
-      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('findings:'),
     );
     expect(findingsLog).toBeDefined();
     expect(findingsLog![0]).toContain('CVE-2024-0001');
+  });
+
+  describe('signature verification', () => {
+    test('should call verifySignature before scan when signatureVerification is set', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockResolvedValue({
+        verified: true,
+        message: 'Signature verification succeeded',
+      });
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'true',
+          },
+        },
+      };
+
+      await handler(event, mockContext, mockCallback);
+
+      expect(signatureVerification.verifySignature).toHaveBeenCalledWith(
+        'my-repo',
+        'v1.0',
+        expect.objectContaining({ type: 'NOTATION' }),
+        expect.any(Object), // logger
+      );
+      // Scan should still run after successful verification
+      expect(ecrScan.startAndWaitForScan).toHaveBeenCalled();
+    });
+
+    test('should not call verifySignature when signatureVerification is not set', async () => {
+      await handler(baseEvent, mockContext, mockCallback);
+
+      expect(signatureVerification.verifySignature).not.toHaveBeenCalled();
+    });
+
+    test('should throw error when signature verification fails', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockRejectedValue(
+        new Error('Signature verification failed: no matching signatures'),
+      );
+      (cloudformationUtils.isRollbackInProgress as jest.Mock).mockResolvedValue(false);
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'true',
+          },
+        },
+      };
+
+      await expect(handler(event, mockContext, mockCallback)).rejects.toThrow(
+        'Signature verification failed',
+      );
+      // Scan should NOT run when verification fails
+      expect(ecrScan.startAndWaitForScan).not.toHaveBeenCalled();
+    });
+
+    test('should suppress signature verification error during rollback', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockRejectedValue(
+        new Error('Signature verification failed'),
+      );
+      (cloudformationUtils.isRollbackInProgress as jest.Mock).mockResolvedValue(true);
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'true',
+          },
+        },
+      };
+
+      const result = await handler(event, mockContext, mockCallback);
+
+      expect(result?.PhysicalResourceId).toBe('test-addr');
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('suppressing errors during rollback'),
+      );
+    });
+
+    test('should send SNS notification when signature verification fails and vulnsTopicArn is set', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockRejectedValue(
+        new Error('Signature verification failed'),
+      );
+      (cloudformationUtils.isRollbackInProgress as jest.Mock).mockResolvedValue(false);
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          vulnsTopicArn: 'arn:aws:sns:us-east-1:123456789012:test-topic',
+          signatureVerification: {
+            type: 'COSIGN',
+            publicKey: '-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----',
+            failOnUnsigned: 'true',
+          },
+        },
+      };
+
+      await expect(handler(event, mockContext, mockCallback)).rejects.toThrow(
+        'Signature verification failed',
+      );
+
+      expect(snsNotification.sendVulnsNotification).toHaveBeenCalledWith(
+        'arn:aws:sns:us-east-1:123456789012:test-topic',
+        expect.stringContaining('Signature verification failed'),
+        'my-repo:v1.0',
+        expect.objectContaining({ type: 'default' }),
+        expect.anything(),
+      );
+    });
+
+    test('should run signature verification before scan (execution order)', async () => {
+      const callOrder: string[] = [];
+
+      (signatureVerification.verifySignature as jest.Mock).mockImplementation(async () => {
+        callOrder.push('verifySignature');
+        return { verified: true, message: 'ok' };
+      });
+      (ecrScan.startAndWaitForScan as jest.Mock).mockImplementation(async () => {
+        callOrder.push('startAndWaitForScan');
+        return mockScanFindings;
+      });
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'true',
+          },
+        },
+      };
+
+      await handler(event, mockContext, mockCallback);
+
+      expect(callOrder).toEqual(['verifySignature', 'startAndWaitForScan']);
+    });
+
+    test('should continue to scan when signature verification fails with failOnUnsigned=false', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockResolvedValue({
+        verified: false,
+        message: 'Signature verification failed: no matching signatures',
+        verificationType: 'NOTATION',
+        timestamp: '2024-01-01T00:00:00.000Z',
+      });
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'false',
+          },
+        },
+      };
+
+      const result = await handler(event, mockContext, mockCallback);
+
+      // Should log warning
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Signature verification failed for image: my-repo:v1.0'),
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Continuing to scan despite unsigned image (failOnUnsigned=false)'),
+      );
+
+      // Should continue to scan
+      expect(ecrScan.startAndWaitForScan).toHaveBeenCalled();
+
+      // Should return successfully
+      expect(result?.PhysicalResourceId).toBe('test-addr');
+    });
+
+    test('should send SNS notification when failOnUnsigned=false and verification fails', async () => {
+      (signatureVerification.verifySignature as jest.Mock).mockResolvedValue({
+        verified: false,
+        message: 'Signature verification failed: no matching signatures',
+        verificationType: 'NOTATION',
+        timestamp: '2024-01-01T00:00:00.000Z',
+      });
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const event = {
+        ...baseEvent,
+        ResourceProperties: {
+          ...baseEvent.ResourceProperties,
+          vulnsTopicArn: 'arn:aws:sns:us-east-1:123456789012:test-topic',
+          signatureVerification: {
+            type: 'NOTATION',
+            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
+            failOnUnsigned: 'false',
+          },
+        },
+      };
+
+      await handler(event, mockContext, mockCallback);
+
+      expect(snsNotification.sendVulnsNotification).toHaveBeenCalledWith(
+        'arn:aws:sns:us-east-1:123456789012:test-topic',
+        expect.stringContaining('Signature verification failed for image: my-repo:v1.0'),
+        'my-repo:v1.0',
+        expect.objectContaining({ type: 'default' }),
+        expect.anything(),
+      );
+    });
   });
 
   test('should log basic findings for Basic scanning', async () => {
@@ -434,7 +661,7 @@ describe('handler', () => {
     await handler(baseEvent, mockContext, mockCallback);
 
     const findingsLog = (console.log as jest.Mock).mock.calls.find(
-      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('findings:'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('findings:'),
     );
     expect(findingsLog).toBeDefined();
     expect(findingsLog![0]).toContain('CVE-2024-0002');

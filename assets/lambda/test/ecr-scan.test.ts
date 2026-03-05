@@ -5,8 +5,15 @@ import {
 } from '@aws-sdk/client-ecr';
 import { mockClient } from 'aws-sdk-client-mock';
 import { startAndWaitForScan, waitForScanResults } from '../lib/ecr-scan';
+import { Logger } from '../lib/logger';
 
 const ecrMock = mockClient(ECRClient);
+
+const createMockLogger = (): Logger => ({
+  log: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+} as any);
 
 describe('ecr-scan', () => {
   beforeEach(() => {
@@ -33,7 +40,7 @@ describe('ecr-scan', () => {
         },
       });
 
-      const result = await startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3);
+      const result = await startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger());
 
       expect(result.status).toBe('COMPLETE');
       expect(result.basicFindings).toHaveLength(1);
@@ -53,7 +60,7 @@ describe('ecr-scan', () => {
         },
       });
 
-      const result = await startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3);
+      const result = await startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger());
 
       expect(result.status).toBe('COMPLETE');
     });
@@ -64,7 +71,7 @@ describe('ecr-scan', () => {
       ecrMock.on(StartImageScanCommand).rejects(validationError);
 
       await expect(
-        startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3),
+        startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger()),
       ).rejects.toThrow('Use ScanConfig.enhanced() instead of ScanConfig.basic().');
     });
 
@@ -72,7 +79,7 @@ describe('ecr-scan', () => {
       ecrMock.on(StartImageScanCommand).rejects(new Error('Access denied'));
 
       await expect(
-        startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3),
+        startAndWaitForScan('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger()),
       ).rejects.toThrow('Access denied');
     });
 
@@ -92,6 +99,7 @@ describe('ecr-scan', () => {
         'BASIC',
         0,
         3,
+        createMockLogger(),
       );
 
       const startCall = ecrMock.commandCalls(StartImageScanCommand)[0];
@@ -113,7 +121,7 @@ describe('ecr-scan', () => {
         },
       });
 
-      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3);
+      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger());
 
       expect(result.status).toBe('COMPLETE');
       expect(result.basicFindings).toHaveLength(1);
@@ -136,7 +144,7 @@ describe('ecr-scan', () => {
         },
       });
 
-      const result = await waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 3);
+      const result = await waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 3, createMockLogger());
 
       expect(result.status).toBe('ACTIVE');
       expect(result.enhancedFindings).toHaveLength(1);
@@ -153,7 +161,7 @@ describe('ecr-scan', () => {
       });
 
       await expect(
-        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3),
+        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger()),
       ).rejects.toThrow('ECR image scan failed: Internal error');
     });
 
@@ -164,7 +172,7 @@ describe('ecr-scan', () => {
       });
 
       await expect(
-        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3),
+        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger()),
       ).rejects.toThrow('Image is not supported for scanning');
     });
 
@@ -192,7 +200,7 @@ describe('ecr-scan', () => {
           },
         });
 
-      const result = await waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 5);
+      const result = await waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 5, createMockLogger());
 
       expect(result.status).toBe('ACTIVE');
       expect(result.enhancedFindings).toHaveLength(1);
@@ -206,7 +214,7 @@ describe('ecr-scan', () => {
       ecrMock.on(DescribeImageScanFindingsCommand).rejects(scanNotFoundError);
 
       await expect(
-        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3),
+        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger()),
       ).rejects.toThrow('No scan results found for the image after');
     });
 
@@ -225,7 +233,7 @@ describe('ecr-scan', () => {
           },
         });
 
-      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3);
+      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger());
 
       expect(result.status).toBe('COMPLETE');
       expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(2);
@@ -238,7 +246,7 @@ describe('ecr-scan', () => {
       });
 
       await expect(
-        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 2),
+        waitForScanResults('my-repo', imageTag, 'BASIC', 0, 2, createMockLogger()),
       ).rejects.toThrow('ECR image scan timed out');
     });
 
@@ -265,7 +273,7 @@ describe('ecr-scan', () => {
           },
         });
 
-      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3);
+      const result = await waitForScanResults('my-repo', imageTag, 'BASIC', 0, 3, createMockLogger());
 
       expect(result.basicFindings).toHaveLength(2);
       expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(2);
@@ -280,7 +288,7 @@ describe('ecr-scan', () => {
         },
       });
 
-      await waitForScanResults('my-repo', 'latest', 'BASIC', 0, 3);
+      await waitForScanResults('my-repo', 'latest', 'BASIC', 0, 3, createMockLogger());
 
       const call = ecrMock.commandCalls(DescribeImageScanFindingsCommand)[0];
       expect(call.args[0].input.imageId).toEqual({ imageTag: 'latest' });

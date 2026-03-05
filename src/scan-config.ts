@@ -1,3 +1,5 @@
+import { SbomOutput } from './sbom-output';
+
 /**
  * Options for basic ECR image scanning.
  */
@@ -31,7 +33,22 @@ export interface BasicScanConfigOptions {
  * Options for enhanced ECR image scanning (Amazon Inspector).
  */
 export interface EnhancedScanConfigOptions {
-  // Reserved for future enhanced scanning options.
+  /**
+   * SBOM (Software Bill of Materials) output configuration.
+   *
+   * SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
+   * and uploads it to S3.
+   *
+   * @default - no SBOM output
+   */
+  readonly sbomOutput?: SbomOutput;
+}
+
+/**
+ * Options for signature-only verification (no scanning).
+ */
+export interface SignatureOnlyConfigOptions {
+  // Reserved for future options.
 }
 
 /**
@@ -39,7 +56,7 @@ export interface EnhancedScanConfigOptions {
  */
 export interface ScanConfigBindOutput {
   /**
-   * The scan type ('BASIC' or 'ENHANCED').
+   * The scan type ('BASIC', 'ENHANCED', or 'SIGNATURE_ONLY').
    */
   readonly scanType: string;
 
@@ -47,13 +64,19 @@ export interface ScanConfigBindOutput {
    * Whether to start an image scan via StartImageScan API.
    */
   readonly startScan: boolean;
+
+  /**
+   * SBOM output configuration (Enhanced scanning only).
+   */
+  readonly sbomOutput?: SbomOutput;
 }
 
 /**
  * Configuration for ECR image scan type.
  *
  * Use `ScanConfig.basic()` for ECR native basic scanning,
- * or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+ * `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning,
+ * or `ScanConfig.signatureOnly()` for signature verification without scanning.
  */
 export abstract class ScanConfig {
   /**
@@ -74,6 +97,19 @@ export abstract class ScanConfig {
    */
   public static enhanced(options?: EnhancedScanConfigOptions): ScanConfig {
     return new EnhancedScanConfig(options);
+  }
+
+  /**
+   * Signature verification only (no vulnerability scanning).
+   *
+   * Verifies the image signature without performing vulnerability scanning.
+   * This mode skips ECR/Inspector scanning entirely and only validates the image signature.
+   *
+   * **Requirements**:
+   * - `signatureVerification` must be specified in EcrScanVerifierProps
+   */
+  public static signatureOnly(options?: SignatureOnlyConfigOptions): ScanConfig {
+    return new SignatureOnlyScanConfig(options);
   }
 
   /**
@@ -99,13 +135,30 @@ class BasicScanConfig extends ScanConfig {
 }
 
 class EnhancedScanConfig extends ScanConfig {
-  constructor(_options?: EnhancedScanConfigOptions) {
+  private readonly sbomOutput?: SbomOutput;
+
+  constructor(options?: EnhancedScanConfigOptions) {
     super();
+    this.sbomOutput = options?.sbomOutput;
   }
 
   public bind(): ScanConfigBindOutput {
     return {
       scanType: 'ENHANCED',
+      startScan: false,
+      sbomOutput: this.sbomOutput,
+    };
+  }
+}
+
+class SignatureOnlyScanConfig extends ScanConfig {
+  constructor(_options?: SignatureOnlyConfigOptions) {
+    super();
+  }
+
+  public bind(): ScanConfigBindOutput {
+    return {
+      scanType: 'SIGNATURE_ONLY',
       startScan: false,
     };
   }

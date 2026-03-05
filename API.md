@@ -271,6 +271,119 @@ The log group to output scan logs.
 
 ---
 
+### CosignKmsVerificationOptions <a name="CosignKmsVerificationOptions" id="ecr-scan-verifier.CosignKmsVerificationOptions"></a>
+
+Options for Cosign signature verification using an AWS KMS key.
+
+**Note on Rekor Transparency Log:**
+This implementation skips Rekor transparency log verification and verifies only
+the cryptographic signature using the KMS key.
+The Lambda function always uses the `--insecure-ignore-tlog` flag when running cosign verify.
+
+> [https://docs.sigstore.dev/cosign/key_management/overview/](https://docs.sigstore.dev/cosign/key_management/overview/)
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.CosignKmsVerificationOptions.Initializer"></a>
+
+```typescript
+import { CosignKmsVerificationOptions } from 'ecr-scan-verifier'
+
+const cosignKmsVerificationOptions: CosignKmsVerificationOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.key">key</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | AWS KMS key used to verify the image signature. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
+
+---
+
+##### `key`<sup>Required</sup> <a name="key" id="ecr-scan-verifier.CosignKmsVerificationOptions.property.key"></a>
+
+```typescript
+public readonly key: IKey;
+```
+
+- *Type:* aws-cdk-lib.aws_kms.IKey
+
+AWS KMS key used to verify the image signature.
+
+---
+
+### CosignPublicKeyVerificationOptions <a name="CosignPublicKeyVerificationOptions" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions"></a>
+
+Options for Cosign signature verification using a public key.
+
+**Note on Rekor Transparency Log:**
+This implementation skips Rekor transparency log verification and verifies only
+the cryptographic signature using the public key.
+The Lambda function always uses the `--insecure-ignore-tlog` flag when running cosign verify.
+
+> [https://docs.sigstore.dev/cosign/key_management/overview/](https://docs.sigstore.dev/cosign/key_management/overview/)
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.Initializer"></a>
+
+```typescript
+import { CosignPublicKeyVerificationOptions } from 'ecr-scan-verifier'
+
+const cosignPublicKeyVerificationOptions: CosignPublicKeyVerificationOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey">publicKey</a></code> | <code>string</code> | The PEM-encoded public key content used to verify the image signature. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
+
+---
+
+##### `publicKey`<sup>Required</sup> <a name="publicKey" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey"></a>
+
+```typescript
+public readonly publicKey: string;
+```
+
+- *Type:* string
+
+The PEM-encoded public key content used to verify the image signature.
+
+---
+
+*Example*
+
+```typescript
+'-----BEGIN PUBLIC KEY-----\nMIIBI...\n-----END PUBLIC KEY-----'
+```
+
+
 ### EcrScanVerifierProps <a name="EcrScanVerifierProps" id="ecr-scan-verifier.EcrScanVerifierProps"></a>
 
 Properties for EcrScanVerifier Construct.
@@ -294,9 +407,9 @@ const ecrScanVerifierProps: EcrScanVerifierProps = { ... }
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.failOnVulnerability">failOnVulnerability</a></code> | <code>boolean</code> | Whether to fail the CloudFormation deployment if vulnerabilities are detected above the severity threshold. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.ignoreFindings">ignoreFindings</a></code> | <code>string[]</code> | Finding IDs to ignore during vulnerability evaluation. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.imageTag">imageTag</a></code> | <code>string</code> | Image tag or digest to scan. |
-| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM (Software Bill of Materials) output configuration. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanLogsOutput">scanLogsOutput</a></code> | <code><a href="#ecr-scan-verifier.ScanLogsOutput">ScanLogsOutput</a></code> | Configuration for scan logs output. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.severity">severity</a></code> | <code><a href="#ecr-scan-verifier.Severity">Severity</a>[]</code> | Severity threshold for vulnerability detection. |
+| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.signatureVerification">signatureVerification</a></code> | <code><a href="#ecr-scan-verifier.SignatureVerification">SignatureVerification</a></code> | Signature verification configuration for the container image. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.suppressErrorOnRollback">suppressErrorOnRollback</a></code> | <code>boolean</code> | Suppress errors during rollback scanner Lambda execution. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.vulnsNotificationTopic">vulnsNotificationTopic</a></code> | <code>aws-cdk-lib.aws_sns.ITopic</code> | SNS topic for vulnerability notification. |
 
@@ -410,25 +523,6 @@ If the value starts with 'sha256:', it is treated as a digest.
 
 ---
 
-##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.EcrScanVerifierProps.property.sbomOutput"></a>
-
-```typescript
-public readonly sbomOutput: SbomOutput;
-```
-
-- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
-- *Default:* no SBOM output
-
-SBOM (Software Bill of Materials) output configuration.
-
-SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
-and uploads it to S3.
-
-**Note**: SBOM export is only available with Enhanced scanning (Amazon Inspector).
-Using with Basic scanning will throw an error.
-
----
-
 ##### `scanLogsOutput`<sup>Optional</sup> <a name="scanLogsOutput" id="ecr-scan-verifier.EcrScanVerifierProps.property.scanLogsOutput"></a>
 
 ```typescript
@@ -455,6 +549,21 @@ Severity threshold for vulnerability detection.
 
 If vulnerabilities at or above any of the specified severity levels are found,
 the scan will be considered as having found vulnerabilities.
+
+---
+
+##### `signatureVerification`<sup>Optional</sup> <a name="signatureVerification" id="ecr-scan-verifier.EcrScanVerifierProps.property.signatureVerification"></a>
+
+```typescript
+public readonly signatureVerification: SignatureVerification;
+```
+
+- *Type:* <a href="#ecr-scan-verifier.SignatureVerification">SignatureVerification</a>
+- *Default:* no signature verification
+
+Signature verification configuration for the container image.
+
+Verifies the image signature before scanning using Notation (AWS Signer) or Cosign (Sigstore).
 
 ---
 
@@ -496,6 +605,84 @@ Options for enhanced ECR image scanning (Amazon Inspector).
 import { EnhancedScanConfigOptions } from 'ecr-scan-verifier'
 
 const enhancedScanConfigOptions: EnhancedScanConfigOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.EnhancedScanConfigOptions.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM (Software Bill of Materials) output configuration. |
+
+---
+
+##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.EnhancedScanConfigOptions.property.sbomOutput"></a>
+
+```typescript
+public readonly sbomOutput: SbomOutput;
+```
+
+- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
+- *Default:* no SBOM output
+
+SBOM (Software Bill of Materials) output configuration.
+
+SBOM export uses Amazon Inspector's CreateSbomExport API to generate SBOM
+and uploads it to S3.
+
+---
+
+### NotationVerificationOptions <a name="NotationVerificationOptions" id="ecr-scan-verifier.NotationVerificationOptions"></a>
+
+Options for Notation (AWS Signer) signature verification.
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.NotationVerificationOptions.Initializer"></a>
+
+```typescript
+import { NotationVerificationOptions } from 'ecr-scan-verifier'
+
+const notationVerificationOptions: NotationVerificationOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.NotationVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.NotationVerificationOptions.property.trustedIdentities">trustedIdentities</a></code> | <code>string[]</code> | Trusted signing profile ARNs. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.NotationVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
+
+---
+
+##### `trustedIdentities`<sup>Required</sup> <a name="trustedIdentities" id="ecr-scan-verifier.NotationVerificationOptions.property.trustedIdentities"></a>
+
+```typescript
+public readonly trustedIdentities: string[];
+```
+
+- *Type:* string[]
+
+Trusted signing profile ARNs.
+
+At least one signing profile ARN must be specified.
+
+---
+
+*Example*
+
+```typescript
+['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile']
 ```
 
 
@@ -757,8 +944,9 @@ const scanConfigBindOutput: ScanConfigBindOutput = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.scanType">scanType</a></code> | <code>string</code> | The scan type ('BASIC' or 'ENHANCED'). |
+| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.scanType">scanType</a></code> | <code>string</code> | The scan type ('BASIC', 'ENHANCED', or 'SIGNATURE_ONLY'). |
 | <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.startScan">startScan</a></code> | <code>boolean</code> | Whether to start an image scan via StartImageScan API. |
+| <code><a href="#ecr-scan-verifier.ScanConfigBindOutput.property.sbomOutput">sbomOutput</a></code> | <code><a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a></code> | SBOM output configuration (Enhanced scanning only). |
 
 ---
 
@@ -770,7 +958,7 @@ public readonly scanType: string;
 
 - *Type:* string
 
-The scan type ('BASIC' or 'ENHANCED').
+The scan type ('BASIC', 'ENHANCED', or 'SIGNATURE_ONLY').
 
 ---
 
@@ -783,6 +971,18 @@ public readonly startScan: boolean;
 - *Type:* boolean
 
 Whether to start an image scan via StartImageScan API.
+
+---
+
+##### `sbomOutput`<sup>Optional</sup> <a name="sbomOutput" id="ecr-scan-verifier.ScanConfigBindOutput.property.sbomOutput"></a>
+
+```typescript
+public readonly sbomOutput: SbomOutput;
+```
+
+- *Type:* <a href="#ecr-scan-verifier.SbomOutput">SbomOutput</a>
+
+SBOM output configuration (Enhanced scanning only).
 
 ---
 
@@ -815,6 +1015,136 @@ public readonly type: ScanLogsOutputType;
 - *Type:* <a href="#ecr-scan-verifier.ScanLogsOutputType">ScanLogsOutputType</a>
 
 The type of scan logs output.
+
+---
+
+### SignatureOnlyConfigOptions <a name="SignatureOnlyConfigOptions" id="ecr-scan-verifier.SignatureOnlyConfigOptions"></a>
+
+Options for signature-only verification (no scanning).
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.SignatureOnlyConfigOptions.Initializer"></a>
+
+```typescript
+import { SignatureOnlyConfigOptions } from 'ecr-scan-verifier'
+
+const signatureOnlyConfigOptions: SignatureOnlyConfigOptions = { ... }
+```
+
+
+### SignatureVerificationBindOutput <a name="SignatureVerificationBindOutput" id="ecr-scan-verifier.SignatureVerificationBindOutput"></a>
+
+Output of SignatureVerification.bind().
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.SignatureVerificationBindOutput.Initializer"></a>
+
+```typescript
+import { SignatureVerificationBindOutput } from 'ecr-scan-verifier'
+
+const signatureVerificationBindOutput: SignatureVerificationBindOutput = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment on unsigned images. |
+| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.type">type</a></code> | <code>string</code> | The verification type. |
+| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.kmsKeyArn">kmsKeyArn</a></code> | <code>string</code> | KMS key ARN (Cosign KMS only). |
+| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.publicKey">publicKey</a></code> | <code>string</code> | Public key content (Cosign public key only). |
+| <code><a href="#ecr-scan-verifier.SignatureVerificationBindOutput.property.trustedIdentities">trustedIdentities</a></code> | <code>string[]</code> | Trusted signing profile ARNs (Notation only). |
+
+---
+
+##### `failOnUnsigned`<sup>Required</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+
+Whether to fail the deployment on unsigned images.
+
+---
+
+##### `type`<sup>Required</sup> <a name="type" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.type"></a>
+
+```typescript
+public readonly type: string;
+```
+
+- *Type:* string
+
+The verification type.
+
+---
+
+##### `kmsKeyArn`<sup>Optional</sup> <a name="kmsKeyArn" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.kmsKeyArn"></a>
+
+```typescript
+public readonly kmsKeyArn: string;
+```
+
+- *Type:* string
+
+KMS key ARN (Cosign KMS only).
+
+---
+
+##### `publicKey`<sup>Optional</sup> <a name="publicKey" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.publicKey"></a>
+
+```typescript
+public readonly publicKey: string;
+```
+
+- *Type:* string
+
+Public key content (Cosign public key only).
+
+---
+
+##### `trustedIdentities`<sup>Optional</sup> <a name="trustedIdentities" id="ecr-scan-verifier.SignatureVerificationBindOutput.property.trustedIdentities"></a>
+
+```typescript
+public readonly trustedIdentities: string[];
+```
+
+- *Type:* string[]
+
+Trusted signing profile ARNs (Notation only).
+
+---
+
+### VerificationOptions <a name="VerificationOptions" id="ecr-scan-verifier.VerificationOptions"></a>
+
+Common options for signature verification.
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.VerificationOptions.Initializer"></a>
+
+```typescript
+import { VerificationOptions } from 'ecr-scan-verifier'
+
+const verificationOptions: VerificationOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.VerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.VerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 
@@ -912,7 +1242,8 @@ Output SBOM in SPDX 2.3 JSON format.
 Configuration for ECR image scan type.
 
 Use `ScanConfig.basic()` for ECR native basic scanning,
-or `ScanConfig.enhanced()` for Amazon Inspector enhanced scanning.
+`ScanConfig.enhanced()` for Amazon Inspector enhanced scanning,
+or `ScanConfig.signatureOnly()` for signature verification without scanning.
 
 #### Initializers <a name="Initializers" id="ecr-scan-verifier.ScanConfig.Initializer"></a>
 
@@ -949,6 +1280,7 @@ Returns the scan configuration.
 | --- | --- |
 | <code><a href="#ecr-scan-verifier.ScanConfig.basic">basic</a></code> | Basic scanning using Amazon ECR native scanning. |
 | <code><a href="#ecr-scan-verifier.ScanConfig.enhanced">enhanced</a></code> | Enhanced scanning using Amazon Inspector. |
+| <code><a href="#ecr-scan-verifier.ScanConfig.signatureOnly">signatureOnly</a></code> | Signature verification only (no vulnerability scanning). |
 
 ---
 
@@ -987,6 +1319,28 @@ Ensure Amazon Inspector is enabled for your registry.
 ###### `options`<sup>Optional</sup> <a name="options" id="ecr-scan-verifier.ScanConfig.enhanced.parameter.options"></a>
 
 - *Type:* <a href="#ecr-scan-verifier.EnhancedScanConfigOptions">EnhancedScanConfigOptions</a>
+
+---
+
+##### `signatureOnly` <a name="signatureOnly" id="ecr-scan-verifier.ScanConfig.signatureOnly"></a>
+
+```typescript
+import { ScanConfig } from 'ecr-scan-verifier'
+
+ScanConfig.signatureOnly(options?: SignatureOnlyConfigOptions)
+```
+
+Signature verification only (no vulnerability scanning).
+
+Verifies the image signature without performing vulnerability scanning.
+This mode skips ECR/Inspector scanning entirely and only validates the image signature.
+
+**Requirements**:
+- `signatureVerification` must be specified in EcrScanVerifierProps
+
+###### `options`<sup>Optional</sup> <a name="options" id="ecr-scan-verifier.ScanConfig.signatureOnly.parameter.options"></a>
+
+- *Type:* <a href="#ecr-scan-verifier.SignatureOnlyConfigOptions">SignatureOnlyConfigOptions</a>
 
 ---
 
@@ -1076,6 +1430,124 @@ Scan logs output to S3 bucket.
 ###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.ScanLogsOutput.s3.parameter.options"></a>
 
 - *Type:* <a href="#ecr-scan-verifier.S3OutputProps">S3OutputProps</a>
+
+---
+
+
+
+### SignatureVerification <a name="SignatureVerification" id="ecr-scan-verifier.SignatureVerification"></a>
+
+Signature verification configuration for container images.
+
+Supports Notation (AWS Signer) and Cosign (Sigstore) verification methods.
+Signature verification is performed before the vulnerability scan during deployment.
+
+#### Initializers <a name="Initializers" id="ecr-scan-verifier.SignatureVerification.Initializer"></a>
+
+```typescript
+import { SignatureVerification } from 'ecr-scan-verifier'
+
+new SignatureVerification()
+```
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+
+---
+
+#### Methods <a name="Methods" id="Methods"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#ecr-scan-verifier.SignatureVerification.bind">bind</a></code> | Returns the signature verification configuration. |
+
+---
+
+##### `bind` <a name="bind" id="ecr-scan-verifier.SignatureVerification.bind"></a>
+
+```typescript
+public bind(grantee: IGrantable): SignatureVerificationBindOutput
+```
+
+Returns the signature verification configuration.
+
+###### `grantee`<sup>Required</sup> <a name="grantee" id="ecr-scan-verifier.SignatureVerification.bind.parameter.grantee"></a>
+
+- *Type:* aws-cdk-lib.aws_iam.IGrantable
+
+---
+
+#### Static Functions <a name="Static Functions" id="Static Functions"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#ecr-scan-verifier.SignatureVerification.cosignKms">cosignKms</a></code> | Verify image signature using Cosign with an AWS KMS key. |
+| <code><a href="#ecr-scan-verifier.SignatureVerification.cosignPublicKey">cosignPublicKey</a></code> | Verify image signature using Cosign with a public key. |
+| <code><a href="#ecr-scan-verifier.SignatureVerification.notation">notation</a></code> | Verify image signature using Notation (AWS Signer). |
+
+---
+
+##### `cosignKms` <a name="cosignKms" id="ecr-scan-verifier.SignatureVerification.cosignKms"></a>
+
+```typescript
+import { SignatureVerification } from 'ecr-scan-verifier'
+
+SignatureVerification.cosignKms(options: CosignKmsVerificationOptions)
+```
+
+Verify image signature using Cosign with an AWS KMS key.
+
+**Important:** Cosign verification skips Rekor transparency log verification.
+
+Sign your images with:
+```bash
+cosign sign --tlog-upload=false --key awskms:///KMS_KEY_ARN IMAGE
+```
+
+###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.cosignKms.parameter.options"></a>
+
+- *Type:* <a href="#ecr-scan-verifier.CosignKmsVerificationOptions">CosignKmsVerificationOptions</a>
+
+---
+
+##### `cosignPublicKey` <a name="cosignPublicKey" id="ecr-scan-verifier.SignatureVerification.cosignPublicKey"></a>
+
+```typescript
+import { SignatureVerification } from 'ecr-scan-verifier'
+
+SignatureVerification.cosignPublicKey(options: CosignPublicKeyVerificationOptions)
+```
+
+Verify image signature using Cosign with a public key.
+
+**Important:** Cosign verification skips Rekor transparency log verification.
+
+Sign your images with:
+```bash
+cosign sign --tlog-upload=false --key cosign.pub IMAGE
+```
+
+###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.cosignPublicKey.parameter.options"></a>
+
+- *Type:* <a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions">CosignPublicKeyVerificationOptions</a>
+
+---
+
+##### `notation` <a name="notation" id="ecr-scan-verifier.SignatureVerification.notation"></a>
+
+```typescript
+import { SignatureVerification } from 'ecr-scan-verifier'
+
+SignatureVerification.notation(options: NotationVerificationOptions)
+```
+
+Verify image signature using Notation (AWS Signer).
+
+Requires the image to be signed with AWS Signer.
+
+###### `options`<sup>Required</sup> <a name="options" id="ecr-scan-verifier.SignatureVerification.notation.parameter.options"></a>
+
+- *Type:* <a href="#ecr-scan-verifier.NotationVerificationOptions">NotationVerificationOptions</a>
 
 ---
 

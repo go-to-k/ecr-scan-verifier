@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "CosignKmsSignatureTest/DefaultTest": {
+      "stacks": [
+        "CosignKmsSignatureStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "CosignKmsSignatureTest/DefaultTest/DeployAssert",
+      "assertionStackName": "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5"
+    }
+  }
+}

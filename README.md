@@ -1,8 +1,8 @@
 # ecr-scan-verifier
 
-An AWS CDK Construct that **blocks deployments when ECR Image Scanning detects vulnerabilities**, and optionally **verifies container image signatures**.
+An AWS CDK Construct that **blocks deployments to ECS, Lambda, and other services when ECR Image Scanning detects vulnerabilities**, and optionally **verifies container image signatures**.
 
-It scans container images during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning, and can verify image signatures with Notation (AWS Signer) or Cosign (Sigstore).
+It scans specified container images during CDK deployment using Basic or Enhanced (Amazon Inspector) scanning, and can verify image signatures with Notation (AWS Signer) or Cosign (Sigstore).
 
 - **Block any construct's deployment** — block ECS, Lambda, or any CDK construct on vulnerability detection via `blockConstructs`
 - **Signature verification** — verify image signatures with Notation (AWS Signer) or Cosign (Sigstore) before scanning

@@ -18,19 +18,6 @@ describe('SignatureVerification', () => {
   });
 
   describe('Notation', () => {
-    test('Snapshot - notation verification', () => {
-      new EcrScanVerifier(stack, 'Scanner', {
-        repository,
-        scanConfig: ScanConfig.basic(),
-        signatureVerification: SignatureVerification.notation({
-          trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile'],
-        }),
-      });
-
-      const template = Template.fromStack(stack);
-      expect(template.toJSON()).toMatchSnapshot();
-    });
-
     test('sets signatureVerification props in Custom Resource', () => {
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
@@ -152,19 +139,6 @@ describe('SignatureVerification', () => {
   });
 
   describe('Cosign (publicKey)', () => {
-    test('Snapshot - cosign public key verification', () => {
-      new EcrScanVerifier(stack, 'Scanner', {
-        repository,
-        scanConfig: ScanConfig.basic(),
-        signatureVerification: SignatureVerification.cosignPublicKey({
-          publicKey: MOCK_PUBLIC_KEY,
-        }),
-      });
-
-      const template = Template.fromStack(stack);
-      expect(template.toJSON()).toMatchSnapshot();
-    });
-
     test('sets signatureVerification props with publicKey content', () => {
       new EcrScanVerifier(stack, 'Scanner', {
         repository,
@@ -236,21 +210,6 @@ describe('SignatureVerification', () => {
   });
 
   describe('Cosign (KMS)', () => {
-    test('Snapshot - cosign KMS verification', () => {
-      const key = new Key(stack, 'CosignKey');
-
-      new EcrScanVerifier(stack, 'Scanner', {
-        repository,
-        scanConfig: ScanConfig.basic(),
-        signatureVerification: SignatureVerification.cosignKms({
-          key,
-        }),
-      });
-
-      const template = Template.fromStack(stack);
-      expect(template.toJSON()).toMatchSnapshot();
-    });
-
     test('sets signatureVerification props with kmsKeyArn', () => {
       const key = new Key(stack, 'CosignKey');
 

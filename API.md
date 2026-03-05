@@ -294,8 +294,21 @@ const cosignKmsVerificationOptions: CosignKmsVerificationOptions = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.key">key</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | AWS KMS key used to verify the image signature. |
 | <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.CosignKmsVerificationOptions.property.key">key</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | AWS KMS key used to verify the image signature. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 
@@ -311,19 +324,6 @@ AWS KMS key used to verify the image signature.
 
 The Lambda function is automatically granted `kms:DescribeKey`, `kms:GetPublicKey`,
 and `kms:Verify` permissions on this key.
-
----
-
-##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignKmsVerificationOptions.property.failOnUnsigned"></a>
-
-```typescript
-public readonly failOnUnsigned: boolean;
-```
-
-- *Type:* boolean
-- *Default:* true
-
-Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 
@@ -350,8 +350,21 @@ const cosignPublicKeyVerificationOptions: CosignPublicKeyVerificationOptions = {
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey">publicKey</a></code> | <code>string</code> | The PEM-encoded public key content used to verify the image signature. |
 | <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.publicKey">publicKey</a></code> | <code>string</code> | The PEM-encoded public key content used to verify the image signature. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 
@@ -373,19 +386,6 @@ The PEM-encoded public key content used to verify the image signature.
 '-----BEGIN PUBLIC KEY-----\nMIIBI...\n-----END PUBLIC KEY-----'
 ```
 
-
-##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.CosignPublicKeyVerificationOptions.property.failOnUnsigned"></a>
-
-```typescript
-public readonly failOnUnsigned: boolean;
-```
-
-- *Type:* boolean
-- *Default:* true
-
-Whether to fail the deployment if the image is unsigned or signature verification fails.
-
----
 
 ### EcrScanVerifierProps <a name="EcrScanVerifierProps" id="ecr-scan-verifier.EcrScanVerifierProps"></a>
 
@@ -650,8 +650,21 @@ const notationVerificationOptions: NotationVerificationOptions = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#ecr-scan-verifier.NotationVerificationOptions.property.trustedIdentities">trustedIdentities</a></code> | <code>string[]</code> | Trusted signing profile ARNs. |
 | <code><a href="#ecr-scan-verifier.NotationVerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+| <code><a href="#ecr-scan-verifier.NotationVerificationOptions.property.trustedIdentities">trustedIdentities</a></code> | <code>string[]</code> | Trusted signing profile ARNs. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.NotationVerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 
@@ -675,19 +688,6 @@ At least one signing profile ARN must be specified.
 ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile']
 ```
 
-
-##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.NotationVerificationOptions.property.failOnUnsigned"></a>
-
-```typescript
-public readonly failOnUnsigned: boolean;
-```
-
-- *Type:* boolean
-- *Default:* true
-
-Whether to fail the deployment if the image is unsigned or signature verification fails.
-
----
 
 ### S3OutputOptions <a name="S3OutputOptions" id="ecr-scan-verifier.S3OutputOptions"></a>
 
@@ -1115,6 +1115,39 @@ public readonly trustedIdentities: string[];
 - *Type:* string[]
 
 Trusted signing profile ARNs (Notation only).
+
+---
+
+### VerificationOptions <a name="VerificationOptions" id="ecr-scan-verifier.VerificationOptions"></a>
+
+Common options for signature verification.
+
+#### Initializer <a name="Initializer" id="ecr-scan-verifier.VerificationOptions.Initializer"></a>
+
+```typescript
+import { VerificationOptions } from 'ecr-scan-verifier'
+
+const verificationOptions: VerificationOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#ecr-scan-verifier.VerificationOptions.property.failOnUnsigned">failOnUnsigned</a></code> | <code>boolean</code> | Whether to fail the deployment if the image is unsigned or signature verification fails. |
+
+---
+
+##### `failOnUnsigned`<sup>Optional</sup> <a name="failOnUnsigned" id="ecr-scan-verifier.VerificationOptions.property.failOnUnsigned"></a>
+
+```typescript
+public readonly failOnUnsigned: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true
+
+Whether to fail the deployment if the image is unsigned or signature verification fails.
 
 ---
 

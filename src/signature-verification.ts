@@ -2,9 +2,21 @@ import { IGrantable } from 'aws-cdk-lib/aws-iam';
 import { IKey } from 'aws-cdk-lib/aws-kms';
 
 /**
+ * Common options for signature verification.
+ */
+export interface VerificationOptions {
+  /**
+   * Whether to fail the deployment if the image is unsigned or signature verification fails.
+   *
+   * @default true
+   */
+  readonly failOnUnsigned?: boolean;
+}
+
+/**
  * Options for Notation (AWS Signer) signature verification.
  */
-export interface NotationVerificationOptions {
+export interface NotationVerificationOptions extends VerificationOptions {
   /**
    * Trusted signing profile ARNs.
    *
@@ -13,13 +25,6 @@ export interface NotationVerificationOptions {
    * @example ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/MyProfile']
    */
   readonly trustedIdentities: string[];
-
-  /**
-   * Whether to fail the deployment if the image is unsigned or signature verification fails.
-   *
-   * @default true
-   */
-  readonly failOnUnsigned?: boolean;
 }
 
 /**
@@ -32,20 +37,13 @@ export interface NotationVerificationOptions {
  *
  * @see https://docs.sigstore.dev/cosign/key_management/overview/
  */
-export interface CosignPublicKeyVerificationOptions {
+export interface CosignPublicKeyVerificationOptions extends VerificationOptions {
   /**
    * The PEM-encoded public key content used to verify the image signature.
    *
    * @example '-----BEGIN PUBLIC KEY-----\nMIIBI...\n-----END PUBLIC KEY-----'
    */
   readonly publicKey: string;
-
-  /**
-   * Whether to fail the deployment if the image is unsigned or signature verification fails.
-   *
-   * @default true
-   */
-  readonly failOnUnsigned?: boolean;
 }
 
 /**
@@ -58,7 +56,7 @@ export interface CosignPublicKeyVerificationOptions {
  *
  * @see https://docs.sigstore.dev/cosign/key_management/overview/
  */
-export interface CosignKmsVerificationOptions {
+export interface CosignKmsVerificationOptions extends VerificationOptions {
   /**
    * AWS KMS key used to verify the image signature.
    *
@@ -66,13 +64,6 @@ export interface CosignKmsVerificationOptions {
    * and `kms:Verify` permissions on this key.
    */
   readonly key: IKey;
-
-  /**
-   * Whether to fail the deployment if the image is unsigned or signature verification fails.
-   *
-   * @default true
-   */
-  readonly failOnUnsigned?: boolean;
 }
 
 /**

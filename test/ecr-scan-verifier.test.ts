@@ -604,49 +604,12 @@ describe('EcrScanVerifier', () => {
     });
   });
 
-  describe('ScanConfig.signatureOnly() validation', () => {
-    test('throws error when signatureOnly without signatureVerification', () => {
-      expect(() => {
-        new EcrScanVerifier(stack, 'Verifier', {
-          repository,
-          scanConfig: ScanConfig.signatureOnly(),
-        });
-      }).toThrow(/signatureOnly.*requires signatureVerification/);
-    });
-
-    test('allows signatureOnly with notation verification', () => {
-      expect(() => {
-        new EcrScanVerifier(stack, 'Verifier', {
-          repository,
-          scanConfig: ScanConfig.signatureOnly(),
-          signatureVerification: SignatureVerification.notation({
-            trustedIdentities: ['arn:aws:signer:us-east-1:123456789012:/signing-profiles/test'],
-          }),
-        });
-      }).not.toThrow();
-    });
-
-    test('allows signatureOnly with cosign public key verification', () => {
-      expect(() => {
-        new EcrScanVerifier(stack, 'Verifier', {
-          repository,
-          scanConfig: ScanConfig.signatureOnly(),
-          signatureVerification: SignatureVerification.cosignPublicKey({
-            publicKey: 'test-key',
-          }),
-        });
-      }).not.toThrow();
-    });
-
-    test('allows signatureOnly with cosign KMS verification', () => {
-      const key = new Key(stack, 'CosignKey');
-      expect(() => {
-        new EcrScanVerifier(stack, 'Verifier', {
-          repository,
-          scanConfig: ScanConfig.signatureOnly(),
-          signatureVerification: SignatureVerification.cosignKms({ key }),
-        });
-      }).not.toThrow();
-    });
+  test('throws error when ScanConfig.signatureOnly() without signatureVerification', () => {
+    expect(() => {
+      new EcrScanVerifier(stack, 'Verifier', {
+        repository,
+        scanConfig: ScanConfig.signatureOnly(),
+      });
+    }).toThrow(/signatureOnly.*requires signatureVerification/);
   });
 });

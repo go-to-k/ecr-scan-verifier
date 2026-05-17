@@ -1,6 +1,11 @@
 # Integration Tests
 
-> **Using Claude Code?** Invoke the `/integ-test` skill (`.claude/skills/integ-test/`) to orchestrate the steps below automatically — Inspector enable/disable + propagation waits, scan-on-push toggling, image signing, and cleanup. This README remains the authoritative reference for the underlying commands.
+> **Shortcuts**:
+>
+> - Source [`scripts/integ.sh`](../../scripts/integ.sh) for shell helpers: `inspector_status_all`, `inspector_enable_all`/`disable_all`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `ecr_signing_setup`/`teardown`, `cleanup_signature_artifacts`.
+> - In Claude Code, invoke the `/integ-test` skill (`.claude/skills/integ-test/`) to orchestrate the steps below — Inspector enable/disable + propagation waits, scan-on-push toggling, image signing, and cleanup.
+>
+> This README remains the authoritative reference for the underlying commands.
 
 Integration tests are split into three directories based on the required AWS account configuration.
 

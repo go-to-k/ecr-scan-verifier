@@ -1,7 +1,7 @@
 ---
 name: integ-test
 description: Orchestrate ecr-scan-verifier integ tests against real AWS. Handles Inspector enable/disable + propagation waits, scan-on-push toggling, image signing (Notation / Cosign KMS / Cosign Public Key / ECR Managed Signing), and cleanup. Use whenever the user wants to run anything under `test/integ/`.
-argument-hint: "<status|basic|enhanced|signature|signature-notation|signature-cosign-kms|signature-cosign-publickey|signature-ecr-signing|all|cleanup-signature> [--snapshot-only] [--no-restore]"
+argument-hint: "<status|basic|enhanced|signature|signature-notation|signature-cosign-kms|signature-cosign-publickey|signature-ecr-signing|all|cleanup|cleanup-signature> [--snapshot-only] [--no-restore]"
 ---
 
 # integ-test
@@ -44,8 +44,9 @@ If you only want the cheap snapshot comparison, pass `--snapshot-only`. The skil
 - `signature-cosign-kms` — Cosign with KMS sign + run `integ.cosign-kms`
 - `signature-cosign-publickey` — Cosign keypair sign + run `integ.cosign-publickey`
 - `signature-ecr-signing` — ECR Managed Signing setup + run `integ.ecr-signing`
-- `all` — run **everything** (enhanced → all signatures → basic), then auto-run `cleanup-signature`
-- `cleanup-signature` — delete SSM params, schedule KMS key deletion, remove local key files
+- `all` — run **everything** (enhanced → all signatures → basic), then auto-run `cleanup`
+- `cleanup` — full teardown: signature artifacts + ECR signing repo + scan-on-push reset. Inspector state left alone (flip via `basic` / `enhanced` if needed). Idempotent.
+- `cleanup-signature` — narrower: only signature artifacts (SSM params, KMS key deletion, local cosign keypair). Subset of `cleanup`.
 
 Flags:
 
@@ -428,13 +429,40 @@ if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
   wait_inspector_status_all ENABLED || exit 1
 fi
 
-# --- 7: cleanup ---
+# --- 7: cleanup (full) ---
 cleanup_signature_artifacts
+ecr_signing_teardown
+scan_on_push_set false
 
 printf '%s\n' "${results[@]}"
 ```
 
 Wall-clock budget for a clean `all` run: roughly 45–80 minutes depending on Inspector warmup and signature retries. Plan accordingly.
+
+## Mode: `cleanup`
+
+Full teardown of everything this skill can leave behind. Idempotent — safe to run any number of times, even when nothing was set up. Used as the final step of `all`, and useful on its own when interrupting a partial signature run.
+
+What it touches:
+
+- Signature artifacts (delegates to `cleanup_signature_artifacts`): SSM params, KMS key 7-day deletion schedule, local cosign keypair
+- ECR signing dedicated repo + signing-configuration (delegates to `ecr_signing_teardown`)
+- Bootstrap-repo scan-on-push reset to `false` in all three regions
+
+What it does NOT touch:
+
+- Inspector enable/disable state (per-account decision; flip via `basic` / `enhanced` if needed)
+- `EcrScanVerifierTestProfile` AWS Signer profile (cancellation is permanent — left Active by design)
+- Pushed Docker / signature artifacts in the bootstrap repo (immutable, cannot be cleaned)
+
+```bash
+. scripts/integ.sh
+cleanup_signature_artifacts
+ecr_signing_teardown          # idempotent (|| true on each step)
+scan_on_push_set false
+```
+
+Report what was actually removed vs what was already absent.
 
 ## Mode: `cleanup-signature`
 

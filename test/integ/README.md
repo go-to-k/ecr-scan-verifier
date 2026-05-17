@@ -382,7 +382,8 @@ If invoked without arguments, the skill asks (1) which mode and (2) whether to r
 | `signature-cosign-publickey` | Sign with Cosign + local keypair and run `integ.cosign-publickey`. |
 | `signature-ecr-signing` | Set up ECR Managed Signing, run `integ.ecr-signing`, tear down (even on failure). |
 | `all` | Run everything end-to-end (`enhanced` → all signatures → `basic`), always restore, auto-cleanup. |
-| `cleanup-signature` | Run `cleanup_signature_artifacts` (delete SSM params, schedule KMS deletion, remove local cosign keys). |
+| `cleanup` | Full teardown (signature artifacts + ECR signing repo + scan-on-push reset). Inspector state left alone. Idempotent. |
+| `cleanup-signature` | Narrower: only signature artifacts (subset of `cleanup`). |
 
 ### Flags
 

@@ -1,0 +1,25 @@
+# markgate configuration — https://github.com/go-to-k/markgate
+#
+# Gates:
+#   integ-docs — keeps the three integ-workflow sources in lockstep:
+#                .claude/skills/integ-test/SKILL.md (automated),
+#                test/integ/README.md (manual),
+#                scripts/integ.sh (shared helpers).
+#                Set by the /verify-integ-docs skill after
+#                scripts/verify-integ-docs.sh passes. The PreToolUse
+#                hook .claude/hooks/integ-docs-gate.sh blocks
+#                `gh pr create` / `gh pr merge` when stale.
+#
+# Scope is intentionally narrow — only the three files above. Integ
+# test files under test/integ/{basic,enhanced,signature}/ are NOT in
+# scope: adding a new test typically comes with a README/SKILL update
+# anyway, which trips the marker naturally. Gating on test file edits
+# directly would force re-verification on every test snapshot refresh.
+
+gates:
+  integ-docs:
+    hash: files
+    include:
+      - ".claude/skills/integ-test/SKILL.md"
+      - "test/integ/README.md"
+      - "scripts/integ.sh"

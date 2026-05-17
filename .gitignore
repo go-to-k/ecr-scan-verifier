@@ -61,4 +61,5 @@ junit.xml
 .jsii
 tsconfig.json
 !/API.md
+!/.github/workflows/verify-integ-docs.yml
 !/.projenrc.ts

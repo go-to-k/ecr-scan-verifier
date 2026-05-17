@@ -31,6 +31,7 @@ Both docs are intentionally redundant — the skill drives Claude through the wo
 
 - After editing any of `.claude/skills/integ-test/SKILL.md`, `test/integ/README.md`, or `scripts/integ.sh`.
 - The `integ-docs-gate.sh` PreToolUse hook blocks `gh pr create` / `gh pr merge` when the marker is stale for the current content of those files, so a missed run surfaces at PR time.
+- The `.github/workflows/verify-integ-docs.yml` workflow runs `scripts/verify-integ-docs.sh` on every pull request, so contributors who don't use Claude Code (or any pre-tool hook) still get blocked at the CI level.
 
 ## How
 

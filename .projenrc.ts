@@ -1,4 +1,5 @@
 import { awscdk } from 'projen';
+import { JobPermission } from 'projen/lib/github/workflows-model';
 import { NodePackageManager, TrailingComma, Transform } from 'projen/lib/javascript';
 const project = new awscdk.AwsCdkConstructLibrary({
   author: 'go-to-k',
@@ -115,5 +116,20 @@ project.projectBuild.compileTask.prependExec('pnpm install --frozen-lockfile && 
   cwd: 'assets/lambda',
 });
 project.projectBuild.testTask.exec('pnpm integ');
+
+// CI counterpart of the local /verify-integ-docs skill + integ-docs-gate hook.
+// The hook only fires for Bash invocations inside Claude Code, so anyone running
+// `gh pr create` from a regular shell bypasses it. This workflow closes that gap.
+// Pure shell — no node/setup needed, runs in seconds.
+const verifyIntegDocs = project.github!.addWorkflow('verify-integ-docs');
+verifyIntegDocs.on({ pullRequest: {}, workflowDispatch: {} });
+verifyIntegDocs.addJob('verify', {
+  runsOn: ['ubuntu-latest'],
+  permissions: { contents: JobPermission.READ },
+  steps: [
+    { name: 'Checkout', uses: 'actions/checkout@v5' },
+    { name: 'Run verify-integ-docs', run: './scripts/verify-integ-docs.sh' },
+  ],
+});
 
 project.synth();

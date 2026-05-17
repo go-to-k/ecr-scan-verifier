@@ -10,7 +10,7 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  * Prerequisites:
  *   1. Create an AWS Signer signing profile:
  *     aws signer put-signing-profile \
- *       --profile-name EcrScanVerifierTest \
+ *       --profile-name EcrScanVerifierTestProfile \
  *       --platform-id Notation-OCI-SHA384-ECDSA
  *
  *   2. Install notation CLI + AWS Signer plugin:
@@ -27,7 +27,7 @@ const app = new App();
 const stack = new Stack(app, 'NotationSignatureStack');
 
 // Use CFn pseudo parameters to avoid hardcoding account ID in snapshots
-const signerProfileArn = `arn:aws:signer:${Aws.REGION}:${Aws.ACCOUNT_ID}:/signing-profiles/EcrScanVerifierTest`;
+const signerProfileArn = `arn:aws:signer:${Aws.REGION}:${Aws.ACCOUNT_ID}:/signing-profiles/EcrScanVerifierTestProfile`;
 
 const image = new DockerImageAsset(stack, 'DockerImage', {
   directory: resolve(__dirname, '../fixtures/docker-image'),

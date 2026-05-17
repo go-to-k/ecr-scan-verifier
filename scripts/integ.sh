@@ -149,15 +149,41 @@ cleanup_signature_artifacts() {
 # --- signature-ecr-signing repo setup / teardown ----------------------------
 
 ECR_SIGNING_REPO_NAME="${ECR_SIGNING_REPO_NAME:-ecr-scan-verifier-integ-ecr-signing}"
+SIGNER_PROFILE_NAME="${SIGNER_PROFILE_NAME:-EcrScanVerifierTestProfile}"
+
+# Idempotent-ish wrapper. `put-signing-profile` is NOT actually idempotent
+# (returns ProfileAlreadyExists for an existing Active profile), so check
+# first and only create if missing. Echoes the ARN on stdout.
+signer_profile_ensure() {
+  local arn
+  arn="$(aws signer get-signing-profile --profile-name "$SIGNER_PROFILE_NAME" \
+    --query 'arn' --output text 2>/dev/null || true)"
+  if [ -z "$arn" ] || [ "$arn" = "None" ]; then
+    aws signer put-signing-profile \
+      --profile-name "$SIGNER_PROFILE_NAME" \
+      --platform-id Notation-OCI-SHA384-ECDSA >&2
+    arn="$(aws signer get-signing-profile --profile-name "$SIGNER_PROFILE_NAME" \
+      --query 'arn' --output text)"
+  fi
+  echo "$arn"
+}
+
+# Build the cosign signing-config the Lambda verifier expects: no rekor
+# (transparency log), no fulcio CA, no OIDC, no TSA. cosign 3.x will try
+# keyless flows even with --key if these fields are present, which manifests
+# as a hung "Signing artifact..." with no further output. Stripping them
+# lets a `--key`-based sign complete.
+cosign_minimal_signing_config() {
+  local out="${1:-/tmp/signing-config.json}"
+  curl -fsSL https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
+    jq 'del(.rekorTlogUrls, .oidcUrls, .caUrls, .tsaUrls)' > "$out"
+  echo "$out"
+}
 
 ecr_signing_setup() {
   local region profile_arn
   region="$(default_region)"
-  aws signer put-signing-profile \
-    --profile-name EcrScanVerifierTestProfile \
-    --platform-id Notation-OCI-SHA384-ECDSA
-  profile_arn="$(aws signer get-signing-profile \
-    --profile-name EcrScanVerifierTestProfile --query 'arn' --output text)"
+  profile_arn="$(signer_profile_ensure)"
   aws ecr create-repository --repository-name "$ECR_SIGNING_REPO_NAME" 2>/dev/null || true
 
   local cfg=/tmp/ecr-scan-verifier-signing-config.json

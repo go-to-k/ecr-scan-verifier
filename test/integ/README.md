@@ -2,7 +2,7 @@
 
 > **Shortcuts**:
 >
-> - For manual runs, source [`scripts/integ.sh`](../../scripts/integ.sh) once per shell. All the `for region in …` loops in this README collapse to helper calls (`inspector_status_all`, `inspector_enable_all` / `disable_all`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `ecr_signing_setup` / `teardown`, `cleanup_signature_artifacts`).
+> - For manual runs, source [`scripts/integ.sh`](../../scripts/integ.sh) once per shell. All the `for region in …` loops in this README collapse to helper calls (`inspector_status_all`, `inspector_enable_all` / `disable_all`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `ecr_signing_setup` / `teardown`, `cleanup_signature_artifacts`).
 > - In Claude Code, invoke the `/integ-test` skill (`.claude/skills/integ-test/`) to orchestrate the steps below — Inspector enable/disable + propagation waits, scan-on-push toggling, image signing, and cleanup. See [Using the `/integ-test` skill](#using-the-integ-test-skill) below.
 
 Integration tests are split into three directories based on the required AWS account configuration.
@@ -16,10 +16,14 @@ Tests deploy stacks across multiple regions (`us-east-1`, `us-east-2`, `us-west-
 ## Bootstrap (run once per shell)
 
 ```bash
+# Install local deps so pnpm scripts (which call `tsc` directly) can resolve them.
+pnpm install --frozen-lockfile
+
+# Source the helpers used throughout this document. The REGIONS array
+# (us-east-1 us-east-2 us-west-2) is set so `inspector_*_all` and
+# `scan_on_push_set` apply to all three at once.
 . scripts/integ.sh
 ```
-
-This defines the helpers used throughout this document. The `REGIONS` array (`us-east-1 us-east-2 us-west-2`) is exported so commands like `inspector_*_all` and `scan_on_push_set` apply to all three at once.
 
 ## Important Note
 
@@ -109,17 +113,15 @@ inspector_status_all
 
 Requires additional setup for signing. Works with both Basic and Enhanced scanning (the tests themselves are state-agnostic w.r.t. Inspector).
 
-> **Note on AWS Signer profiles:** Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused for signing. We intentionally leave the `EcrScanVerifierTestProfile` profile Active across test runs so the same name is reusable (`put-signing-profile` is idempotent for Active profiles). If you already have a profile in `Canceled` state from a previous run, use a different `--profile-name` once (e.g. `EcrScanVerifierTestProfile2`) and update subsequent commands accordingly.
+> **Note on AWS Signer profiles:** Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused for signing. We intentionally leave the `EcrScanVerifierTestProfile` profile Active across test runs so the same name is reusable. **`put-signing-profile` is NOT actually idempotent** — calling it for an existing Active profile returns `ProfileAlreadyExists`. Use `signer_profile_ensure` from `scripts/integ.sh` (checks first, then creates if missing). If you already have a profile in `Canceled` state from a previous run, use a different `--profile-name` once (e.g. `EcrScanVerifierTestProfile2`) and update subsequent commands accordingly.
 
 The signature flows below are mostly per-mode and don't share enough structure for helpers — they remain raw commands. Use `cleanup_signature_artifacts` once at the end of the day to tear down SSM/KMS state.
 
 #### Notation (AWS Signer)
 
 ```bash
-# 1. Create a signing profile
-aws signer put-signing-profile \
-  --profile-name EcrScanVerifierTestProfile \
-  --platform-id Notation-OCI-SHA384-ECDSA
+# 1. Ensure the signing profile exists (idempotent — get-or-create)
+PROFILE_ARN="$(signer_profile_ensure)"
 
 # 2. Install notation CLI + AWS Signer plugin
 #    https://docs.aws.amazon.com/signer/latest/developerguide/image-signing-prerequisites.html
@@ -142,9 +144,6 @@ ACCOUNT="$(account_id)"
 REGION="$(default_region)"
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
 REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
-PROFILE_ARN=$(aws signer get-signing-profile \
-  --profile-name EcrScanVerifierTestProfile --query 'arn' --output text)
-
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
 npx cdk synth --app 'node test/integ/signature/integ.notation.js' -o cdk.out
@@ -262,8 +261,10 @@ aws ecr get-login-password --region ${REGION} | cosign login --username AWS --pa
 # Sign the pushed image WITHOUT Rekor transparency log
 # This matches the Lambda verification behavior (always skips Rekor)
 # Create signing config without transparency log, then sign
-curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
-  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+# cosign 3.x requires stripping rekor, oidc, ca AND tsa from the signing-config
+# when using --key (keyful). Leaving any of them in causes a silent hang on
+# "Signing artifact...". `cosign_minimal_signing_config` does the strip in one call.
+cosign_minimal_signing_config /tmp/signing-config.json
 
 cosign sign --signing-config /tmp/signing-config.json --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
@@ -326,8 +327,10 @@ aws ecr get-login-password --region ${REGION} | cosign login --username AWS --pa
 
 # Sign the pushed image WITHOUT Rekor transparency log
 # This matches the Lambda verification behavior (always skips Rekor)
-curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
-  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+# cosign 3.x requires stripping rekor, oidc, ca AND tsa from the signing-config
+# when using --key (keyful). Leaving any of them in causes a silent hang on
+# "Signing artifact...". `cosign_minimal_signing_config` does the strip in one call.
+cosign_minimal_signing_config /tmp/signing-config.json
 
 COSIGN_PASSWORD="" cosign sign --signing-config /tmp/signing-config.json --key cosign.key "${REGISTRY}/${REPO}@${DIGEST}"
 

@@ -14,7 +14,9 @@ Most AWS-mutating primitives live in [`scripts/integ.sh`](../../../scripts/integ
 . scripts/integ.sh
 ```
 
-After sourcing you have: `account_id`, `default_region`, `inspector_status`, `inspector_status_all`, `inspector_enable_all`, `inspector_disable_all`, `wait_inspector_status`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `cleanup_signature_artifacts`, `ecr_signing_setup`, `ecr_signing_teardown`.
+After sourcing you have: `account_id`, `default_region`, `inspector_status`, `inspector_status_all`, `inspector_enable_all`, `inspector_disable_all`, `wait_inspector_status`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `cleanup_signature_artifacts`, `ecr_signing_setup`, `ecr_signing_teardown`.
+
+In a worktree (or any clone without `node_modules`), run `pnpm install --frozen-lockfile` first — the `pnpm integ:*` scripts call `tsc` directly and will fail with `sh: tsc: command not found` otherwise.
 
 ## Integ suite layout
 
@@ -196,19 +198,15 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 ## Mode: `signature-notation` (deploy)
 
-**Profile reuse**: AWS Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused. We intentionally keep `EcrScanVerifierTestProfile` `Active` across runs (`put-signing-profile` is idempotent on Active profiles). If you find it `Canceled`, use a new name (e.g. `EcrScanVerifierTestProfile2`) and substitute throughout.
+**Profile reuse**: AWS Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused. We intentionally keep `EcrScanVerifierTestProfile` `Active` across runs. **`put-signing-profile` is NOT actually idempotent** — calling it for an existing Active profile returns `ProfileAlreadyExists`. Use `signer_profile_ensure` from `scripts/integ.sh` (or check with `get-signing-profile` first). If you find it `Canceled`, use a new name (e.g. `EcrScanVerifierTestProfile2`) and substitute throughout.
 
 Pre-flight: `notation version` should succeed. If absent, install via the AWS Signer installer pkg (see `test/integ/README.md` → Notation install — do not improvise URLs).
 
 ```bash
-# 1. Idempotent profile create
-aws signer put-signing-profile \
-  --profile-name EcrScanVerifierTestProfile \
-  --platform-id Notation-OCI-SHA384-ECDSA
+# 1. Ensure profile exists (idempotent wrapper; raw put-signing-profile is NOT)
+PROFILE_ARN="$(signer_profile_ensure)"
 
 # 2. Synth + publish only the Docker asset (no stack deploy yet)
-PROFILE_ARN=$(aws signer get-signing-profile \
-  --profile-name EcrScanVerifierTestProfile --query 'arn' --output text)
 npx cdk synth --app 'node test/integ/signature/integ.notation.js' -o cdk.out
 npx cdk-assets -p cdk.out/NotationSignatureStack.assets.json publish
 
@@ -269,8 +267,10 @@ DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --query 'imageDetails[0].imageDigest' --output text)
 
 aws ecr get-login-password --region "${REGION}" | cosign login --username AWS --password-stdin "${REGISTRY}"
-curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
-  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+# cosign 3.x requires stripping rekor + oidc + ca + tsa from the signing-config
+# when using --key (keyful). Leaving any of them in causes a silent hang on
+# "Signing artifact...". `cosign_minimal_signing_config` does the strip.
+cosign_minimal_signing_config /tmp/signing-config.json
 cosign sign --signing-config /tmp/signing-config.json \
   --key "awskms:///${KMS_KEY_ARN}" "${REGISTRY}/${REPO}@${DIGEST}"
 
@@ -302,8 +302,10 @@ DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --query 'imageDetails[0].imageDigest' --output text)
 
 aws ecr get-login-password --region "${REGION}" | cosign login --username AWS --password-stdin "${REGISTRY}"
-curl -s https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json | \
-  jq 'del(.rekorTlogUrls)' > /tmp/signing-config.json
+# cosign 3.x requires stripping rekor + oidc + ca + tsa from the signing-config
+# when using --key (keyful). Leaving any of them in causes a silent hang on
+# "Signing artifact...". `cosign_minimal_signing_config` does the strip.
+cosign_minimal_signing_config /tmp/signing-config.json
 COSIGN_PASSWORD="" cosign sign --signing-config /tmp/signing-config.json \
   --key cosign.key "${REGISTRY}/${REPO}@${DIGEST}"
 
@@ -465,4 +467,6 @@ Never end with stale state silently. If a restore step was skipped or failed, sa
 - **Never commit `cosign.key` / `cosign.pub`** — they're git-ignored, keep it that way.
 - **Bootstrap repo uses immutable tags** — leftover Notation referrer tags from a failed `notation sign` MUST be deleted before retrying; do not work around with a fresh tag.
 - **`signature-ecr-signing` teardown is not optional** — wrap the test runner so `ecr_signing_teardown` runs even on failure.
+- **`cosign sign` looks hung** — on success it emits only `Signing artifact...` to stderr and then goes silent until the OCI referrer push completes. Use `cosign sign -d` for verbose HTTP logging when debugging.
+- **worktrees need `pnpm install --frozen-lockfile` first** — the `pnpm integ:*` scripts call `tsc` directly (not via `npx tsc`); without local `node_modules` the script fails with `sh: tsc: command not found`.
 - When in doubt about which test to run, call `AskUserQuestion` rather than guess.

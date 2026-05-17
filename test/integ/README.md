@@ -186,6 +186,15 @@ DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --query 'imageDetails[0].imageDigest' --output text)
 
 aws ecr get-login-password | notation login --username AWS --password-stdin "${REGISTRY}"
+
+# If a previous `notation sign` attempt partially succeeded (e.g. failed at the
+# signing step but already pushed the referrers index tag), the next run will
+# fail with `tag invalid: ... already exists ... cannot be overwritten because
+# the tag is immutable` because the CDK bootstrap ECR repository uses immutable
+# tags. Delete the leftover referrer tag and retry:
+#   REFERRER_TAG="sha256-${DIGEST#sha256:}"
+#   aws ecr batch-delete-image --repository-name "${REPO}" \
+#     --image-ids imageTag="${REFERRER_TAG}"
 notation sign \
   --plugin com.amazonaws.signer.notation.plugin \
   --id "${PROFILE_ARN}" \

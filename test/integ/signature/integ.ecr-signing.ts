@@ -19,7 +19,7 @@ import { EcrScanVerifier, ScanConfig, SignatureVerification } from '../../../src
  *
  *   2. Create AWS Signer signing profile (if not exists):
  *      aws signer put-signing-profile \
- *        --profile-name EcrScanVerifierTest \
+ *        --profile-name EcrScanVerifierTestProfile \
  *        --platform-id Notation-OCI-SHA384-ECDSA
  *
  *   3. Enable ECR managed signing:
@@ -65,7 +65,7 @@ ecrDeployment.addToPrincipalPolicy(
 );
 
 // Use CFn pseudo parameters to build signing profile ARN (avoids hardcoding account ID)
-const signingProfileArn = `arn:aws:signer:${stack.region}:${stack.account}:/signing-profiles/EcrScanVerifierTest`;
+const signingProfileArn = `arn:aws:signer:${stack.region}:${stack.account}:/signing-profiles/EcrScanVerifierTestProfile`;
 
 const verifier = new EcrScanVerifier(stack, 'Scanner', {
   repository: targetRepository,

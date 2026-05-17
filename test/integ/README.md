@@ -12,6 +12,8 @@ Tests deploy stacks across multiple regions (e.g. `us-east-1`, `us-east-2`, `us-
 
 Changing the ECR scanning configuration via `aws inspector2 enable/disable` may take a few minutes to propagate. After enabling or disabling Enhanced scanning, **verify the status has changed in all regions before running tests**.
 
+Even after `batch-get-account-status` reports `ENABLED`, the Inspector scanning engine may need **additional time** (sometimes well over 10 minutes) before newly pushed images are actually scanned and produce findings. If `enhanced/` tests fail with empty or missing findings shortly after enabling, wait longer and retry.
+
 ## Check Current Environment
 
 Before running tests, check whether Enhanced scanning (Amazon Inspector) is currently enabled or disabled in all regions:
@@ -135,12 +137,14 @@ done
 
 Requires additional setup for signing. Works with both Basic and Enhanced scanning.
 
+> **Note on AWS Signer profiles:** Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused for signing. We intentionally leave the `EcrScanVerifierTestProfile` profile Active across test runs so the same name is reusable (`put-signing-profile` is idempotent for Active profiles). If you already have a profile in `Canceled` state from a previous run, use a different `--profile-name` once (e.g. `EcrScanVerifierTestProfile2`) and update subsequent commands accordingly.
+
 #### Notation (AWS Signer)
 
 ```bash
 # 1. Create a signing profile
 aws signer put-signing-profile \
-  --profile-name EcrScanVerifierTest \
+  --profile-name EcrScanVerifierTestProfile \
   --platform-id Notation-OCI-SHA384-ECDSA
 
 # 2. Install notation CLI + AWS Signer plugin
@@ -165,7 +169,7 @@ REGION=$(aws configure get region)
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
 REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 PROFILE_ARN=$(aws signer get-signing-profile \
-  --profile-name EcrScanVerifierTest --query 'arn' --output text)
+  --profile-name EcrScanVerifierTestProfile --query 'arn' --output text)
 
 pnpm tsc -p tsconfig.dev.json
 cd assets/lambda && pnpm install --frozen-lockfile && pnpm build && cd -
@@ -182,6 +186,15 @@ DIGEST=$(aws ecr describe-images --repository-name "${REPO}" \
   --query 'imageDetails[0].imageDigest' --output text)
 
 aws ecr get-login-password | notation login --username AWS --password-stdin "${REGISTRY}"
+
+# If a previous `notation sign` attempt partially succeeded (e.g. failed at the
+# signing step but already pushed the referrers index tag), the next run will
+# fail with `tag invalid: ... already exists ... cannot be overwritten because
+# the tag is immutable` because the CDK bootstrap ECR repository uses immutable
+# tags. Delete the leftover referrer tag and retry:
+#   REFERRER_TAG="sha256-${DIGEST#sha256:}"
+#   aws ecr batch-delete-image --repository-name "${REPO}" \
+#     --image-ids imageTag="${REFERRER_TAG}"
 notation sign \
   --plugin com.amazonaws.signer.notation.plugin \
   --id "${PROFILE_ARN}" \
@@ -202,12 +215,12 @@ ECR's managed signing feature (`signing-configuration`) automatically signs imag
 **Prerequisites:**
 
 - User must have `signer:*` permissions (including `signer:SignPayload`)
-- Same AWS Signer profile as above (`EcrScanVerifierTest`)
+- Same AWS Signer profile as above (`EcrScanVerifierTestProfile`)
 
 ```bash
 # 1. Create a signing profile (if not already created)
 aws signer put-signing-profile \
-  --profile-name EcrScanVerifierTest \
+  --profile-name EcrScanVerifierTestProfile \
   --platform-id Notation-OCI-SHA384-ECDSA
 
 # 2. Create ECR repository via CLI
@@ -215,7 +228,7 @@ ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGION=$(aws configure get region)
 REPO_NAME="ecr-scan-verifier-integ-ecr-signing"
 PROFILE_ARN=$(aws signer get-signing-profile \
-  --profile-name EcrScanVerifierTest --query 'arn' --output text)
+  --profile-name EcrScanVerifierTestProfile --query 'arn' --output text)
 
 aws ecr create-repository --repository-name "${REPO_NAME}" || echo "Repository already exists"
 
@@ -382,8 +395,9 @@ pnpm integ:signature:update --language javascript --test-regex "integ.cosign-pub
 #### Cleanup
 
 ```bash
-# Cancel the signing profile (cannot be deleted, but can be revoked)
-aws signer cancel-signing-profile --profile-name EcrScanVerifierTest
+# AWS Signer profiles cannot be deleted. We leave the profile Active so it can be
+# reused on the next test run; cancel manually only if you no longer need it.
+# (Once canceled, the profile name is permanently unusable for signing.)
 
 # Delete SSM parameters and schedule KMS key deletion (minimum 7-day waiting period)
 aws ssm delete-parameter --name /ecr-scan-verifier/cosign-kms-key-id

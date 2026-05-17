@@ -219,8 +219,13 @@ environments. The cryptographic signature is still verified using the KMS key.
 **Setup:**
 
 ```bash
-# 1. Install cosign
-brew install cosign  # macOS
+# 1. Install cosign + jq if not present (no auto-install — pick your packager)
+#    cosign: https://docs.sigstore.dev/cosign/installation/
+#            brew install cosign     # macOS / brew users
+#            apt install ...         # Debian/Ubuntu via sigstore release
+#    jq:     brew install jq | apt install jq | dnf install jq
+command -v cosign >/dev/null || { echo "install cosign first"; exit 1; }
+command -v jq     >/dev/null || { echo "install jq first";     exit 1; }
 
 # 2. Create a KMS key for signing and store key ID in SSM Parameter Store
 KMS_KEY_ID=$(aws kms create-key \
@@ -280,8 +285,13 @@ environments. The cryptographic signature is still verified using the public key
 **Setup:**
 
 ```bash
-# 1. Install cosign
-brew install cosign  # macOS
+# 1. Install cosign + jq if not present (no auto-install — pick your packager)
+#    cosign: https://docs.sigstore.dev/cosign/installation/
+#            brew install cosign     # macOS / brew users
+#            apt install ...         # Debian/Ubuntu via sigstore release
+#    jq:     brew install jq | apt install jq | dnf install jq
+command -v cosign >/dev/null || { echo "install cosign first"; exit 1; }
+command -v jq     >/dev/null || { echo "install jq first";     exit 1; }
 
 # 2. Generate a key pair and store the public key in SSM Parameter Store.
 #    COSIGN_PASSWORD="" skips the interactive password prompt — required

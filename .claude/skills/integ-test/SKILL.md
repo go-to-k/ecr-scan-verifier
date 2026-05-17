@@ -244,8 +244,11 @@ Then retry the `notation sign` step.
 
 **Rekor note**: the Lambda verifier always skips Rekor. Sign with the same skip so the test matches Lambda behavior — verification then works offline / inside VPC without internet.
 
+Pre-flight: `cosign version` and `jq --version` should both succeed. Do NOT auto-install via brew — the user may not use brew. If either is missing, abort and tell the user which package + suggested install commands (`brew install cosign jq`, `apt install jq`, sigstore release page for cosign, etc.).
+
 ```bash
-command -v cosign >/dev/null || brew install cosign
+command -v cosign >/dev/null || { echo "cosign not installed. See https://docs.sigstore.dev/cosign/installation/" >&2; exit 1; }
+command -v jq >/dev/null || { echo "jq not installed." >&2; exit 1; }
 
 KMS_KEY_ID=$(aws kms create-key \
   --key-usage SIGN_VERIFY --key-spec ECC_NIST_P256 \
@@ -278,8 +281,11 @@ pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms
 
 Same Rekor-skip rule. `COSIGN_PASSWORD=""` required on `generate-key-pair` and `sign` to avoid the interactive password prompt blocking unattended runs.
 
+Same pre-flight as `signature-cosign-kms`: check `cosign` and `jq`, abort with install hint if missing — do not auto-brew-install.
+
 ```bash
-command -v cosign >/dev/null || brew install cosign
+command -v cosign >/dev/null || { echo "cosign not installed. See https://docs.sigstore.dev/cosign/installation/" >&2; exit 1; }
+command -v jq >/dev/null || { echo "jq not installed." >&2; exit 1; }
 
 COSIGN_PASSWORD="" cosign generate-key-pair
 aws ssm put-parameter \

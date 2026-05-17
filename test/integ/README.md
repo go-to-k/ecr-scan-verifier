@@ -12,6 +12,8 @@ Tests deploy stacks across multiple regions (e.g. `us-east-1`, `us-east-2`, `us-
 
 Changing the ECR scanning configuration via `aws inspector2 enable/disable` may take a few minutes to propagate. After enabling or disabling Enhanced scanning, **verify the status has changed in all regions before running tests**.
 
+Even after `batch-get-account-status` reports `ENABLED`, the Inspector scanning engine may need **additional time** (sometimes well over 10 minutes) before newly pushed images are actually scanned and produce findings. If `enhanced/` tests fail with empty or missing findings shortly after enabling, wait longer and retry.
+
 ## Check Current Environment
 
 Before running tests, check whether Enhanced scanning (Amazon Inspector) is currently enabled or disabled in all regions:

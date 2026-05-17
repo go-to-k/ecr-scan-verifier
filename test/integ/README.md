@@ -31,6 +31,8 @@ Changing the ECR scanning configuration via `aws inspector2 enable/disable` may 
 
 Even after `batch-get-account-status` reports `ENABLED`, the Inspector scanning engine may need **additional time** — empirically **20–30 minutes** on a fresh enable — before newly pushed images are actually scanned and produce findings. The `wait_enhanced_engine_warmup` helper sleeps 20 min by default after a DISABLED→ENABLED transition, and `enhanced_run_with_retry` then retries the test up to 3 times with 10 min gaps. If `enhanced/` tests fail with empty or missing findings after that, the cause is not propagation lag — investigate.
 
+**`cosign sign` looks hung**: on success it emits only `Signing artifact...` to stderr and then goes silent until the OCI referrer push completes (typically a few seconds, longer for large layers). Do NOT cancel — that produces orphan referrer tags in the bootstrap repo. Use `cosign sign -d` for verbose HTTP logging when actually debugging.
+
 ## Check Current Environment
 
 ```bash

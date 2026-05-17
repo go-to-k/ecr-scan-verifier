@@ -1,14 +1,14 @@
 ---
 name: integ-test
 description: Orchestrate ecr-scan-verifier integ tests against real AWS. Handles Inspector enable/disable + propagation waits, scan-on-push toggling, image signing (Notation / Cosign KMS / Cosign Public Key / ECR Managed Signing), and cleanup. Use whenever the user wants to run anything under `test/integ/`.
-argument-hint: "<status|basic|enhanced|signature|signature-notation|signature-cosign-kms|signature-cosign-publickey|signature-ecr-signing|all|cleanup-signature> [--update] [--no-restore]"
+argument-hint: "<status|basic|enhanced|signature|signature-notation|signature-cosign-kms|signature-cosign-publickey|signature-ecr-signing|all|cleanup-signature> [--snapshot-only] [--no-restore]"
 ---
 
 # integ-test
 
 End-to-end orchestrator for `test/integ/` tests. Replaces the manual checklist in `test/integ/README.md`.
 
-Most of the AWS-mutating primitives live in [`scripts/integ.sh`](../../../scripts/integ.sh) as shell functions. This skill **always sources that file first** and composes the functions per mode — keep the primitives there, keep the orchestration here.
+Most AWS-mutating primitives live in [`scripts/integ.sh`](../../../scripts/integ.sh) as shell functions. This skill **always sources that file first** and composes the functions per mode — keep primitives there, keep orchestration here.
 
 ```bash
 . scripts/integ.sh
@@ -18,74 +18,82 @@ After sourcing you have: `account_id`, `default_region`, `inspector_status`, `in
 
 ## Integ suite layout
 
-| Directory       | Regions exercised               | Required state                                              |
-| --------------- | ------------------------------- | ----------------------------------------------------------- |
-| `basic/`        | `us-east-1 us-east-2 us-west-2` | Enhanced scanning (Inspector) **DISABLED** in all regions   |
-| `enhanced/`     | `us-east-1 us-east-2 us-west-2` | Enhanced scanning (Inspector) **ENABLED** in all regions    |
-| `signature/`    | default region only             | Pre-signed images + SSM/KMS prerequisites (state-agnostic)  |
+| Directory   | Regions exercised               | Required state                                              |
+| ----------- | ------------------------------- | ----------------------------------------------------------- |
+| `basic/`    | `us-east-1 us-east-2 us-west-2` | Enhanced scanning (Inspector) **DISABLED** in all regions   |
+| `enhanced/` | `us-east-1 us-east-2 us-west-2` | Enhanced scanning (Inspector) **ENABLED** in all regions    |
+| `signature/`| default region only             | Pre-signed images + SSM/KMS prerequisites (state-agnostic)  |
 
 Signature modes are single-region (resolved from `aws configure get region`). `basic`/`enhanced` always operate on **all three** regions.
+
+## Default behavior: real deploy
+
+The skill **deploys to AWS by default**. The `pnpm integ:*` scripts wrap `integ-runner`; without `--update-on-failed`, integ-runner does a *snapshot template comparison only* and never touches AWS. With `--update-on-failed` (which the skill passes by default), it actually deploys.
+
+If you only want the cheap snapshot comparison, pass `--snapshot-only`. The skill then degenerates to a single `pnpm integ:<mode>` call and **skips every AWS-mutating step** (Inspector toggle, scan-on-push toggle, signing setup).
 
 ## Arguments
 
 - `status` — only triage current AWS state, propose no changes
-- `basic` — switch state if needed, run `pnpm integ:basic`, restore
-- `enhanced` — switch state if needed, run `pnpm integ:enhanced`, restore
-- `signature` — run all four signature sub-modes back-to-back (state-agnostic)
+- `basic` — switch Inspector if needed, run `pnpm integ:basic:update`, restore
+- `enhanced` — switch Inspector if needed, warm engine, run `pnpm integ:enhanced:update`, restore
+- `signature` — run all four signature sub-modes back-to-back
 - `signature-notation` — Notation (AWS Signer) sign + run `integ.notation`
 - `signature-cosign-kms` — Cosign with KMS sign + run `integ.cosign-kms`
 - `signature-cosign-publickey` — Cosign keypair sign + run `integ.cosign-publickey`
 - `signature-ecr-signing` — ECR Managed Signing setup + run `integ.ecr-signing`
-- `all` — run **everything** (enhanced → all signatures → basic), then auto-run `cleanup-signature`. See [Mode: `all`](#mode-all).
-- `cleanup-signature` — Delete SSM params, schedule KMS key deletion, remove local key files
+- `all` — run **everything** (enhanced → all signatures → basic), then auto-run `cleanup-signature`
+- `cleanup-signature` — delete SSM params, schedule KMS key deletion, remove local key files
 
 Flags:
 
-- `--update` — pass `--update-on-failed` to `integ-runner` (use during real deploy to refresh snapshots)
+- `--snapshot-only` — skip every AWS-mutating step; just run `pnpm integ:<mode>` (template comparison only). Mutually exclusive with the orchestration in each mode below.
 - `--no-restore` — skip restoring Inspector state at the end (useful when running multiple modes back-to-back). **Ignored by `all`**, which always restores.
 
 ### When invoked without arguments
 
-Use `AskUserQuestion` to elicit BOTH the mode and the `--update` flag:
+Use `AskUserQuestion` to elicit BOTH the mode and the snapshot flag:
 
-1. First question — **target**:
+1. **Target**:
    - `basic`
    - `enhanced`
    - `signature` (all four signature sub-modes)
    - `all` (everything end-to-end with auto-cleanup)
-   - `status` (just triage current state, no test run)
-2. Second question — **mode**:
-   - `--update` off — snapshot only, no AWS deploy (fast, the default)
-   - `--update` on — real deploy against AWS (slow, mutates state)
+   - `status` (just triage, no test run)
+2. **Run mode**:
+   - **Deploy** (default) — real AWS deploy, refresh snapshots
+   - **Snapshot-only** — template comparison only, no AWS calls
 
-Skip both prompts if the user already provided the target in their message. If they provided the target but not `--update`, only ask the second question.
+Skip both prompts if the user already gave the target. If they gave the target but not the run-mode, only ask the second question.
 
-## Post-run cleanup (always)
+## `--snapshot-only` (any mode)
 
-After ANY `--update` invocation (single mode or `all`), the skill must:
+Single command, no helpers, no setup. The skill exits after this:
+
+```bash
+pnpm integ            # all directories
+pnpm integ:basic      # or one directory
+pnpm integ:enhanced
+pnpm integ:signature
+```
+
+For per-test signature snapshots:
+
+```bash
+pnpm integ:signature --language javascript --test-regex "integ.notation.js$"
+```
+
+Nothing else in this document applies when `--snapshot-only` is set.
+
+## Post-run cleanup (deploy runs only)
+
+After ANY deploy-mode invocation (single mode or `all`), the skill must:
 
 1. Confirm Inspector state has been restored as documented in the mode (or, with `--no-restore`, explicitly report what was left as-is).
-2. For `all` and any `signature-*` `--update` run, finish with `cleanup_signature_artifacts` from `scripts/integ.sh`. Single `signature-*` runs leave SSM/KMS in place by default so the user can chain modes — call cleanup at the very end of the session.
+2. For `all` and any `signature-*` deploy run, finish with `cleanup_signature_artifacts` from `scripts/integ.sh`. Single `signature-*` runs leave SSM/KMS in place by default so the user can chain modes — call cleanup at the very end of the session.
 3. Print the full reporting summary (see [Reporting](#reporting)) — never end silently.
 
-Snapshot-only runs (no `--update`) have nothing to clean up; just report and exit.
-
-## Snapshot vs `--update` (read this first)
-
-`pnpm integ:*` runs **snapshot tests only** — no AWS calls, no deploy. `pnpm integ:*:update` (or `pnpm integ:* --update-on-failed` via the `--update` flag) actually deploys to AWS.
-
-This drastically changes what the skill needs to do:
-
-| Without `--update` (snapshot)               | With `--update` (real deploy)                              |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| Skip Inspector toggle entirely              | Toggle Inspector + poll convergence in all regions         |
-| Skip scan-on-push toggle                    | Toggle scan-on-push on/off around the `basic` run           |
-| Skip image signing setup                    | Run the full sign flow for signature modes                 |
-| Just run `pnpm integ:<mode>`                | Run `pnpm integ:<mode>:update`                              |
-
-**Rule of thumb**: if `--update` is not in the invocation, all AWS-state manipulation is a no-op. Only the test runner command itself matters. The rest of this document describes the `--update` path; gate every AWS-mutating step on the flag.
-
-## Common preamble (always run first)
+## Common preamble (deploy runs)
 
 ```bash
 . scripts/integ.sh
@@ -97,7 +105,7 @@ ORIGINAL_STATE_WEST2="$(inspector_status us-west-2)"
 
 If the three states differ, surface it — that itself is worth flagging before running anything.
 
-For `--update` runs, also build the Lambda once up front (every `pnpm integ:*` script chains this, but doing it once avoids repeating across modes):
+Build the Lambda once up front (every `pnpm integ:*` script chains this, but doing it once avoids repeating across modes):
 
 ```bash
 pnpm tsc -p tsconfig.dev.json
@@ -114,26 +122,15 @@ Then recommend:
 
 - All ENABLED → `enhanced/` is ready. `basic/` requires a disable cycle.
 - All DISABLED → `basic/` is ready. `enhanced/` requires an enable cycle.
-- Mixed → flag as anomaly; ask the user before proceeding.
+- Mixed → flag as anomaly; ask before proceeding.
 
 Exit without changing any state.
 
-## Mode: `basic`
-
-### Without `--update` (snapshot)
-
-```bash
-pnpm integ:basic
-```
-
-That's it. No Inspector toggle, no scan-on-push toggle, no restore.
-
-### With `--update`
+## Mode: `basic` (deploy)
 
 `pnpm integ:basic:update` runs **all** basic tests including `integ.scan-on-push`, so scan-on-push must be on **before** the run.
 
 ```bash
-# Disable Inspector if necessary, then enable scan-on-push on bootstrap repos
 inspector_disable_all
 wait_inspector_status_all DISABLED || exit 1
 scan_on_push_set true
@@ -157,15 +154,7 @@ if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
 fi
 ```
 
-## Mode: `enhanced`
-
-### Without `--update` (snapshot)
-
-```bash
-pnpm integ:enhanced
-```
-
-### With `--update`
+## Mode: `enhanced` (deploy)
 
 ```bash
 # Capture the "was DISABLED in any region" condition BEFORE we flip,
@@ -181,23 +170,20 @@ fi
 inspector_enable_all
 wait_inspector_status_all ENABLED || exit 1
 
-# Engine warmup: empirically 20-30 min on a fresh enable, despite the
-# status API flipping immediately. Skip when no transition happened.
+# Engine warmup: empirically 20-30 min on a fresh enable.
 wait_enhanced_engine_warmup "$TRANSITION" 1200
 
-# Up to 3 attempts × 10 min wait gap. This is calibrated to the engine
-# warmup tail — NOT to flaky tests. If 3 attempts fail, stop waiting.
+# Up to 3 attempts × 10 min gap. Calibrated to the warmup tail —
+# NOT to flaky tests. If 3 fail, stop.
 MAX_ATTEMPTS=3 RETRY_GAP_SECS=600 \
   enhanced_run_with_retry pnpm integ:enhanced:update || exit 1
 ```
 
 ### Restore (unless `--no-restore`)
 
-If all three `ORIGINAL_STATE_*` were `DISABLED`, disable in all regions and poll until DISABLED. Otherwise leave as-is (or restore per-region to original — but mixed-state accounts are flagged in the preamble as anomalies).
+If all three `ORIGINAL_STATE_*` were `DISABLED`, disable in all regions and poll until DISABLED. Otherwise leave as-is.
 
-## Signature modes — shared preamble
-
-All four signature modes share these steps. Only run when `--update`; the snapshot variants just run the test runner with `--test-regex`.
+## Signature modes — shared preamble (deploy)
 
 ```bash
 rm -rf cdk.out/    # avoid stale assets manifests from prior signature runs
@@ -208,15 +194,7 @@ REPO="cdk-hnb659fds-container-assets-${ACCOUNT}-${REGION}"
 
 `signature-ecr-signing` uses its own dedicated repo (set up via `ecr_signing_setup`).
 
-## Mode: `signature-notation`
-
-### Without `--update` (snapshot)
-
-```bash
-pnpm integ:signature --language javascript --test-regex "integ.notation.js$"
-```
-
-### With `--update`
+## Mode: `signature-notation` (deploy)
 
 **Profile reuse**: AWS Signer profiles cannot be deleted (only canceled), and a canceled profile cannot be reused. We intentionally keep `EcrScanVerifierTestProfile` `Active` across runs (`put-signing-profile` is idempotent on Active profiles). If you find it `Canceled`, use a new name (e.g. `EcrScanVerifierTestProfile2`) and substitute throughout.
 
@@ -262,15 +240,7 @@ aws ecr batch-delete-image --repository-name "${REPO}" \
 
 Then retry the `notation sign` step.
 
-## Mode: `signature-cosign-kms`
-
-### Without `--update`
-
-```bash
-pnpm integ:signature --language javascript --test-regex "integ.cosign-kms.js$"
-```
-
-### With `--update`
+## Mode: `signature-cosign-kms` (deploy)
 
 **Rekor note**: the Lambda verifier always skips Rekor. Sign with the same skip so the test matches Lambda behavior — verification then works offline / inside VPC without internet.
 
@@ -304,17 +274,9 @@ cosign sign --signing-config /tmp/signing-config.json \
 pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms.js$"
 ```
 
-## Mode: `signature-cosign-publickey`
+## Mode: `signature-cosign-publickey` (deploy)
 
-### Without `--update`
-
-```bash
-pnpm integ:signature --language javascript --test-regex "integ.cosign-publickey.js$"
-```
-
-### With `--update`
-
-Same Rekor-skip rule as `signature-cosign-kms`. `COSIGN_PASSWORD=""` is required on `generate-key-pair` and `sign` to avoid the interactive password prompt blocking unattended runs.
+Same Rekor-skip rule. `COSIGN_PASSWORD=""` required on `generate-key-pair` and `sign` to avoid the interactive password prompt blocking unattended runs.
 
 ```bash
 command -v cosign >/dev/null || brew install cosign
@@ -344,15 +306,7 @@ pnpm integ:signature:update --language javascript --test-regex "integ.cosign-pub
 
 `cosign.key` / `cosign.pub` are git-ignored. Do NOT commit them, and remove them via `cleanup-signature`.
 
-## Mode: `signature-ecr-signing`
-
-### Without `--update`
-
-```bash
-pnpm integ:signature --language javascript --test-regex "integ.ecr-signing.js$"
-```
-
-### With `--update`
+## Mode: `signature-ecr-signing` (deploy)
 
 ECR Managed Signing auto-signs on push when a signing-configuration matches the repository. The integ uses `ECRDeployment` to copy a CDK asset into a signing-enabled repo so that the push triggers a signature.
 
@@ -363,7 +317,6 @@ ECR Managed Signing auto-signs on push when a signing-configuration matches the 
 ```bash
 ecr_signing_setup
 
-# Run, then ALWAYS tear down even if the test failed.
 if pnpm integ:signature:update --language javascript --test-regex "integ.ecr-signing.js$"; then
   status=0
 else
@@ -373,27 +326,16 @@ ecr_signing_teardown
 exit "$status"
 ```
 
-## Mode: `signature`
+## Mode: `signature` (deploy)
 
-Runs all four signature sub-modes back-to-back. They are state-agnostic w.r.t. Inspector (no toggle needed), but each one mutates SSM/KMS/ECR and synths into the shared `cdk.out/`, so order matters.
+Runs all four signature sub-modes back-to-back. They are state-agnostic w.r.t. Inspector, but each mutates SSM/KMS/ECR and synths into the shared `cdk.out/`, so order matters.
 
-### Without `--update` (snapshot)
-
-```bash
-pnpm integ:signature
-```
-
-Single command — `pnpm integ:signature` runs every test under `test/integ/signature/` as a snapshot.
-
-### With `--update`
-
-Run each signature mode in this order. Failures in earlier modes do NOT short-circuit later ones — capture per-mode status and surface them all in the final report. Each mode's preamble (`rm -rf cdk.out/`, REGION/REGISTRY/REPO export) must run anew per iteration.
+Failures in earlier modes do NOT short-circuit later ones — capture per-mode status and surface them all in the final report. Each mode's preamble (`rm -rf cdk.out/`, REGION/REGISTRY/REPO export) must run anew per iteration.
 
 ```bash
 sig_status=()
 for mode in signature-notation signature-cosign-kms signature-cosign-publickey signature-ecr-signing; do
   echo "=== Running mode: $mode ==="
-  # Dispatch to the per-mode steps documented above. Capture pass/fail.
   if run_mode "$mode"; then
     sig_status+=("$mode: PASS")
   else
@@ -403,30 +345,20 @@ done
 printf '%s\n' "${sig_status[@]}"
 ```
 
-(`run_mode` is conceptual — in practice, inline the steps from each `signature-*` section above, or break each into a small helper.)
+After the loop, finish with `cleanup_signature_artifacts`.
 
-After the loop, finish with `cleanup_signature_artifacts` (see [Post-run cleanup](#post-run-cleanup-always)).
-
-## Mode: `all`
+## Mode: `all` (deploy)
 
 Runs **every** integ test end-to-end with optimal Inspector state transitions.
 
-### Without `--update` (snapshot)
-
-```bash
-pnpm integ          # runs all three directories as snapshot
-```
-
-### With `--update`
-
 State-transition strategy (minimizes Inspector flips, which each cost a ~5 min poll + the ~20 min engine warmup on enable):
 
-1. **Enable Inspector** (if not already) and absorb the engine warmup. This serves both `enhanced` AND positions us for `signature-*` (state-agnostic but cheaper to keep ENABLED across them).
+1. **Enable Inspector** (if not already) and absorb the engine warmup. Serves both `enhanced` AND positions us for `signature-*` (state-agnostic but cheaper to keep ENABLED across them).
 2. **Run `enhanced`** with the 3-attempt retry loop.
-3. **Run all four `signature-*` modes** (loop body identical to the `signature` mode).
+3. **Run all four `signature-*` modes**.
 4. **Flip Inspector to DISABLED** + poll.
-5. **Run `basic`** (with proactive scan-on-push enable + unconditional restore).
-6. **Restore Inspector to `ORIGINAL_STATE_*`** unless `--no-restore` — but `all` IGNORES `--no-restore` and always restores, because a sequence that flips both directions has no obvious "as-found" target otherwise.
+5. **Run `basic`** (proactive scan-on-push enable + unconditional restore).
+6. **Restore Inspector to `ORIGINAL_STATE_*`** — `all` IGNORES `--no-restore` because a both-directions sequence has no obvious "as-found" target.
 7. **Run `cleanup_signature_artifacts`** unconditionally.
 
 Pseudocode:
@@ -438,7 +370,6 @@ ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 ORIGINAL_STATE_EAST2="$(inspector_status us-east-2)"
 ORIGINAL_STATE_WEST2="$(inspector_status us-west-2)"
 
-# Build Lambda once for the whole run
 pnpm tsc -p tsconfig.dev.json
 (cd assets/lambda && pnpm install --frozen-lockfile && pnpm build)
 
@@ -488,7 +419,6 @@ if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
   inspector_enable_all
   wait_inspector_status_all ENABLED || exit 1
 fi
-# (If all three were originally DISABLED, the state is already DISABLED after basic — nothing to do.)
 
 # --- 7: cleanup ---
 cleanup_signature_artifacts
@@ -496,11 +426,9 @@ cleanup_signature_artifacts
 printf '%s\n' "${results[@]}"
 ```
 
-Wall-clock budget for a clean `all --update` run: roughly 45–80 minutes depending on Inspector warmup and how many signature retries the bootstrap repo demands. Plan accordingly — don't kick this off and walk away if you have a meeting in 30 minutes.
+Wall-clock budget for a clean `all` run: roughly 45–80 minutes depending on Inspector warmup and signature retries. Plan accordingly.
 
 ## Mode: `cleanup-signature`
-
-Removes shared signature-test artifacts. **AWS Signer profiles are not deleted here** (cancellation is permanent and would break future runs).
 
 ```bash
 cleanup_signature_artifacts
@@ -512,7 +440,7 @@ The function resolves the KMS key id from SSM before deleting the param. If SSM 
 
 At the end of every run, print:
 
-- Mode invoked + whether `--update` was set + duration
+- Mode invoked + whether `--snapshot-only` was set + duration
 - `ORIGINAL_STATE_*` per region and whether each was restored (or "n/a" for snapshot-only)
 - Test pass/fail counts (parse from `integ-runner` output)
 - Any leftover side effects (e.g. `EcrScanVerifierTestProfile` left Active intentionally; signing-configuration disabled; `cosign.key` removed)
@@ -521,11 +449,11 @@ Never end with stale state silently. If a restore step was skipped or failed, sa
 
 ## Important
 
-- **Snapshot runs do not touch AWS.** Gate every AWS-mutating step on `--update`. Running the Inspector toggle for a snapshot-only run is wasted effort and can paradoxically break other concurrent work.
+- **Deploy is the default.** Snapshot-only is opt-in via `--snapshot-only`, which collapses every mode to a single `pnpm integ:<mode>` call with no AWS calls and no state changes.
 - **Always operate on all three regions** (`us-east-1 us-east-2 us-west-2`) when toggling Inspector — partial toggles cause hard-to-debug test failures.
-- **Poll with a bounded loop** (`wait_inspector_status` from `scripts/integ.sh`) — never use a bare `sleep` for state convergence. The status API flip is fast.
+- **Poll with a bounded loop** (`wait_inspector_status` from `scripts/integ.sh`) — never use a bare `sleep` for state convergence.
 - **`enhanced` engine lag is long**: status flipping to `ENABLED` is not the same as the scanning engine being ready. On a fresh DISABLED→ENABLED transition, sleep 1200s (20 min) before the first test attempt, then allow up to 3 total attempts with 600s (10 min) gaps. This worst-case ~40 min budget matches observed warmup. If all 3 fail, the cause is not propagation lag — stop waiting and investigate.
-- **Always enable scan-on-push proactively for `basic --update`** — `pnpm integ:basic:update` runs the `integ.scan-on-push` test in the same suite, so toggling on after a failure is too late.
+- **Always enable scan-on-push proactively for `basic`** — `pnpm integ:basic:update` runs the `integ.scan-on-push` test in the same suite, so toggling on after a failure is too late.
 - **Never cancel `EcrScanVerifierTestProfile`** — cancellation is permanent and blocks future runs under the same name.
 - **`cosign generate-key-pair` and `cosign sign` need `COSIGN_PASSWORD=""`** when run unattended — otherwise they hang on a password prompt.
 - **Never commit `cosign.key` / `cosign.pub`** — they're git-ignored, keep it that way.

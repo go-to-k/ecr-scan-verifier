@@ -205,7 +205,7 @@ Pre-flight: `notation version` should succeed. If absent, install via the AWS Si
 
 ```bash
 # 1. Ensure profile exists (idempotent wrapper; raw put-signing-profile is NOT)
-PROFILE_ARN="$(signer_profile_ensure)"
+PROFILE_ARN="$(signer_profile_ensure)" || exit 1
 
 # 2. Synth + publish only the Docker asset (no stack deploy yet)
 npx cdk synth --app 'node test/integ/signature/integ.notation.js' -o cdk.out

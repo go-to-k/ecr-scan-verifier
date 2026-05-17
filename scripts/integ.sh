@@ -154,6 +154,9 @@ SIGNER_PROFILE_NAME="${SIGNER_PROFILE_NAME:-EcrScanVerifierTestProfile}"
 # Idempotent-ish wrapper. `put-signing-profile` is NOT actually idempotent
 # (returns ProfileAlreadyExists for an existing Active profile), so check
 # first and only create if missing. Echoes the ARN on stdout.
+# Returns non-zero if the profile cannot be ensured — callers using
+# `var=$(signer_profile_ensure)` should also check `[ -n "$var" ]` since
+# command substitution swallows the inner exit code by default.
 signer_profile_ensure() {
   local arn
   arn="$(aws signer get-signing-profile --profile-name "$SIGNER_PROFILE_NAME" \
@@ -161,9 +164,13 @@ signer_profile_ensure() {
   if [ -z "$arn" ] || [ "$arn" = "None" ]; then
     aws signer put-signing-profile \
       --profile-name "$SIGNER_PROFILE_NAME" \
-      --platform-id Notation-OCI-SHA384-ECDSA >&2
+      --platform-id Notation-OCI-SHA384-ECDSA >&2 || return 1
     arn="$(aws signer get-signing-profile --profile-name "$SIGNER_PROFILE_NAME" \
-      --query 'arn' --output text)"
+      --query 'arn' --output text 2>/dev/null || true)"
+  fi
+  if [ -z "$arn" ] || [ "$arn" = "None" ]; then
+    echo "ERROR: signer_profile_ensure: could not resolve ARN for $SIGNER_PROFILE_NAME" >&2
+    return 1
   fi
   echo "$arn"
 }

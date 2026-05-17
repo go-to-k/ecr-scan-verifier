@@ -121,7 +121,7 @@ The signature flows below are mostly per-mode and don't share enough structure f
 
 ```bash
 # 1. Ensure the signing profile exists (idempotent — get-or-create)
-PROFILE_ARN="$(signer_profile_ensure)"
+PROFILE_ARN="$(signer_profile_ensure)" || exit 1
 
 # 2. Install notation CLI + AWS Signer plugin
 #    https://docs.aws.amazon.com/signer/latest/developerguide/image-signing-prerequisites.html

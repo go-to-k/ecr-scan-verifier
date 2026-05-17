@@ -103,15 +103,17 @@ for f in "$SKILL" "$README"; do
   fi
 done
 
-# --- 7. signature mode list matches integ.signature/integ.<name>.js -------
-# For every signature-* mode, the referenced integ test file must exist.
+# --- 7. signature mode list matches integ.signature/integ.<name>.ts -------
+# For every signature-* mode, the referenced integ test source must exist.
+# Check .ts (the source) not .js (the build artifact) — a fresh clone
+# without `pnpm tsc` would otherwise false-fail.
 
 for mode in $(printf '%s\n' "$modes" | grep '^signature-'); do
-  # signature-notation -> test/integ/signature/integ.notation.js
+  # signature-notation -> test/integ/signature/integ.notation.ts
   fname=$(printf '%s' "$mode" | sed 's/^signature-//')
-  testfile="test/integ/signature/integ.${fname}.js"
+  testfile="test/integ/signature/integ.${fname}.ts"
   if [ ! -f "$testfile" ]; then
-    fail "mode '$mode' references missing test file $testfile"
+    fail "mode '$mode' references missing test source $testfile"
   fi
 done
 

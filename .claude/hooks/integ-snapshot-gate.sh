@@ -21,7 +21,13 @@ cmd=$(jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
 
 # Only gate `gh pr create` and `gh pr merge` — any other Bash invocation
 # passes through.
-if ! printf '%s' "$cmd" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+(create|merge)\b'; then
+#
+# IMPORTANT: anchor `gh pr (create|merge)` to the START of a command
+# (string start, or after a chain operator `&&`, `||`, `;`, `|`), NOT
+# anywhere in the body. Otherwise the hook false-positives on commands
+# whose heredoc bodies / quoted arguments simply mention those phrases
+# (e.g. `git commit -m "describe gh pr create behavior"`).
+if ! printf '%s' "$cmd" | grep -qE '(^|(&&|\|\||;|\|)[[:space:]]*)gh[[:space:]]+pr[[:space:]]+(create|merge)([[:space:]]|$)'; then
   exit 0
 fi
 

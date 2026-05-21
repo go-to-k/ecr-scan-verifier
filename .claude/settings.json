@@ -10,6 +10,13 @@
             "if": "Bash(gh pr create*) or Bash(gh pr merge*)",
             "timeout": 10,
             "statusMessage": "Checking integ-docs marker..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/integ-snapshot-gate.sh",
+            "if": "Bash(gh pr create*) or Bash(gh pr merge*)",
+            "timeout": 10,
+            "statusMessage": "Checking integ-snapshot-fresh marker..."
           }
         ]
       }

@@ -402,6 +402,7 @@ const ecrScanVerifierProps: EcrScanVerifierProps = { ... }
 | --- | --- | --- |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.repository">repository</a></code> | <code>aws-cdk-lib.aws_ecr.IRepository</code> | ECR Repository to scan. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanConfig">scanConfig</a></code> | <code><a href="#ecr-scan-verifier.ScanConfig">ScanConfig</a></code> | Scan configuration — choose based on your ECR repository/account settings:. |
+| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.architecture">architecture</a></code> | <code>aws-cdk-lib.aws_lambda.Architecture</code> | The system architecture for the Scanner Lambda function. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.blockConstructs">blockConstructs</a></code> | <code>constructs.IConstruct[]</code> | Constructs to block if vulnerabilities are detected. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.defaultLogGroup">defaultLogGroup</a></code> | <code>aws-cdk-lib.aws_logs.ILogGroup</code> | The Scanner Lambda function's default log group. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.failOnVulnerability">failOnVulnerability</a></code> | <code>boolean</code> | Whether to fail the CloudFormation deployment if vulnerabilities are detected above the severity threshold. |
@@ -446,6 +447,22 @@ Scan configuration — choose based on your ECR repository/account settings:.
 
 If the required scanning configuration is not in place and no prior scan results exist,
 the deployment will fail.
+
+---
+
+##### `architecture`<sup>Optional</sup> <a name="architecture" id="ecr-scan-verifier.EcrScanVerifierProps.property.architecture"></a>
+
+```typescript
+public readonly architecture: Architecture;
+```
+
+- *Type:* aws-cdk-lib.aws_lambda.Architecture
+- *Default:* Architecture.ARM_64
+
+The system architecture for the Scanner Lambda function.
+
+Only `Architecture.ARM_64` and `Architecture.X86_64` are supported.
+The Docker image asset is built for the matching platform.
 
 ---
 

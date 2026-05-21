@@ -1,17 +1,26 @@
+# Architecture build args.
+#   TARGETARCH: 'arm64' or 'amd64' — used for Notation RPM and Cosign download URLs.
+#   LAMBDA_ARCH: 'arm64' or 'x86_64' — used for the Lambda base image tag suffix.
+# Defaults preserve standalone `docker build` behavior (ARM64).
+ARG TARGETARCH=arm64
+ARG LAMBDA_ARCH=arm64
+
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
+ARG TARGETARCH
 
 # Notation CLI + AWS Signer plugin
 RUN curl -sLo /tmp/signer.rpm \
-    "https://d2hvyiie56hcat.cloudfront.net/linux/arm64/installer/rpm/latest/aws-signer-notation-cli_arm64.rpm" \
+    "https://d2hvyiie56hcat.cloudfront.net/linux/${TARGETARCH}/installer/rpm/latest/aws-signer-notation-cli_${TARGETARCH}.rpm" \
     && rpm -ivh /tmp/signer.rpm && rm /tmp/signer.rpm
 
-# Cosign for ARM64 (Sigstore)
+# Cosign (Sigstore)
 ARG COSIGN_VERSION=3.0.5
 RUN curl -sLo /tmp/cosign \
-    "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-arm64" \
+    "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${TARGETARCH}" \
     && chmod +x /tmp/cosign
 
-FROM public.ecr.aws/lambda/nodejs:24-arm64
+ARG LAMBDA_ARCH
+FROM public.ecr.aws/lambda/nodejs:24-${LAMBDA_ARCH}
 
 # Notation binary
 COPY --from=builder /usr/local/bin/notation /var/task/bin/notation

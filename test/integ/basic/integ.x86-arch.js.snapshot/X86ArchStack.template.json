@@ -92,7 +92,7 @@
      },
      "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
     },
-    "Description": "AWS CDK resource provider framework - onEvent (MinimalOptionsStack/Scanner/Provider)",
+    "Description": "AWS CDK resource provider framework - onEvent (X86ArchStack/Scanner/Provider)",
     "Environment": {
      "Variables": {
       "USER_ON_EVENT_FUNCTION_ARN": {
@@ -135,7 +135,7 @@
       "Arn"
      ]
     },
-    "addr": "c88630cd7637c571a9fec999a676002ea2f509abc8",
+    "addr": "c8131940708795434bbaab8f9ce461d69b7fad0a20",
     "repositoryName": {
      "Fn::Sub": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}"
     },
@@ -252,11 +252,11 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Architectures": [
-     "arm64"
+     "x86_64"
     ],
     "Code": {
      "ImageUri": {
-      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:9bb1ddd4837c3d0e7ff42e9eb866fdb15decb7bc6155274f32176d621faeaf68"
+      "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:5f73b20d67af58b4b01218b6e5fd6623703200668c43a4ea57d31eb18d796d80"
      }
     },
     "PackageType": "Image",

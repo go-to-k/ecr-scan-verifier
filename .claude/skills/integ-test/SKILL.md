@@ -99,7 +99,22 @@ After ANY deploy-mode invocation (single mode or `all`), the skill must:
 ## Common preamble (deploy runs)
 
 ```bash
+# 1. Pre-flight: required tools must exist (abort early, do not auto-install).
+command -v docker  >/dev/null && docker info >/dev/null 2>&1 \
+  || { echo "docker daemon not running — cdk synth needs it to build the Lambda asset" >&2; exit 1; }
+command -v notation >/dev/null || { echo "notation not installed (needed by signature-notation)" >&2; exit 1; }
+command -v cosign   >/dev/null || { echo "cosign not installed (needed by signature-cosign-*)"   >&2; exit 1; }
+command -v jq       >/dev/null || { echo "jq not installed (needed by cosign signing-config strip)" >&2; exit 1; }
+
+# 2. Worktree initialization (skip if you already have node_modules at the repo root).
+#    The `pnpm integ:*` scripts call `tsc` directly, NOT via `npx tsc` — they fail
+#    with `sh: tsc: command not found` if local node_modules is missing.
+[ -d node_modules ] || pnpm install --frozen-lockfile
+
+# 3. Source the shared helpers.
 . scripts/integ.sh
+
+# 4. Snapshot original Inspector state per region so we can restore at the end.
 ACCOUNT="$(account_id)"
 ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 ORIGINAL_STATE_EAST2="$(inspector_status us-east-2)"
@@ -114,6 +129,33 @@ Build the Lambda once up front (every `pnpm integ:*` script chains this, but doi
 pnpm tsc -p tsconfig.dev.json
 (cd assets/lambda && pnpm install --frozen-lockfile && pnpm build)
 ```
+
+### Running unattended (Claude Code / long wall-clock)
+
+A deploy-mode `all` run takes 45–80 minutes wall-clock, which exceeds the Bash tool's 10-minute timeout cap. Run the orchestrator detached and observe its progress via a side-channel:
+
+```bash
+# Write the full `all`-mode pseudocode (see Mode: `all` below) into a script
+# that emits `PHASE: <name> <iso-timestamp>` markers, then detach:
+nohup bash /tmp/integ-all.sh > /tmp/integ-all.log 2>&1 < /dev/null & disown
+echo "$!" > /tmp/integ-all.pid
+```
+
+Inside the script, write a known status file on every phase transition so an outside watcher can stream events:
+
+```bash
+mark_phase() { echo "PHASE: $1 $(date -u +%FT%TZ)" | tee -a "$LOG"; echo "$1" > /tmp/integ-phase.txt; }
+mark_status() { echo "$1" > /tmp/integ-status.txt; echo "STATUS: $1"; }
+# ... mark_status "PASS" only after all results PASS + markgate set succeeds
+```
+
+From Claude Code, attach a `Monitor` to the log with a tight grep so you get one notification per phase + the final result:
+
+```bash
+tail -n +1 -F /tmp/integ-all.log | grep --line-buffered -E "^(STATUS|PHASE|ALL_DONE|ALL_FAILED|=== FINAL|=== START)"
+```
+
+Per-phase `PHASE: <name> <iso-timestamp>` markers are mandatory, not optional — they're how you reconstruct phase durations after the run for skill calibration (e.g. validating the `1200s` warmup default against reality).
 
 ## Mode: `status`
 
@@ -369,8 +411,9 @@ State-transition strategy (minimizes Inspector flips, which each cost a ~5 min p
 5. **Run `basic`** (proactive scan-on-push enable + unconditional restore).
 6. **Restore Inspector to `ORIGINAL_STATE_*`** — `all` IGNORES `--no-restore` because a both-directions sequence has no obvious "as-found" target.
 7. **Run `cleanup_signature_artifacts`** unconditionally.
+8. **Set the `integ-snapshot-fresh` markgate marker** — ONLY when every entry in `results` is `PASS`. On any FAIL, leave the marker stale so the `gh pr create` / `gh pr merge` hook blocks PRs until the offending mode is re-run cleanly. Partial-mode invocations (`basic`, `enhanced`, `signature`) must NEVER set this marker — only `all` is broad enough to guarantee snapshot freshness.
 
-Pseudocode:
+Pseudocode (insert this AFTER the [Common preamble](#common-preamble-deploy-runs) — `mark_phase` and `mark_status` come from there, and the unattended-run path also relies on them):
 
 ```bash
 . scripts/integ.sh
@@ -379,6 +422,7 @@ ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 ORIGINAL_STATE_EAST2="$(inspector_status us-east-2)"
 ORIGINAL_STATE_WEST2="$(inspector_status us-west-2)"
 
+mark_phase build-deps
 pnpm tsc -p tsconfig.dev.json
 (cd assets/lambda && pnpm install --frozen-lockfile && pnpm build)
 
@@ -389,11 +433,14 @@ if [ "$ORIGINAL_STATE_EAST1" != "ENABLED" ] || \
    [ "$ORIGINAL_STATE_WEST2" != "ENABLED" ]; then
   TRANSITION="DISABLED"
 fi
+mark_phase inspector-enable
 inspector_enable_all
 wait_inspector_status_all ENABLED || exit 1
+mark_phase warmup
 wait_enhanced_engine_warmup "$TRANSITION" 1200
 
 results=()
+mark_phase enhanced
 if MAX_ATTEMPTS=3 RETRY_GAP_SECS=600 \
    enhanced_run_with_retry pnpm integ:enhanced:update; then
   results+=("enhanced: PASS")
@@ -402,7 +449,10 @@ else
 fi
 
 # --- 3: all signatures ---
+# `run_signature_mode` is illustrative — inline each sub-mode's setup
+# (synth + sign + run) or define a local shell function per sub-mode.
 for mode in signature-notation signature-cosign-kms signature-cosign-publickey signature-ecr-signing; do
+  mark_phase "$mode"
   if run_signature_mode "$mode"; then
     results+=("$mode: PASS")
   else
@@ -411,8 +461,10 @@ for mode in signature-notation signature-cosign-kms signature-cosign-publickey s
 done
 
 # --- 4+5: basic ---
+mark_phase inspector-disable
 inspector_disable_all
 wait_inspector_status_all DISABLED || exit 1
+mark_phase basic
 scan_on_push_set true
 if pnpm integ:basic:update; then
   results+=("basic: PASS")
@@ -422,6 +474,7 @@ fi
 scan_on_push_set false
 
 # --- 6: restore Inspector (always for `all`) ---
+mark_phase restore
 if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
    [ "$ORIGINAL_STATE_EAST2" = "ENABLED" ] || \
    [ "$ORIGINAL_STATE_WEST2" = "ENABLED" ]; then
@@ -430,14 +483,41 @@ if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
 fi
 
 # --- 7: cleanup (full) ---
+mark_phase cleanup
 cleanup_signature_artifacts
 ecr_signing_teardown
 scan_on_push_set false
+
+# --- 8: markgate (only on full PASS) ---
+if printf '%s\n' "${results[@]}" | grep -q FAIL; then
+  echo "Skipping \`markgate set integ-snapshot-fresh\`: some modes failed." >&2
+else
+  if command -v mise >/dev/null 2>&1; then
+    mise exec -- markgate set integ-snapshot-fresh
+  else
+    markgate set integ-snapshot-fresh
+  fi
+fi
 
 printf '%s\n' "${results[@]}"
 ```
 
 Wall-clock budget for a clean `all` run: roughly 45–80 minutes depending on Inspector warmup and signature retries. Plan accordingly.
+
+**Validated reference run** (2026-05-21, fresh `DISABLED → ENABLED` transition, all 12 tests PASS, zero retries):
+
+| Phase | Duration |
+|---|---|
+| build-deps → inspector-enable polling | ~2 min |
+| warmup (`wait_enhanced_engine_warmup 1200`) | 20 min |
+| enhanced (1 attempt PASS, no retry) | ~3 min |
+| 4 × signature-* | ~17 min total (~4 min each) |
+| inspector-disable polling | ~2 min |
+| basic (6 tests) | ~16 min |
+| restore + cleanup | <1 min |
+| **Total** | **55:08** |
+
+If a future run drifts significantly from this profile, re-extract `PHASE:` timestamps from `/tmp/integ-all.log` and update this table. The 1200s warmup was sufficient in this run — if you see enhanced retries on a fresh enable, bump it.
 
 ## Mode: `cleanup`
 
@@ -483,6 +563,28 @@ At the end of every run, print:
 
 Never end with stale state silently. If a restore step was skipped or failed, say so explicitly.
 
+### Concrete pattern for unattended runs
+
+When the orchestrator runs detached (see [Running unattended](#running-unattended-claude-code--long-wall-clock)), the report has to be machine-readable so an outside watcher can tell PASS from FAIL without parsing prose:
+
+```bash
+# At the end of the orchestrator (Mode: `all` step 8 or equivalent):
+echo "=== FINAL RESULTS ==="
+printf '%s\n' "${results[@]}"     # one "name: PASS|FAIL" line per mode
+
+if printf '%s\n' "${results[@]}" | grep -q FAIL; then
+  mark_status "FAIL"               # /tmp/integ-status.txt = FAIL
+  echo "ALL_FAILED $(date -u +%FT%TZ)"
+  exit 1
+else
+  markgate set integ-snapshot-fresh
+  mark_status "PASS"               # /tmp/integ-status.txt = PASS
+  echo "ALL_DONE $(date -u +%FT%TZ)"
+fi
+```
+
+`STATUS: PASS|FAIL`, `ALL_DONE`, and `ALL_FAILED` are the contract — any Monitor-based watcher should grep for those exact tokens. `mark_phase` (see [Common preamble](#common-preamble-deploy-runs)) writes the same convention per phase so progress is also machine-readable.
+
 ## Important
 
 - **Deploy is the default.** Snapshot-only is opt-in via `--snapshot-only`, which collapses every mode to a single `pnpm integ:<mode>` call with no AWS calls and no state changes.
@@ -496,5 +598,10 @@ Never end with stale state silently. If a restore step was skipped or failed, sa
 - **Bootstrap repo uses immutable tags** — leftover Notation referrer tags from a failed `notation sign` MUST be deleted before retrying; do not work around with a fresh tag.
 - **`signature-ecr-signing` teardown is not optional** — wrap the test runner so `ecr_signing_teardown` runs even on failure.
 - **`cosign sign` looks hung** — on success it emits only `Signing artifact...` to stderr and then goes silent until the OCI referrer push completes. Use `cosign sign -d` for verbose HTTP logging when debugging.
-- **worktrees need `pnpm install --frozen-lockfile` first** — the `pnpm integ:*` scripts call `tsc` directly (not via `npx tsc`); without local `node_modules` the script fails with `sh: tsc: command not found`.
+- **worktrees need `pnpm install --frozen-lockfile` first** — the `pnpm integ:*` scripts call `tsc` directly (not via `npx tsc`); without local `node_modules` the script fails with `sh: tsc: command not found`. The Common preamble runs this conditionally.
+- **`docker` daemon must be running** — every mode's `cdk synth` invokes Docker to build the Lambda asset (`AssetCode.fromAssetImage`). The Common preamble pre-flights `docker info`; if it fails, the run aborts early instead of failing 15 minutes deep into stack deploy.
+- **Editing this `SKILL.md` (or any of the three integ-docs sources) flips the `integ-docs` markgate marker stale.** After editing, run `./scripts/verify-integ-docs.sh` and then `markgate set integ-docs` (or invoke `/verify-integ-docs`). Otherwise `gh pr create` / `gh pr merge` will be blocked by the integ-docs hook on the next PR.
+- **`integ-snapshot-fresh` marker is set ONLY by `Mode: all`.** Partial-mode runs (`basic`, `enhanced`, `signature`) intentionally do not touch the marker — they don't refresh all three suites, so allowing them to flip the marker would let stale snapshots through. If you genuinely only changed something that affects a single suite and you know the others are unaffected, set the marker manually.
+- **`run_signature_mode` in the pseudocode is illustrative.** No such helper exists in `scripts/integ.sh`; concrete implementations inline each signature sub-mode's setup (synth + sign + run) or wrap them in local shell functions. See `/tmp/integ-all.sh` from a prior `all` run for one inlined-functions example.
+- **`PHASE: <name> <iso-timestamp>` markers double as skill-calibration data.** When a wall-clock estimate in this file drifts from reality (e.g. the `~20-30 min warmup` window), extract the durations from `/tmp/integ-all.log` and update the doc — the markers are how you do that.
 - When in doubt about which test to run, call `AskUserQuestion` rather than guess.

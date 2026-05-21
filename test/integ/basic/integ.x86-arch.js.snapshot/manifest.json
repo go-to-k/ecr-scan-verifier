@@ -1,28 +1,28 @@
 {
   "version": "39.0.0",
   "artifacts": {
-    "CosignKmsSignatureStack.assets": {
+    "X86ArchStack.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "CosignKmsSignatureStack.assets.json",
+        "file": "X86ArchStack.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "CosignKmsSignatureStack": {
+    "X86ArchStack": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://unknown-account/unknown-region",
       "properties": {
-        "templateFile": "CosignKmsSignatureStack.template.json",
+        "templateFile": "X86ArchStack.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/cc53b4896006aaa2e7a3cf2c5d50d660d633a56d5ab6719f6abc1a185477a817.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/1d8761e4f96485039f521700362b23a1765d0a127c56aa92e5b39fa8942061ac.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "CosignKmsSignatureStack.assets"
+          "X86ArchStack.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
@@ -31,16 +31,10 @@
         }
       },
       "dependencies": [
-        "CosignKmsSignatureStack.assets"
+        "X86ArchStack.assets"
       ],
       "metadata": {
-        "/CosignKmsSignatureStack/SsmParameterValue:--ecr-scan-verifier--cosign-kms-key-id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "SsmParameterValueecrscanverifiercosignkmskeyidC96584B6F00A464EAD1953AFF4B05118Parameter"
-          }
-        ],
-        "/CosignKmsSignatureStack/Scanner/CustomResourceLambda": [
+        "/X86ArchStack/Scanner/CustomResourceLambda": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -56,7 +50,7 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -84,7 +78,7 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/ServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -132,19 +126,19 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/ServiceRole/ImportServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEventServiceRole5EA00D06"
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -182,31 +176,31 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEventServiceRoleDefaultPolicy3BF43B7A"
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Provider/framework-onEvent/Resource": [
+        "/X86ArchStack/Scanner/Provider/framework-onEvent/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScannerProviderframeworkonEvent93283B50"
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Resource": [
+        "/X86ArchStack/Scanner/Resource": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/CosignKmsSignatureStack/Scanner/Resource/Default": [
+        "/X86ArchStack/Scanner/Resource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Scanner1EAEC57B"
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -220,7 +214,7 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -274,37 +268,21 @@
                 {}
               ]
             }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addToPrincipalPolicy": [
-                {}
-              ]
-            }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addToPrincipalPolicy": [
-                {}
-              ]
-            }
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/ImportServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleF7376DEB"
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -348,37 +326,21 @@
                 {}
               ]
             }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addStatements": [
-                {}
-              ]
-            }
-          },
-          {
-            "type": "aws:cdk:analytics:method",
-            "data": {
-              "addStatements": [
-                {}
-              ]
-            }
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8ServiceRoleDefaultPolicyFBB05076"
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c88D89C87D"
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -390,46 +352,46 @@
             }
           }
         ],
-        "/CosignKmsSignatureStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource": [
+        "/X86ArchStack/Custom::EcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8/EventInvokeConfig/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomEcrScanVerifierCustomResourceLambdac56cee6b6775541bd179c1535d88a0c8EventInvokeConfig01C00B6E"
           }
         ],
-        "/CosignKmsSignatureStack/LatestNodeRuntimeMap": [
+        "/X86ArchStack/LatestNodeRuntimeMap": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LatestNodeRuntimeMap"
           }
         ],
-        "/CosignKmsSignatureStack/BootstrapVersion": [
+        "/X86ArchStack/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/CosignKmsSignatureStack/CheckBootstrapVersion": [
+        "/X86ArchStack/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "CosignKmsSignatureStack"
+      "displayName": "X86ArchStack"
     },
-    "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5.assets": {
+    "X86ArchTestDefaultTestDeployAssert70BB6D5E.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5.assets.json",
+        "file": "X86ArchTestDefaultTestDeployAssert70BB6D5E.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5": {
+    "X86ArchTestDefaultTestDeployAssert70BB6D5E": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://unknown-account/unknown-region",
       "properties": {
-        "templateFile": "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5.template.json",
+        "templateFile": "X86ArchTestDefaultTestDeployAssert70BB6D5E.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
@@ -438,7 +400,7 @@
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5.assets"
+          "X86ArchTestDefaultTestDeployAssert70BB6D5E.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
@@ -447,23 +409,23 @@
         }
       },
       "dependencies": [
-        "CosignKmsSignatureTestDefaultTestDeployAssert6E0224F5.assets"
+        "X86ArchTestDefaultTestDeployAssert70BB6D5E.assets"
       ],
       "metadata": {
-        "/CosignKmsSignatureTest/DefaultTest/DeployAssert/BootstrapVersion": [
+        "/X86ArchTest/DefaultTest/DeployAssert/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/CosignKmsSignatureTest/DefaultTest/DeployAssert/CheckBootstrapVersion": [
+        "/X86ArchTest/DefaultTest/DeployAssert/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "CosignKmsSignatureTest/DefaultTest/DeployAssert"
+      "displayName": "X86ArchTest/DefaultTest/DeployAssert"
     },
     "Tree": {
       "type": "cdk:tree",

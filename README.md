@@ -217,7 +217,7 @@ new EcrScanVerifier(this, 'Scanner2', {
 
 You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API.
 
-**Note**: SBOM export is only available with Enhanced scanning. In addition, Amazon Inspector only includes images that it [actively monitors](https://docs.aws.amazon.com/inspector/latest/user/sbom-export.html) in SBOM exports — if the repository's scan filter is set to **scan on push** only, images will not appear in the export. Enable **continuous scan** on the repository (or via Inspector's ECR scan filter) so that SBOM export covers them. See [Scan behaviors for Amazon ECR scanning](https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html) for details.
+**Note**: SBOM export is only available with Enhanced scanning. Amazon Inspector only includes images that it [actively monitors](https://docs.aws.amazon.com/inspector/latest/user/sbom-export.html) in SBOM exports. Based on the documented behavior, this requires the repository to match a `CONTINUOUS_SCAN` rule in [Inspector's registry scanning configuration](https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-enhanced-enabling.html) — note this is the **Inspector-level `scanFrequency`** (`aws ecr put-registry-scanning-configuration`), not ECR's repository-level `scanOnPush` field (which only applies to Basic scanning). Repositories covered only by a `SCAN_ON_PUSH` rule (or no rule at all) appear to be excluded from SBOM exports. The default is `CONTINUOUS_SCAN` for all repositories (`*`); verify yours with `aws ecr get-registry-scanning-configuration`.
 
 ```ts
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';

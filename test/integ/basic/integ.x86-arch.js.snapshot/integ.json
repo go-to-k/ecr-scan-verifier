@@ -1,0 +1,14 @@
+{
+  "version": "39.0.0",
+  "testCases": {
+    "X86ArchTest/DefaultTest": {
+      "stacks": [
+        "X86ArchStack"
+      ],
+      "diffAssets": true,
+      "stackUpdateWorkflow": false,
+      "assertionStack": "X86ArchTest/DefaultTest/DeployAssert",
+      "assertionStackName": "X86ArchTestDefaultTestDeployAssert70BB6D5E"
+    }
+  }
+}

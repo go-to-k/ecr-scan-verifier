@@ -369,6 +369,7 @@ State-transition strategy (minimizes Inspector flips, which each cost a ~5 min p
 5. **Run `basic`** (proactive scan-on-push enable + unconditional restore).
 6. **Restore Inspector to `ORIGINAL_STATE_*`** — `all` IGNORES `--no-restore` because a both-directions sequence has no obvious "as-found" target.
 7. **Run `cleanup_signature_artifacts`** unconditionally.
+8. **Set the `integ-snapshot-fresh` markgate marker** — ONLY when every entry in `results` is `PASS`. On any FAIL, leave the marker stale so the `gh pr create` / `gh pr merge` hook blocks PRs until the offending mode is re-run cleanly. Partial-mode invocations (`basic`, `enhanced`, `signature`) must NEVER set this marker — only `all` is broad enough to guarantee snapshot freshness.
 
 Pseudocode:
 
@@ -433,6 +434,17 @@ fi
 cleanup_signature_artifacts
 ecr_signing_teardown
 scan_on_push_set false
+
+# --- 8: markgate (only on full PASS) ---
+if printf '%s\n' "${results[@]}" | grep -q FAIL; then
+  echo "Skipping \`markgate set integ-snapshot-fresh\`: some modes failed." >&2
+else
+  if command -v mise >/dev/null 2>&1; then
+    mise exec -- markgate set integ-snapshot-fresh
+  else
+    markgate set integ-snapshot-fresh
+  fi
+fi
 
 printf '%s\n' "${results[@]}"
 ```

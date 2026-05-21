@@ -15,6 +15,19 @@
 # scope: adding a new test typically comes with a README/SKILL update
 # anyway, which trips the marker naturally. Gating on test file edits
 # directly would force re-verification on every test snapshot refresh.
+#
+#   integ-snapshot-fresh — guarantees integ snapshots in test/integ/
+#                          have been refreshed against AWS for the
+#                          current state of CDK source + Lambda asset.
+#                          Set by the /integ-test skill after a clean
+#                          `all` mode run (basic + enhanced + signature
+#                          all PASS). The PreToolUse hook
+#                          .claude/hooks/integ-snapshot-gate.sh blocks
+#                          `gh pr create` / `gh pr merge` when stale.
+#                          Scope covers files whose change forces an
+#                          asset hash change or template structure
+#                          change — anything else won't actually drift
+#                          the snapshots.
 
 gates:
   integ-docs:
@@ -23,3 +36,12 @@ gates:
       - ".claude/skills/integ-test/SKILL.md"
       - "test/integ/README.md"
       - "scripts/integ.sh"
+
+  integ-snapshot-fresh:
+    hash: files
+    include:
+      - "src/**/*.ts"
+      - "assets/lambda/**/*.ts"
+      - "assets/lambda/Dockerfile"
+      - "assets/lambda/package.json"
+      - "assets/lambda/pnpm-lock.yaml"

@@ -2,6 +2,7 @@ import { App, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Key } from 'aws-cdk-lib/aws-kms';
+import { Architecture } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Topic } from 'aws-cdk-lib/aws-sns';
@@ -611,5 +612,55 @@ describe('EcrScanVerifier', () => {
         scanConfig: ScanConfig.signatureOnly(),
       });
     }).toThrow(/signatureOnly.*requires signatureVerification/);
+  });
+
+  describe('architecture', () => {
+    test('defaults to arm64', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Architectures: ['arm64'],
+      });
+    });
+
+    test('explicit Architecture.ARM_64 produces arm64 Lambda', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        architecture: Architecture.ARM_64,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Architectures: ['arm64'],
+      });
+    });
+
+    test('Architecture.X86_64 produces x86_64 Lambda', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        architecture: Architecture.X86_64,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Architectures: ['x86_64'],
+      });
+    });
+
+    test('throws on unsupported architecture', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          architecture: Architecture.custom('mips64'),
+        });
+      }).toThrow(/Unsupported architecture/);
+    });
   });
 });

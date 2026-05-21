@@ -130,6 +130,16 @@ export interface EcrScanVerifierProps {
    * @default - no constructs to block
    */
   readonly blockConstructs?: IConstruct[];
+
+  /**
+   * The system architecture for the Scanner Lambda function.
+   *
+   * Only `Architecture.ARM_64` and `Architecture.X86_64` are supported.
+   * The Docker image asset is built for the matching platform.
+   *
+   * @default Architecture.ARM_64
+   */
+  readonly architecture?: Architecture;
 }
 
 /**
@@ -146,16 +156,23 @@ export class EcrScanVerifier extends Construct {
     this.defaultLogGroup = props.defaultLogGroup;
     const lambdaPurpose = 'Custom::EcrScanVerifierCustomResourceLambda';
 
+    const architecture = props.architecture ?? Architecture.ARM_64;
+    const { platform, targetArch, lambdaArch } = resolveArchitecture(architecture);
+
     const customResourceLambda = new SingletonFunction(this, 'CustomResourceLambda', {
       uuid: 'c56cee6b-6775-541b-d179-c1535d88a0c8',
       lambdaPurpose,
       runtime: Runtime.FROM_IMAGE,
       handler: Handler.FROM_IMAGE,
       code: AssetCode.fromAssetImage(join(__dirname, '../assets/lambda'), {
-        platform: Platform.LINUX_ARM64,
+        platform,
         ignoreMode: IgnoreMode.DOCKER,
+        buildArgs: {
+          TARGETARCH: targetArch,
+          LAMBDA_ARCH: lambdaArch,
+        },
       }),
-      architecture: Architecture.ARM_64,
+      architecture,
       timeout: Duration.seconds(900),
       retryAttempts: 0,
       logGroup: this.defaultLogGroup,
@@ -320,4 +337,26 @@ export class EcrScanVerifier extends Construct {
   get _defaultLogGroup(): ILogGroup | undefined {
     return this.defaultLogGroup;
   }
+}
+
+/**
+ * Resolve a Lambda `Architecture` to the Docker `Platform` and the build args
+ * (`TARGETARCH`, `LAMBDA_ARCH`) that the asset Dockerfile expects.
+ */
+function resolveArchitecture(architecture: Architecture): {
+  platform: Platform;
+  targetArch: string;
+  lambdaArch: string;
+} {
+  // Compare by `name` rather than reference so equivalent `Architecture.custom()`
+  // values are handled correctly.
+  if (architecture.name === Architecture.ARM_64.name) {
+    return { platform: Platform.LINUX_ARM64, targetArch: 'arm64', lambdaArch: 'arm64' };
+  }
+  if (architecture.name === Architecture.X86_64.name) {
+    return { platform: Platform.LINUX_AMD64, targetArch: 'amd64', lambdaArch: 'x86_64' };
+  }
+  throw new Error(
+    `Unsupported architecture '${architecture.name}'. Only Architecture.ARM_64 and Architecture.X86_64 are supported.`,
+  );
 }

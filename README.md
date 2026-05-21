@@ -217,7 +217,7 @@ new EcrScanVerifier(this, 'Scanner2', {
 
 You can generate SBOM (Software Bill of Materials) using Amazon Inspector's CreateSbomExport API.
 
-**Note**: SBOM export is only available with Enhanced scanning. In addition, the ECR scan filter must be set to **continuous scan** — if the repository is only configured for **scan on push**, the SBOM export will be empty. See [Amazon Inspector scan modes for ECR](https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html) for details.
+**Note**: SBOM export is only available with Enhanced scanning. In addition, Amazon Inspector only includes images that it [actively monitors](https://docs.aws.amazon.com/inspector/latest/user/sbom-export.html) in SBOM exports — if the repository's scan filter is set to **scan on push** only, images will not appear in the export. Enable **continuous scan** on the repository (or via Inspector's ECR scan filter) so that SBOM export covers them. See [Scan behaviors for Amazon ECR scanning](https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html) for details.
 
 ```ts
 import { SbomOutput, ScanConfig } from 'ecr-scan-verifier';

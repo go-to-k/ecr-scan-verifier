@@ -35,7 +35,8 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   }
 
   const pollingIntervalSeconds = 5;
-  const pollingMaxRetries = 60;
+  const pollingTimeoutSeconds = Number(props.pollingTimeoutSeconds ?? '840');
+  const pollingMaxRetries = Math.ceil(pollingTimeoutSeconds / pollingIntervalSeconds);
   const imageIdentifier = `${props.repositoryName}:${props.imageTag}`;
 
   // Create logger with context

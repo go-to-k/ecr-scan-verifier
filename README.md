@@ -291,6 +291,24 @@ new EcrScanVerifier(this, 'Scanner', {
 });
 ```
 
+### Polling Timeout
+
+You can configure how long the Scanner Lambda waits for the ECR scan to complete via `pollingTimeout`. Lower this value to fail fast on stuck scans, or keep the default when using Enhanced scanning (Amazon Inspector), whose initial scan after pushing a new image can take several minutes.
+
+If the scan does not complete within `pollingTimeout`, the deployment fails with `ECR image scan timed out`.
+
+```ts
+import { Duration } from 'aws-cdk-lib';
+
+new EcrScanVerifier(this, 'Scanner', {
+  repository,
+  scanConfig: ScanConfig.enhanced(),
+  pollingTimeout: Duration.minutes(5), // default: Duration.minutes(14)
+});
+```
+
+The value must be between 1 and 840 seconds (the Scanner Lambda has a 900 second timeout and reserves 60 seconds for SBOM export, signature verification, and notifications).
+
 ### SNS Notification for Vulnerabilities
 
 You can configure an SNS topic via `vulnsNotificationTopic` to receive notifications when vulnerabilities are detected.

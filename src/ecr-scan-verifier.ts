@@ -140,7 +140,29 @@ export interface EcrScanVerifierProps {
    * @default Architecture.ARM_64
    */
   readonly architecture?: Architecture;
+
+  /**
+   * Timeout for polling the ECR image scan results.
+   *
+   * Lower this value to fail fast on stuck scans, or keep the default when using
+   * Enhanced scanning (Amazon Inspector), whose initial scan after pushing a new
+   * image can take several minutes.
+   *
+   * Must be between 1 and 840 seconds (14 minutes). The upper bound is not 15
+   * minutes because the Scanner Lambda runs on the AWS Lambda 900 second (15
+   * minute) hard maximum, and the remaining 60 seconds are reserved as buffer
+   * for SBOM export, signature verification, log output, and SNS notifications
+   * — work that happens in the same invocation after polling. Setting this to
+   * the Lambda hard maximum would let the function be killed by Lambda before
+   * emitting the friendly `ECR image scan timed out` error.
+   *
+   * @default Duration.minutes(14)
+   */
+  readonly pollingTimeout?: Duration;
 }
+
+const POLLING_TIMEOUT_MAX_SECONDS = 840;
+const POLLING_TIMEOUT_DEFAULT_SECONDS = 840;
 
 /**
  * A Construct that verifies container image scan findings with ECR image scanning.
@@ -179,6 +201,15 @@ export class EcrScanVerifier extends Construct {
     });
 
     const imageTag = props.imageTag ?? 'latest';
+
+    const pollingTimeoutSeconds = (
+      props.pollingTimeout ?? Duration.seconds(POLLING_TIMEOUT_DEFAULT_SECONDS)
+    ).toSeconds();
+    if (pollingTimeoutSeconds < 1 || pollingTimeoutSeconds > POLLING_TIMEOUT_MAX_SECONDS) {
+      throw new Error(
+        `pollingTimeout must be between 1 and ${POLLING_TIMEOUT_MAX_SECONDS} seconds, got ${pollingTimeoutSeconds}.`,
+      );
+    }
 
     const scanConfigOutput = props.scanConfig.bind();
 
@@ -320,6 +351,7 @@ export class EcrScanVerifier extends Construct {
       vulnsTopicArn: props.vulnsNotificationTopic?.topicArn,
       defaultLogGroupName:
         this.defaultLogGroup?.logGroupName ?? `/aws/lambda/${customResourceLambda.functionName}`,
+      pollingTimeoutSeconds: String(pollingTimeoutSeconds),
     };
 
     new CustomResource(this, 'Resource', {

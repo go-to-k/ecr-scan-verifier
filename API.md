@@ -408,6 +408,7 @@ const ecrScanVerifierProps: EcrScanVerifierProps = { ... }
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.failOnVulnerability">failOnVulnerability</a></code> | <code>boolean</code> | Whether to fail the CloudFormation deployment if vulnerabilities are detected above the severity threshold. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.ignoreFindings">ignoreFindings</a></code> | <code>string[]</code> | Finding IDs to ignore during vulnerability evaluation. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.imageTag">imageTag</a></code> | <code>string</code> | Image tag or digest to scan. |
+| <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.pollingTimeout">pollingTimeout</a></code> | <code>aws-cdk-lib.Duration</code> | Timeout for polling the ECR image scan results. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.scanLogsOutput">scanLogsOutput</a></code> | <code><a href="#ecr-scan-verifier.ScanLogsOutput">ScanLogsOutput</a></code> | Configuration for scan logs output. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.severity">severity</a></code> | <code><a href="#ecr-scan-verifier.Severity">Severity</a>[]</code> | Severity threshold for vulnerability detection. |
 | <code><a href="#ecr-scan-verifier.EcrScanVerifierProps.property.signatureVerification">signatureVerification</a></code> | <code><a href="#ecr-scan-verifier.SignatureVerification">SignatureVerification</a></code> | Signature verification configuration for the container image. |
@@ -537,6 +538,26 @@ Image tag or digest to scan.
 
 You can specify a tag (e.g., 'v1.0', 'latest') or a digest (e.g., 'sha256:abc123...').
 If the value starts with 'sha256:', it is treated as a digest.
+
+---
+
+##### `pollingTimeout`<sup>Optional</sup> <a name="pollingTimeout" id="ecr-scan-verifier.EcrScanVerifierProps.property.pollingTimeout"></a>
+
+```typescript
+public readonly pollingTimeout: Duration;
+```
+
+- *Type:* aws-cdk-lib.Duration
+- *Default:* Duration.seconds(300)
+
+Timeout for polling the ECR image scan results.
+
+Useful when Enhanced scanning (Amazon Inspector) takes longer than the default
+to complete the initial scan after pushing a new image. Increase this value
+if you see `ECR image scan timed out` errors during deployment.
+
+Must be between 1 and 840 seconds (the Scanner Lambda has a 900 second timeout
+and reserves 60 seconds for SBOM export, signature verification, and notifications).
 
 ---
 

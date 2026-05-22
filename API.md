@@ -548,16 +548,21 @@ public readonly pollingTimeout: Duration;
 ```
 
 - *Type:* aws-cdk-lib.Duration
-- *Default:* Duration.seconds(300)
+- *Default:* Duration.minutes(14)
 
 Timeout for polling the ECR image scan results.
 
-Useful when Enhanced scanning (Amazon Inspector) takes longer than the default
-to complete the initial scan after pushing a new image. Increase this value
-if you see `ECR image scan timed out` errors during deployment.
+Lower this value to fail fast on stuck scans, or keep the default when using
+Enhanced scanning (Amazon Inspector), whose initial scan after pushing a new
+image can take several minutes.
 
-Must be between 1 and 840 seconds (the Scanner Lambda has a 900 second timeout
-and reserves 60 seconds for SBOM export, signature verification, and notifications).
+Must be between 1 and 840 seconds (14 minutes). The upper bound is not 15
+minutes because the Scanner Lambda runs on the AWS Lambda 900 second (15
+minute) hard maximum, and the remaining 60 seconds are reserved as buffer
+for SBOM export, signature verification, log output, and SNS notifications
+— work that happens in the same invocation after polling. Setting this to
+the Lambda hard maximum would let the function be killed by Lambda before
+emitting the friendly `ECR image scan timed out` error.
 
 ---
 

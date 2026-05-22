@@ -30,4 +30,5 @@ export interface ScannerCustomResourceProps {
   readonly defaultLogGroupName: string;
   readonly sbom?: SbomOutputConfig;
   readonly signatureVerification?: SignatureVerificationConfig;
+  readonly pollingTimeoutSeconds: string;
 }

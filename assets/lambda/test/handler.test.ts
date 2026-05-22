@@ -127,8 +127,72 @@ describe('handler', () => {
       'v1.0',
       'BASIC',
       5,
-      60,
+      168,
       expect.any(Object), // logger
+    );
+  });
+
+  test('should compute pollingMaxRetries from pollingTimeoutSeconds', async () => {
+    const event = {
+      ...baseEvent,
+      ResourceProperties: {
+        ...baseEvent.ResourceProperties,
+        pollingTimeoutSeconds: '600',
+      },
+    };
+
+    await handler(event, mockContext, mockCallback);
+
+    expect(ecrScan.startAndWaitForScan).toHaveBeenCalledWith(
+      'my-repo',
+      'v1.0',
+      'BASIC',
+      5,
+      120,
+      expect.any(Object),
+    );
+  });
+
+  test('should default to 168 retries when pollingTimeoutSeconds is missing', async () => {
+    const event = {
+      ...baseEvent,
+      ResourceProperties: {
+        ...baseEvent.ResourceProperties,
+        pollingTimeoutSeconds: undefined,
+      },
+    };
+
+    await handler(event, mockContext, mockCallback);
+
+    expect(ecrScan.startAndWaitForScan).toHaveBeenCalledWith(
+      'my-repo',
+      'v1.0',
+      'BASIC',
+      5,
+      168,
+      expect.any(Object),
+    );
+  });
+
+  test('should pass pollingMaxRetries to waitForScanResults when startScan is false', async () => {
+    const event = {
+      ...baseEvent,
+      ResourceProperties: {
+        ...baseEvent.ResourceProperties,
+        startScan: 'false',
+        pollingTimeoutSeconds: '450',
+      },
+    };
+
+    await handler(event, mockContext, mockCallback);
+
+    expect(ecrScan.waitForScanResults).toHaveBeenCalledWith(
+      'my-repo',
+      'v1.0',
+      'BASIC',
+      5,
+      90,
+      expect.any(Object),
     );
   });
 

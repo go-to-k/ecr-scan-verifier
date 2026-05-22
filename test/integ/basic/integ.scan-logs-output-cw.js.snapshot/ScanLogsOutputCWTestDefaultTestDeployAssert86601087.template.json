@@ -36,7 +36,7 @@
     "outputPaths": [
      "events.0.message"
     ],
-    "salt": "1779379625476"
+    "salt": "1779427658341"
    },
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete"
@@ -417,7 +417,7 @@
      "logStreams.0.logStreamName",
      "logStreams.1.logStreamName"
     ],
-    "salt": "1779379625478"
+    "salt": "1779427658342"
    },
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete"

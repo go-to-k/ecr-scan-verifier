@@ -1,4 +1,4 @@
-import { App, Stack } from 'aws-cdk-lib';
+import { App, Duration, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Key } from 'aws-cdk-lib/aws-kms';
@@ -661,6 +661,89 @@ describe('EcrScanVerifier', () => {
           architecture: Architecture.custom('mips64'),
         });
       }).toThrow(/Unsupported architecture/);
+    });
+  });
+
+  describe('pollingTimeout', () => {
+    test('defaults to 840 seconds when not specified', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        pollingTimeoutSeconds: '840',
+      });
+    });
+
+    test('passes custom pollingTimeout to the custom resource', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        pollingTimeout: Duration.seconds(600),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        pollingTimeoutSeconds: '600',
+      });
+    });
+
+    test('accepts Duration.minutes()', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        pollingTimeout: Duration.minutes(10),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        pollingTimeoutSeconds: '600',
+      });
+    });
+
+    test('throws when pollingTimeout is below the lower bound', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          pollingTimeout: Duration.seconds(0),
+        });
+      }).toThrow(/pollingTimeout must be between 1 and 840 seconds/);
+    });
+
+    test('accepts the upper bound of 840 seconds', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        pollingTimeout: Duration.seconds(840),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('Custom::EcrScanVerifier', {
+        pollingTimeoutSeconds: '840',
+      });
+    });
+
+    test('throws when pollingTimeout is one second above the upper bound', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          pollingTimeout: Duration.seconds(841),
+        });
+      }).toThrow(/pollingTimeout must be between 1 and 840 seconds/);
+    });
+
+    test('throws when pollingTimeout equals the Lambda hard maximum (900 seconds)', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          pollingTimeout: Duration.seconds(900),
+        });
+      }).toThrow(/pollingTimeout must be between 1 and 840 seconds/);
     });
   });
 });

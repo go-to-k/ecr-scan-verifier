@@ -235,6 +235,7 @@ exports[`EcrScanVerifier Snapshot - all options 1`] = `
             "Ref": "LogGroupF5B46931",
           },
         },
+        "MemorySize": 512,
         "PackageType": "Image",
         "Role": {
           "Fn::GetAtt": [
@@ -908,6 +909,7 @@ exports[`EcrScanVerifier Snapshot - minimal options 1`] = `
             "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:0edfec9a9dedffd80ff82d90e63f772f2d604f4449d5d12971722bb2b3a216b5",
           },
         },
+        "MemorySize": 512,
         "PackageType": "Image",
         "Role": {
           "Fn::GetAtt": [
@@ -1354,6 +1356,7 @@ exports[`EcrScanVerifier Snapshot - signature only 1`] = `
             "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:0edfec9a9dedffd80ff82d90e63f772f2d604f4449d5d12971722bb2b3a216b5",
           },
         },
+        "MemorySize": 512,
         "PackageType": "Image",
         "Role": {
           "Fn::GetAtt": [

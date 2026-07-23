@@ -159,10 +159,29 @@ export interface EcrScanVerifierProps {
    * @default Duration.minutes(14)
    */
   readonly pollingTimeout?: Duration;
+
+  /**
+   * The amount of memory, in MB, for the Scanner Lambda function.
+   *
+   * Increase this value when Enhanced scanning (Amazon Inspector) reports a
+   * large number of findings; loading them all can exceed the Lambda memory
+   * and crash the function with `Runtime.OutOfMemory`.
+   *
+   * Must be between 128 and 10240 MB (the AWS Lambda limits).
+   *
+   * The Scanner Lambda is a singleton shared by all EcrScanVerifier constructs
+   * in the same stack, so the memory size of the first construct is used.
+   *
+   * @default 512
+   */
+  readonly memorySize?: number;
 }
 
 const POLLING_TIMEOUT_MAX_SECONDS = 840;
 const POLLING_TIMEOUT_DEFAULT_SECONDS = 840;
+const MEMORY_SIZE_MIN_MB = 128;
+const MEMORY_SIZE_MAX_MB = 10240;
+const MEMORY_SIZE_DEFAULT_MB = 512;
 
 /**
  * A Construct that verifies container image scan findings with ECR image scanning.
@@ -181,6 +200,13 @@ export class EcrScanVerifier extends Construct {
     const architecture = props.architecture ?? Architecture.ARM_64;
     const { platform, targetArch, lambdaArch } = resolveArchitecture(architecture);
 
+    const memorySize = props.memorySize ?? MEMORY_SIZE_DEFAULT_MB;
+    if (memorySize < MEMORY_SIZE_MIN_MB || memorySize > MEMORY_SIZE_MAX_MB) {
+      throw new Error(
+        `memorySize must be between ${MEMORY_SIZE_MIN_MB} and ${MEMORY_SIZE_MAX_MB} MB, got ${memorySize}.`,
+      );
+    }
+
     const customResourceLambda = new SingletonFunction(this, 'CustomResourceLambda', {
       uuid: 'c56cee6b-6775-541b-d179-c1535d88a0c8',
       lambdaPurpose,
@@ -196,6 +222,7 @@ export class EcrScanVerifier extends Construct {
       }),
       architecture,
       timeout: Duration.seconds(900),
+      memorySize,
       retryAttempts: 0,
       logGroup: this.defaultLogGroup,
     });

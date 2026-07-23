@@ -746,4 +746,77 @@ describe('EcrScanVerifier', () => {
       }).toThrow(/pollingTimeout must be between 1 and 840 seconds/);
     });
   });
+
+  describe('memorySize', () => {
+    test('defaults to 512 MB when not specified', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        MemorySize: 512,
+      });
+    });
+
+    test('passes custom memorySize to the Scanner Lambda', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+        memorySize: 1024,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        MemorySize: 1024,
+      });
+    });
+
+    test('accepts the lower bound of 128 MB', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        memorySize: 128,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        MemorySize: 128,
+      });
+    });
+
+    test('accepts the upper bound of 10240 MB', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+        memorySize: 10240,
+      });
+
+      const template = Template.fromStack(stack);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        MemorySize: 10240,
+      });
+    });
+
+    test('throws when memorySize is below the lower bound', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          memorySize: 127,
+        });
+      }).toThrow(/memorySize must be between 128 and 10240 MB/);
+    });
+
+    test('throws when memorySize is above the upper bound', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          memorySize: 10241,
+        });
+      }).toThrow(/memorySize must be between 128 and 10240 MB/);
+    });
+  });
 });

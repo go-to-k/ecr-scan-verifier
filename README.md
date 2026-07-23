@@ -309,6 +309,20 @@ new EcrScanVerifier(this, 'Scanner', {
 
 The value must be between 1 and 840 seconds (the Scanner Lambda has a 900 second timeout and reserves 60 seconds for SBOM export, signature verification, and notifications).
 
+### Memory Size
+
+You can configure the amount of memory for the Scanner Lambda via `memorySize`. Increase this value when Enhanced scanning (Amazon Inspector) reports a large number of findings; loading them all can exceed the Lambda memory and crash the function with `Runtime.OutOfMemory`.
+
+```ts
+new EcrScanVerifier(this, 'Scanner', {
+  repository,
+  scanConfig: ScanConfig.enhanced(),
+  memorySize: 1024, // default: 512
+});
+```
+
+The value must be between 128 and 10240 MB (the AWS Lambda limits). The Scanner Lambda is a singleton shared by all `EcrScanVerifier` constructs in the same stack, so the memory size of the first construct is used.
+
 ### SNS Notification for Vulnerabilities
 
 You can configure an SNS topic via `vulnsNotificationTopic` to receive notifications when vulnerabilities are detected.

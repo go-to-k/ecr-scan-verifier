@@ -226,6 +226,10 @@ export class EcrScanVerifier extends Construct {
       code: AssetCode.fromAssetImage(join(__dirname, '../assets/lambda'), {
         platform,
         ignoreMode: IgnoreMode.DOCKER,
+        // pnpm settings file for standalone installs — irrelevant to the image
+        // contents, so keep it out of the asset fingerprint to avoid needless
+        // image rebuilds.
+        exclude: ['pnpm-workspace.yaml'],
         buildArgs: {
           TARGETARCH: targetArch,
           LAMBDA_ARCH: lambdaArch,

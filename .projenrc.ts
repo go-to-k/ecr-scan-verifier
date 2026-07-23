@@ -85,6 +85,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
     'cdk-ecr-deployment@^4.1.1',
   ],
   packageManager: NodePackageManager.PNPM,
+  pnpmVersion: '11',
   workflowNodeVersion: '24',
   npmTrustedPublishing: true,
 });

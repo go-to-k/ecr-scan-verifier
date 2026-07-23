@@ -1,0 +1,8 @@
+# Settings-only marker: pnpm treats the nearest pnpm-workspace.yaml as the
+# project root. Without this file, `pnpm install` here would walk up to the
+# repo root's settings file, treat this package as part of that root, and
+# skip creating assets/lambda/node_modules (breaking the esbuild bundling
+# step in CI).
+allowBuilds:
+  aws-sdk: false # aws-sdk v2 postinstall only prints a support notice; not needed
+  esbuild: true

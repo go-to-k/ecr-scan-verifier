@@ -1,0 +1,7 @@
+# pnpm settings (pnpm >= 11 no longer reads the package.json "pnpm" field —
+# https://pnpm.io/settings). Settings-only: this is a single-package repo, so
+# there is deliberately no "packages" list here. assets/lambda has its own
+# settings file, which stops pnpm's upward workspace-root search and keeps
+# `pnpm install` there standalone.
+allowBuilds:
+  unrs-resolver: true

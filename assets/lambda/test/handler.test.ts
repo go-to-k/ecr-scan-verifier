@@ -119,6 +119,34 @@ describe('handler', () => {
     expect(ecrScan.startAndWaitForScan).not.toHaveBeenCalled();
   });
 
+  test('should echo the incoming PhysicalResourceId on Delete even when it differs from addr', async () => {
+    // A CREATE that failed without a response leaves a CFN-generated physical
+    // ID; the rollback DELETE must echo it or the stack sticks in DELETE_FAILED.
+    const event = {
+      ...baseEvent,
+      RequestType: 'Delete' as const,
+      PhysicalResourceId: 'Stack-Scanner-CFNGENERATED',
+    };
+
+    const result = await handler(event, mockContext, mockCallback);
+
+    expect(result?.PhysicalResourceId).toBe('Stack-Scanner-CFNGENERATED');
+    expect(ecrScan.startAndWaitForScan).not.toHaveBeenCalled();
+  });
+
+  test('should echo the incoming PhysicalResourceId on Update', async () => {
+    const event = {
+      ...baseEvent,
+      RequestType: 'Update' as const,
+      PhysicalResourceId: 'Stack-Scanner-CFNGENERATED',
+      OldResourceProperties: { ...baseEvent.ResourceProperties },
+    };
+
+    const result = await handler(event, mockContext, mockCallback);
+
+    expect(result?.PhysicalResourceId).toBe('Stack-Scanner-CFNGENERATED');
+  });
+
   test('should call startAndWaitForScan when startScan is true', async () => {
     await handler(baseEvent, mockContext, mockCallback);
 

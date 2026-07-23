@@ -26,7 +26,11 @@ export const handler: CdkCustomResourceHandler = async function (event) {
   }
 
   const funcResponse: CdkCustomResourceResponse = {
-    PhysicalResourceId: props.addr,
+    // Only Create may mint the physical ID. Update/Delete must echo the ID
+    // CloudFormation recorded — if a failed CREATE never delivered a response,
+    // CFN records a generated ID, and returning a different one during the
+    // rollback DELETE leaves the stack stuck in DELETE_FAILED.
+    PhysicalResourceId: event.RequestType === 'Create' ? props.addr : event.PhysicalResourceId,
     Data: {} as { [key: string]: string },
   };
 

@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/441449925ebbc2c5a2900f315fd00ce875f0a20c23d3e8186af18c715339e24a.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/0dcaf142604aff60a6d657b800f6a01430d93d29ddeb8a9f7b818cb8a47b2080.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -45,6 +45,7 @@
               "code": "*",
               "architecture": "*",
               "timeout": "*",
+              "memorySize": "*",
               "retryAttempts": "*",
               "logGroup": "*"
             }
@@ -209,6 +210,7 @@
               "code": "*",
               "architecture": "*",
               "timeout": "*",
+              "memorySize": "*",
               "retryAttempts": "*",
               "logGroup": "*"
             }

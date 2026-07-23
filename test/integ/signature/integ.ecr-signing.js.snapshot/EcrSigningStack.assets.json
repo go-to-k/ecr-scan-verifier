@@ -27,7 +27,7 @@
         }
       }
     },
-    "4c30072d9df6a7e2e66e7e6cf5c6a4c9847abf11c66fc4e6283cc997c42d7648": {
+    "4872506108e2468ae934efb25d4e45403e850d8069754425732d35d1425b0610": {
       "source": {
         "path": "EcrSigningStack.template.json",
         "packaging": "file"
@@ -35,7 +35,7 @@
       "destinations": {
         "current_account-current_region": {
           "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
-          "objectKey": "4c30072d9df6a7e2e66e7e6cf5c6a4c9847abf11c66fc4e6283cc997c42d7648.json",
+          "objectKey": "4872506108e2468ae934efb25d4e45403e850d8069754425732d35d1425b0610.json",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }

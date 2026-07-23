@@ -14,7 +14,7 @@ Most AWS-mutating primitives live in [`scripts/integ.sh`](../../../scripts/integ
 . scripts/integ.sh
 ```
 
-After sourcing you have: `account_id`, `default_region`, `inspector_status`, `inspector_status_all`, `inspector_enable_all`, `inspector_disable_all`, `wait_inspector_status`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `cleanup_signature_artifacts`, `ecr_signing_setup`, `ecr_signing_teardown`.
+After sourcing you have: `account_id`, `default_region`, `inspector_status`, `inspector_status_all`, `inspector_enable_all`, `inspector_disable_all`, `wait_inspector_status`, `wait_inspector_status_all`, `inspector_rescan_set`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `cleanup_signature_artifacts`, `ecr_signing_setup`, `ecr_signing_teardown`.
 
 In a worktree (or any clone without `node_modules`), run `pnpm install --frozen-lockfile` first — the `pnpm integ:*` scripts call `tsc` directly and will fail with `sh: tsc: command not found` otherwise.
 
@@ -214,6 +214,15 @@ fi
 
 inspector_enable_all
 wait_inspector_status_all ENABLED || exit 1
+
+# CRITICAL: a fresh enable can reset the ECR re-scan duration to DAYS_14.
+# Fixture images older than that window are then NEVER scanned — the scan
+# stays PENDING forever and every attempt times out at 840s (this is
+# deterministic, NOT warmup lag; observed 2026-07-22 with 4.5-month-old
+# fixtures). Set LIFETIME right after enable. The immediate readback may
+# still show the old value for ~1 min (propagation lag) — trust the
+# SUCCESS status, or re-check after the warmup sleep.
+inspector_rescan_set LIFETIME
 
 # Engine warmup: empirically 20-30 min on a fresh enable.
 wait_enhanced_engine_warmup "$TRANSITION" 1200
@@ -436,6 +445,7 @@ fi
 mark_phase inspector-enable
 inspector_enable_all
 wait_inspector_status_all ENABLED || exit 1
+inspector_rescan_set LIFETIME   # fresh enable can reset it to DAYS_14 — see Mode: `enhanced`
 mark_phase warmup
 wait_enhanced_engine_warmup "$TRANSITION" 1200
 

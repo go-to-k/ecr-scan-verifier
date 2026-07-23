@@ -2,7 +2,7 @@
 
 > **Shortcuts**:
 >
-> - For manual runs, source [`scripts/integ.sh`](../../scripts/integ.sh) once per shell. All the `for region in …` loops in this README collapse to helper calls (`inspector_status_all`, `inspector_enable_all` / `disable_all`, `wait_inspector_status_all`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `ecr_signing_setup` / `teardown`, `cleanup_signature_artifacts`).
+> - For manual runs, source [`scripts/integ.sh`](../../scripts/integ.sh) once per shell. All the `for region in …` loops in this README collapse to helper calls (`inspector_status_all`, `inspector_enable_all` / `disable_all`, `wait_inspector_status_all`, `inspector_rescan_set`, `scan_on_push_set`, `wait_enhanced_engine_warmup`, `enhanced_run_with_retry`, `signer_profile_ensure`, `cosign_minimal_signing_config`, `ecr_signing_setup` / `teardown`, `cleanup_signature_artifacts`).
 > - In Claude Code, invoke the `/integ-test` skill (`.claude/skills/integ-test/`) to orchestrate the steps below — Inspector enable/disable + propagation waits, scan-on-push toggling, image signing, and cleanup. See [Using the `/integ-test` skill](#using-the-integ-test-skill) below.
 
 Integration tests are split into three directories based on the required AWS account configuration.
@@ -95,6 +95,13 @@ ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 inspector_enable_all
 wait_inspector_status_all ENABLED
 inspector_status_all
+
+# CRITICAL: a fresh enable can reset the ECR re-scan duration to DAYS_14,
+# which makes fixture images older than 14 days permanently ineligible for
+# scanning — the scan stays PENDING forever and every attempt times out at
+# 840s (deterministic, NOT warmup lag). Set LIFETIME right after enable.
+# The immediate readback may show the old value for ~1 min (propagation lag).
+inspector_rescan_set LIFETIME
 
 # Engine warmup (20 min by default, skipped if already ENABLED)
 wait_enhanced_engine_warmup "$ORIGINAL_STATE_EAST1"

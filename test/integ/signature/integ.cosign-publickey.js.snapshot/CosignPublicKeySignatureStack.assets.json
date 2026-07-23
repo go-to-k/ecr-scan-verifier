@@ -14,7 +14,7 @@
         }
       }
     },
-    "591ca426c664d5990af21575c89f66e4a6df5a9b9c70dc408e6de60c585d0f19": {
+    "14473588daaccff39ab5ecae30c097e64bd93e1f8a2f680f9826d71230239a90": {
       "source": {
         "path": "CosignPublicKeySignatureStack.template.json",
         "packaging": "file"
@@ -22,7 +22,7 @@
       "destinations": {
         "current_account-current_region": {
           "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
-          "objectKey": "591ca426c664d5990af21575c89f66e4a6df5a9b9c70dc408e6de60c585d0f19.json",
+          "objectKey": "14473588daaccff39ab5ecae30c097e64bd93e1f8a2f680f9826d71230239a90.json",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }

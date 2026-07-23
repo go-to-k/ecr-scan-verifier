@@ -25,6 +25,7 @@ const IGNORE_FOR_PASSING_TESTS = [
   'CVE-2025-7783',
   'CVE-2023-42282',
   'CVE-2023-26136',
+  'IN-DISCONTINUED-001', // "Platform End Of Life" — Inspector flags the intentionally-old nodejs:14 base as CRITICAL
 ];
 
 const app = new App();

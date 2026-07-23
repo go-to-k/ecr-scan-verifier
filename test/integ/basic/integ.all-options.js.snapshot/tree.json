@@ -119,6 +119,7 @@
                       "code": "*",
                       "architecture": "*",
                       "timeout": "*",
+                      "memorySize": "*",
                       "retryAttempts": "*",
                       "logGroup": "*"
                     }
@@ -702,6 +703,7 @@
                         "Ref": "DefaultLogGroup696834B2"
                       }
                     },
+                    "memorySize": 512,
                     "packageType": "Image",
                     "role": {
                       "Fn::GetAtt": [
@@ -765,6 +767,7 @@
                   "code": "*",
                   "architecture": "*",
                   "timeout": "*",
+                  "memorySize": "*",
                   "retryAttempts": "*",
                   "logGroup": "*"
                 }

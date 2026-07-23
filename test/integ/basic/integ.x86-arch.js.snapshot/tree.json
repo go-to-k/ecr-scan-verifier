@@ -54,6 +54,7 @@
                       "code": "*",
                       "architecture": "*",
                       "timeout": "*",
+                      "memorySize": "*",
                       "retryAttempts": "*",
                       "logGroup": "*"
                     }
@@ -632,6 +633,7 @@
                         "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:4e1dbe5382bb1ee810f739a9f65efcb7fee550e08aa57b1514886c812d0ce2f2"
                       }
                     },
+                    "memorySize": 512,
                     "packageType": "Image",
                     "role": {
                       "Fn::GetAtt": [
@@ -695,6 +697,7 @@
                   "code": "*",
                   "architecture": "*",
                   "timeout": "*",
+                  "memorySize": "*",
                   "retryAttempts": "*",
                   "logGroup": "*"
                 }

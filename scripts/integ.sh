@@ -83,6 +83,23 @@ scan_on_push_set() {
   done
 }
 
+# Ensure old fixture images stay scannable: Inspector only scans images
+# within the ECR re-scan duration (a fresh `inspector2 enable` can reset it
+# to DAYS_14). Fixture images older than that window are then NEVER scanned
+# and enhanced tests time out deterministically. Call this AFTER
+# inspector_enable_all. Usage: inspector_rescan_set [LIFETIME]
+inspector_rescan_set() {
+  local duration="${1:-LIFETIME}"
+  for region in "${REGIONS[@]}"; do
+    aws inspector2 update-configuration --region "$region" \
+      --ecr-configuration "{\"rescanDuration\":\"${duration}\",\"pullDateRescanDuration\":\"DAYS_180\"}"
+  done
+  for region in "${REGIONS[@]}"; do
+    echo "$region: $(aws inspector2 get-configuration --region "$region" \
+      --query 'ecrConfiguration.rescanDurationState.rescanDuration' --output text)"
+  done
+}
+
 # --- Enhanced engine warmup (DISABLED -> ENABLED) ---------------------------
 #
 # `batch-get-account-status` flipping to ENABLED is not the same as the

@@ -41,13 +41,19 @@ const test = new IntegTest(app, 'ScanLogsOutputCWTest', {
   stackUpdateWorkflow: false,
 });
 
+// Read the summary stream directly with getLogEvents instead of searching
+// with filterLogEvents: the search path can return empty first pages with a
+// nextToken (which the assertion cannot follow), making the test hang until
+// timeout even though the events exist.
+const summaryLogStreamName = `${image.repository.repositoryName},${image.assetHash}/summary`;
 test.assertions
-  .awsApiCall('CloudWatchLogs', 'filterLogEvents', {
+  .awsApiCall('CloudWatchLogs', 'getLogEvents', {
     logGroupName: scanLogsOutputLogGroup.logGroupName,
-    filterPattern: 'Severity Summary',
-    limit: 1,
+    logStreamName: summaryLogStreamName,
+    startFromHead: true,
+    limit: 10,
   })
-  .assertAtPath('events.0.message', ExpectedResult.stringLikeRegexp('.+'))
+  .assertAtPath('events.0.message', ExpectedResult.stringLikeRegexp('Severity Summary'))
   .waitForAssertions();
 
 // Assert that two log streams (findings and summary) exist

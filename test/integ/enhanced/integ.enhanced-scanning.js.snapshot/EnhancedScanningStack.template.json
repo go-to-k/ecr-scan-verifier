@@ -152,7 +152,8 @@
      "CVE-2025-68121",
      "CVE-2025-7783",
      "CVE-2023-42282",
-     "CVE-2023-26136"
+     "CVE-2023-26136",
+     "IN-DISCONTINUED-001"
     ],
     "suppressErrorOnRollback": "true",
     "defaultLogGroupName": {
@@ -274,6 +275,7 @@
       "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:0edfec9a9dedffd80ff82d90e63f772f2d604f4449d5d12971722bb2b3a216b5"
      }
     },
+    "MemorySize": 512,
     "PackageType": "Image",
     "Role": {
      "Fn::GetAtt": [

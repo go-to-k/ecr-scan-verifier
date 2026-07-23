@@ -276,6 +276,7 @@
       "Ref": "DefaultLogGroup696834B2"
      }
     },
+    "MemorySize": 512,
     "PackageType": "Image",
     "Role": {
      "Fn::GetAtt": [

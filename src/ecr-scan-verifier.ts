@@ -1,5 +1,13 @@
 import { join } from 'path';
-import { Annotations, Aspects, CustomResource, Duration, IgnoreMode, Stack } from 'aws-cdk-lib';
+import {
+  Annotations,
+  Aspects,
+  CustomResource,
+  Duration,
+  IgnoreMode,
+  Stack,
+  Token,
+} from 'aws-cdk-lib';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -201,7 +209,10 @@ export class EcrScanVerifier extends Construct {
     const { platform, targetArch, lambdaArch } = resolveArchitecture(architecture);
 
     const memorySize = props.memorySize ?? MEMORY_SIZE_DEFAULT_MB;
-    if (memorySize < MEMORY_SIZE_MIN_MB || memorySize > MEMORY_SIZE_MAX_MB) {
+    if (
+      !Token.isUnresolved(memorySize) &&
+      (memorySize < MEMORY_SIZE_MIN_MB || memorySize > MEMORY_SIZE_MAX_MB)
+    ) {
       throw new Error(
         `memorySize must be between ${MEMORY_SIZE_MIN_MB} and ${MEMORY_SIZE_MAX_MB} MB, got ${memorySize}.`,
       );

@@ -1,4 +1,4 @@
-import { App, Duration, Stack } from 'aws-cdk-lib';
+import { App, Duration, Lazy, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Key } from 'aws-cdk-lib/aws-kms';
@@ -817,6 +817,16 @@ describe('EcrScanVerifier', () => {
           memorySize: 10241,
         });
       }).toThrow(/memorySize must be between 128 and 10240 MB/);
+    });
+
+    test('skips validation for unresolved tokens', () => {
+      expect(() => {
+        new EcrScanVerifier(stack, 'Scanner', {
+          repository,
+          scanConfig: ScanConfig.basic(),
+          memorySize: Lazy.number({ produce: () => 1024 }),
+        });
+      }).not.toThrow();
     });
   });
 });

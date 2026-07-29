@@ -221,6 +221,7 @@ describe('handler', () => {
       5,
       90,
       expect.any(Object),
+      true,
     );
   });
 

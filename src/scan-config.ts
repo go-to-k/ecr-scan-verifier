@@ -10,9 +10,10 @@ export interface BasicScanConfigOptions {
    * If false, the construct will poll for existing scan results
    * (useful when scan-on-push is configured).
    *
-   * **Note**: If `startScan` is false and no scan has been performed
-   * (e.g., scan-on-push is not configured), the deployment will fail
-   * after polling times out.
+   * **Note**: If `startScan` is false and no scan has been performed,
+   * the deployment will fail. When the scanning configuration shows that
+   * no scan will ever run (scan-on-push is disabled), it fails immediately;
+   * otherwise it fails after polling times out.
    *
    * **Note**: If scan-on-push is configured and `startScan` is true,
    * the `StartImageScan` API may return a `LimitExceededException`
@@ -94,6 +95,10 @@ export abstract class ScanConfig {
    * Enhanced scanning provides more detailed findings including
    * programming language package vulnerabilities.
    * Ensure Amazon Inspector is enabled for your registry.
+   *
+   * If Enhanced scanning is not enabled on the account, or the repository
+   * is not covered by any Enhanced scanning filter, the deployment fails
+   * immediately without waiting for the polling timeout.
    */
   public static enhanced(options?: EnhancedScanConfigOptions): ScanConfig {
     return new EnhancedScanConfig(options);

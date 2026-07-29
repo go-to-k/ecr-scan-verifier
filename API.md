@@ -178,9 +178,10 @@ Whether to start an image scan via StartImageScan API.
 If false, the construct will poll for existing scan results
 (useful when scan-on-push is configured).
 
-**Note**: If `startScan` is false and no scan has been performed
-(e.g., scan-on-push is not configured), the deployment will fail
-after polling times out.
+**Note**: If `startScan` is false and no scan has been performed,
+the deployment will fail. When the scanning configuration shows that
+no scan will ever run (scan-on-push is disabled), it fails immediately;
+otherwise it fails after polling times out.
 
 **Note**: If scan-on-push is configured and `startScan` is true,
 the `StartImageScan` API may return a `LimitExceededException`
@@ -448,7 +449,8 @@ Scan configuration — choose based on your ECR repository/account settings:.
   Requires Enhanced scanning to be enabled on the account.
 
 If the required scanning configuration is not in place and no prior scan results exist,
-the deployment will fail.
+the deployment will fail — immediately when the scanning configuration shows the scan
+will never run, without waiting for the polling timeout.
 
 ---
 
@@ -1381,6 +1383,10 @@ Enhanced scanning using Amazon Inspector.
 Enhanced scanning provides more detailed findings including
 programming language package vulnerabilities.
 Ensure Amazon Inspector is enabled for your registry.
+
+If Enhanced scanning is not enabled on the account, or the repository
+is not covered by any Enhanced scanning filter, the deployment fails
+immediately without waiting for the polling timeout.
 
 ###### `options`<sup>Optional</sup> <a name="options" id="ecr-scan-verifier.ScanConfig.enhanced.parameter.options"></a>
 

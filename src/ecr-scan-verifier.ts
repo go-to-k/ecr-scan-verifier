@@ -58,7 +58,8 @@ export interface EcrScanVerifierProps {
    *   Requires Enhanced scanning to be enabled on the account.
    *
    * If the required scanning configuration is not in place and no prior scan results exist,
-   * the deployment will fail.
+   * the deployment will fail — immediately when the scanning configuration shows the scan
+   * will never run, without waiting for the polling timeout.
    */
   readonly scanConfig: ScanConfig;
 
@@ -286,6 +287,25 @@ export class EcrScanVerifier extends Construct {
       customResourceLambda.addToRolePolicy(
         new PolicyStatement({
           actions: ['inspector2:ListCoverage', 'inspector2:ListFindings'],
+          resources: ['*'],
+        }),
+      );
+    }
+
+    // Scanning-configuration APIs let the handler fail fast when no scan will
+    // ever start (repository not covered by scan filters / scan-on-push
+    // disabled). Only needed when the handler waits for a scan it does not
+    // start itself.
+    if (scanConfigOutput.scanType !== 'SIGNATURE_ONLY' && !scanConfigOutput.startScan) {
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:BatchGetRepositoryScanningConfiguration'],
+          resources: [props.repository.repositoryArn],
+        }),
+      );
+      customResourceLambda.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ecr:GetRegistryScanningConfiguration'],
           resources: ['*'],
         }),
       );

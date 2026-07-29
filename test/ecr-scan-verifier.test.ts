@@ -232,6 +232,114 @@ describe('EcrScanVerifier', () => {
       );
     });
 
+    test('scanning configuration permissions for enhanced scan', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.enhanced(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:BatchGetRepositoryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+              {
+                Action: 'ecr:GetRegistryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
+    test('scanning configuration permissions for basic scan with startScan false', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic({ startScan: false }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:BatchGetRepositoryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+              {
+                Action: 'ecr:GetRegistryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: '*',
+              },
+            ]),
+          },
+        },
+        1,
+      );
+    });
+
+    test('no scanning configuration permissions for basic scan with startScan true', () => {
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.basic(),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:BatchGetRepositoryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+    });
+
+    test('no scanning configuration permissions for signature only scan', () => {
+      const kmsKey = new Key(stack, 'SigningKey');
+      new EcrScanVerifier(stack, 'Scanner', {
+        repository,
+        scanConfig: ScanConfig.signatureOnly(),
+        signatureVerification: SignatureVerification.cosignKms({ key: kmsKey }),
+      });
+
+      const template = Template.fromStack(stack);
+      template.resourcePropertiesCountIs(
+        'AWS::IAM::Policy',
+        {
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 'ecr:BatchGetRepositoryScanningConfiguration',
+                Effect: 'Allow',
+                Resource: { 'Fn::GetAtt': [Match.stringLikeRegexp('TestRepo'), 'Arn'] },
+              },
+            ]),
+          },
+        },
+        0,
+      );
+    });
+
     test('signature only scan has DescribeImages but not DescribeImageScanFindings', () => {
       const kmsKey = new Key(stack, 'SigningKey');
       new EcrScanVerifier(stack, 'Scanner', {

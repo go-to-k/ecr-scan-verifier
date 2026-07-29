@@ -126,6 +126,8 @@ export const handler: CdkCustomResourceHandler = async function (event) {
       logger,
     );
   } else {
+    // No scan is started explicitly here, so fail fast if the scanning
+    // configuration shows the repository will never be scanned.
     scanFindings = await waitForScanResults(
       props.repositoryName,
       props.imageTag,
@@ -133,6 +135,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
       pollingIntervalSeconds,
       pollingMaxRetries,
       logger,
+      true,
     );
   }
 

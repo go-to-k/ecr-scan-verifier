@@ -38,7 +38,7 @@ For the following modes, **scan-on-push must be enabled** on your ECR repository
 
 `ScanConfig.signatureOnly()` does not require scan-on-push, as it only verifies image signatures without scanning.
 
-If scan-on-push is not configured and no prior scan results exist, the deployment will fail with an error. The construct checks the registry / repository scanning configuration when no scan results are found, so misconfigurations that mean the scan will never run — the repository not matching any Enhanced scanning filter, Enhanced scanning not being enabled on the account, or Basic scan-on-push being disabled — fail immediately with a descriptive error instead of waiting for the `pollingTimeout` (14 minutes by default).
+If scan-on-push is not configured and no prior scan results exist, the deployment will fail with an error. The construct checks the registry / repository scanning configuration when no scan results are found, so misconfigurations that mean the scan will never run — the repository not matching any Enhanced scanning filter, Enhanced scanning not being enabled on the account, or Basic scan-on-push being disabled — fail immediately with a descriptive error instead of waiting for the `pollingTimeout` (14 minutes by default). See [docs/scan-coverage-check.md](docs/scan-coverage-check.md) for the full decision table.
 
 > **Tip**: `startScan: true` works even when scan-on-push is already enabled. If a scan has already been triggered, the construct simply uses the existing scan results.
 

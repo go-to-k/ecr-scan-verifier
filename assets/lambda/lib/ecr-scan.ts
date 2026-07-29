@@ -127,6 +127,13 @@ export const waitForScanResults = async (
         );
       }
 
+      if (status === 'IMAGE_ARCHIVED') {
+        throw new Error(
+          'ECR image scan failed: the image is archived. Archived images cannot be ' +
+            'scanned or pulled. Restore the image to the active tier before deploying it.',
+        );
+      }
+
       logger.log(`Scan status: ${status}, waiting ${pollingIntervalSeconds}s...`);
     } catch (error: any) {
       if (error.name === 'ScanNotFoundException') {

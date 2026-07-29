@@ -106,7 +106,8 @@ on their own, with no configuration inference needed
 | `COMPLETE` / `ACTIVE` | Success — return findings |
 | `FAILED` / `UNSUPPORTED_IMAGE` | Fail immediately (pre-existing behavior) |
 | `SCAN_ELIGIBILITY_EXPIRED` | **Fail immediately** — the image is older than Amazon Inspector's ECR re-scan duration, so its findings are no longer available. Remedy: push the image again, or extend the re-scan duration (`aws inspector2 update-configuration`). |
-| Anything else (`PENDING`, `IN_PROGRESS`, ...) | Keep polling |
+| `IMAGE_ARCHIVED` | **Fail immediately** — archived images cannot be scanned or pulled. Remedy: restore the image to the active tier. Failing here surfaces the problem with a clear message *before* the deployment reaches ECS, where the same image would otherwise fail as an opaque `CannotPullContainerError` crash-loop at task launch. |
+| Anything else (`PENDING`, `IN_PROGRESS`, `FINDINGS_UNAVAILABLE`, ...) | Keep polling |
 
 Notes:
 
@@ -114,8 +115,17 @@ Notes:
   monitoring, so `SCAN_ELIGIBILITY_EXPIRED` is not strictly permanent — but waiting
   for that to happen spontaneously during a deployment is pointless; failing with the
   remedy is the right behavior.
-- `FINDINGS_UNAVAILABLE` and `IMAGE_ARCHIVED` also look terminal but their exact
-  semantics have not been verified; they keep polling for now.
+- Both fail-fast statuses describe states that cannot arise or heal spontaneously
+  within a deployment's polling window (aging past the re-scan window and archival
+  are slow, externally-driven transitions), so a wrong fail-fast is not possible if
+  the statuses mean what they say. Their exact real-API behavior is still unverified
+  (reproducing either requires an aged or archived image); if a status never actually
+  appears, the branch is simply dead code and behavior is unchanged.
+- `FINDINGS_UNAVAILABLE` is deliberately **not** a fail-fast status: it may plausibly
+  appear transiently between scan completion and findings propagation (failing there
+  would break healthy deployments), and even when terminal its cause is ambiguous, so
+  no actionable remedy could be offered. Re-evaluate if real-world observations
+  clarify its semantics.
 - An image that was **never scanned** and is already outside the re-scan window has
   been observed to report `PENDING` forever (2026-07-22 integ incident). `PENDING` is
   also the legitimate warming-up state, so it cannot be used for fail-fast;

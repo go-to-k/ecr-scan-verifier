@@ -192,6 +192,19 @@ describe('ecr-scan', () => {
       expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(1);
     });
 
+    test('should throw immediately when scan status is IMAGE_ARCHIVED', async () => {
+      ecrMock.on(DescribeImageScanFindingsCommand).resolves({
+        imageScanStatus: { status: 'IMAGE_ARCHIVED' },
+        imageScanFindings: {},
+      });
+
+      await expect(
+        waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 100, createMockLogger()),
+      ).rejects.toThrow('the image is archived');
+
+      expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(1);
+    });
+
     test('should retry on ScanNotFoundException and eventually succeed', async () => {
       const scanNotFoundError = new Error('Scan not found');
       scanNotFoundError.name = 'ScanNotFoundException';

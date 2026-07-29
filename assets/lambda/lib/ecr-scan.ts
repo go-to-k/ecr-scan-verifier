@@ -118,6 +118,15 @@ export const waitForScanResults = async (
         );
       }
 
+      if (status === 'SCAN_ELIGIBILITY_EXPIRED') {
+        throw new Error(
+          'ECR image scan failed: scan eligibility for the image has expired. ' +
+            "The image is older than Amazon Inspector's ECR re-scan duration, " +
+            'so its findings are no longer available. Push the image again, or extend ' +
+            'the re-scan duration (aws inspector2 update-configuration).',
+        );
+      }
+
       logger.log(`Scan status: ${status}, waiting ${pollingIntervalSeconds}s...`);
     } catch (error: any) {
       if (error.name === 'ScanNotFoundException') {

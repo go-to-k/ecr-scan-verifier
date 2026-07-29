@@ -178,6 +178,20 @@ describe('ecr-scan', () => {
       ).rejects.toThrow('Image is not supported for scanning');
     });
 
+    test('should throw immediately when scan status is SCAN_ELIGIBILITY_EXPIRED', async () => {
+      ecrMock.on(DescribeImageScanFindingsCommand).resolves({
+        imageScanStatus: { status: 'SCAN_ELIGIBILITY_EXPIRED' },
+        imageScanFindings: {},
+      });
+
+      await expect(
+        waitForScanResults('my-repo', imageTag, 'ENHANCED', 0, 100, createMockLogger()),
+      ).rejects.toThrow('scan eligibility for the image has expired');
+
+      // Fails on the first poll instead of exhausting all retries
+      expect(ecrMock.commandCalls(DescribeImageScanFindingsCommand)).toHaveLength(1);
+    });
+
     test('should retry on ScanNotFoundException and eventually succeed', async () => {
       const scanNotFoundError = new Error('Scan not found');
       scanNotFoundError.name = 'ScanNotFoundException';

@@ -831,6 +831,7 @@
                                 },
                                 {
                                   "Action": [
+                                    "ecr:BatchGetRepositoryScanningConfiguration",
                                     "ecr:DescribeImageScanFindings",
                                     "ecr:DescribeImages"
                                   ],
@@ -861,6 +862,7 @@
                                 },
                                 {
                                   "Action": [
+                                    "ecr:GetRegistryScanningConfiguration",
                                     "inspector2:CreateSbomExport",
                                     "inspector2:GetSbomExport",
                                     "inspector2:ListCoverage",
@@ -906,6 +908,16 @@
                         {
                           "attachToRole": [
                             "*"
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
+                          ]
+                        },
+                        {
+                          "addStatements": [
+                            {}
                           ]
                         },
                         {
@@ -996,6 +1008,16 @@
                       "addToPrincipalPolicy": [
                         {}
                       ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
+                    },
+                    {
+                      "addToPrincipalPolicy": [
+                        {}
+                      ]
                     }
                   ]
                 }
@@ -1038,7 +1060,7 @@
                     ],
                     "code": {
                       "imageUri": {
-                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:a1cde20d1e37a5b18b466d990d74def693beddc2892c364ecf9a39ec84c69ea4"
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:e5c10df673444fe322fef17b3c0d980de343d676dbf0cc3f2e23fcf9acecf06b"
                       }
                     },
                     "memorySize": 512,

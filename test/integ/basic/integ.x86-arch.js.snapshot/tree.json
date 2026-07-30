@@ -630,7 +630,7 @@
                     ],
                     "code": {
                       "imageUri": {
-                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:9376c1a3b57b5295015f8f15178a9e694bcf760b9b25678c9a0899a99690aae7"
+                        "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}:fe3df43c0b0e620d0a13be3a6519b7e060479f696498ca0cbcb766cf44fae434"
                       }
                     },
                     "memorySize": 512,

@@ -14,7 +14,7 @@
         }
       }
     },
-    "dd57eccf3d93fe3ec6be0f39bb781b2e5127e46cdb7989433f7fb9e091f15c5e": {
+    "11e9e1eae869bad19a687a662ec352236df78dafaefcedbcd2cfcd6134a1ee26": {
       "source": {
         "path": "X86ArchStack.template.json",
         "packaging": "file"
@@ -22,7 +22,7 @@
       "destinations": {
         "current_account-current_region": {
           "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
-          "objectKey": "dd57eccf3d93fe3ec6be0f39bb781b2e5127e46cdb7989433f7fb9e091f15c5e.json",
+          "objectKey": "11e9e1eae869bad19a687a662ec352236df78dafaefcedbcd2cfcd6134a1ee26.json",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }
@@ -42,9 +42,9 @@
         }
       }
     },
-    "9376c1a3b57b5295015f8f15178a9e694bcf760b9b25678c9a0899a99690aae7": {
+    "fe3df43c0b0e620d0a13be3a6519b7e060479f696498ca0cbcb766cf44fae434": {
       "source": {
-        "directory": "asset.9376c1a3b57b5295015f8f15178a9e694bcf760b9b25678c9a0899a99690aae7",
+        "directory": "asset.fe3df43c0b0e620d0a13be3a6519b7e060479f696498ca0cbcb766cf44fae434",
         "dockerBuildArgs": {
           "TARGETARCH": "amd64",
           "LAMBDA_ARCH": "x86_64"
@@ -54,7 +54,7 @@
       "destinations": {
         "current_account-current_region": {
           "repositoryName": "cdk-hnb659fds-container-assets-${AWS::AccountId}-${AWS::Region}",
-          "imageTag": "9376c1a3b57b5295015f8f15178a9e694bcf760b9b25678c9a0899a99690aae7",
+          "imageTag": "fe3df43c0b0e620d0a13be3a6519b7e060479f696498ca0cbcb766cf44fae434",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-image-publishing-role-${AWS::AccountId}-${AWS::Region}"
         }
       }

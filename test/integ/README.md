@@ -33,6 +33,8 @@ Even after `batch-get-account-status` reports `ENABLED`, the Inspector scanning 
 
 **`cosign sign` looks hung**: on success it emits only `Signing artifact...` to stderr and then goes silent until the OCI referrer push completes (typically a few seconds, longer for large layers). Do NOT cancel — that produces orphan referrer tags in the bootstrap repo. Use `cosign sign -d` for verbose HTTP logging when actually debugging.
 
+**Docker daemon must be running**: every flow's `cdk synth` builds the Lambda image asset (`AssetCode.fromAssetImage`), so start Docker before running any test — otherwise the failure surfaces minutes deep into the run instead of up front.
+
 ## Check Current Environment
 
 ```bash
@@ -219,7 +221,7 @@ The teardown disables the signing-configuration and deletes the dedicated repo. 
 This implementation always skips Rekor transparency log verification for reliability in AWS Lambda
 environments. The cryptographic signature is still verified using the KMS key.
 
-- Sign with: `cosign sign --tlog-upload=false --key "awskms:///${KMS_KEY_ARN}" IMAGE`
+- Sign without the transparency log via a minimal signing-config (`cosign_minimal_signing_config`, see the signing step below)
 - Verification works offline and in VPC environments without internet access
 - Faster verification without network calls to Rekor service
 - If you require Rekor transparency log verification for compliance, consider using Notation with AWS Signer instead
@@ -287,7 +289,7 @@ pnpm integ:signature:update --language javascript --test-regex "integ.cosign-kms
 This implementation always skips Rekor transparency log verification for reliability in AWS Lambda
 environments. The cryptographic signature is still verified using the public key.
 
-- Sign with: `cosign sign --tlog-upload=false --key cosign.key IMAGE`
+- Sign without the transparency log via a minimal signing-config (`cosign_minimal_signing_config`, see the signing step below)
 - Verification works offline and in VPC environments without internet access
 - Faster verification without network calls to Rekor service
 - If you require Rekor transparency log verification for compliance, consider using Notation with AWS Signer instead

@@ -14,6 +14,8 @@ const inspectorMock = mockClient(Inspector2Client);
 const s3Mock = mockClient(S3Client);
 const mockLogger = new Logger({ repositoryName: 'my-repo', imageTag: 'v1.0' });
 
+const kmsKeyArn = 'arn:aws:kms:us-east-1:123456789012:key/test-key';
+
 const createMockStream = (content: string) => {
   const stream = new Readable();
   stream.push(content);
@@ -44,11 +46,10 @@ describe('sbom-export', () => {
         status: 'SUCCEEDED',
         s3Destination: {
           bucketName: 'test-bucket',
-          keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
       s3Mock.on(ListObjectsV2Command).resolves({
-        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+        Contents: [{ Key: 'report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{"bomFormat": "CycloneDX"}'),
@@ -59,7 +60,8 @@ describe('sbom-export', () => {
         'v1.0',
         'CYCLONEDX_1_4',
         'test-bucket',
-        'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        undefined,
+        kmsKeyArn,
         mockLogger,
       );
 
@@ -79,11 +81,10 @@ describe('sbom-export', () => {
         status: 'SUCCEEDED',
         s3Destination: {
           bucketName: 'test-bucket',
-          keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
       s3Mock.on(ListObjectsV2Command).resolves({
-        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+        Contents: [{ Key: 'report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{"spdxVersion": "SPDX-2.3"}'),
@@ -94,7 +95,8 @@ describe('sbom-export', () => {
         'v1.0',
         'SPDX_2_3',
         'test-bucket',
-        'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        undefined,
+        kmsKeyArn,
         mockLogger,
       );
 
@@ -102,6 +104,65 @@ describe('sbom-export', () => {
 
       const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
       expect(createCall.args[0].input.reportFormat).toBe('SPDX_2_3');
+    });
+
+    test('should pass the configured prefix to CreateSbomExport and search under it', async () => {
+      inspectorMock.on(CreateSbomExportCommand).resolves({
+        reportId: 'report-prefix',
+      });
+      inspectorMock.on(GetSbomExportCommand).resolves({
+        status: 'SUCCEEDED',
+        s3Destination: {
+          bucketName: 'test-bucket',
+          keyPrefix: 'sbom/',
+        },
+      });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'sbom/report.json' }],
+      });
+      s3Mock.on(GetObjectCommand).resolves({
+        Body: createMockStream('{}'),
+      });
+
+      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'sbom/', kmsKeyArn, mockLogger);
+
+      const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
+      expect(createCall.args[0].input.s3Destination?.keyPrefix).toBe('sbom/');
+
+      const listCall = s3Mock.commandCalls(ListObjectsV2Command)[0];
+      expect(listCall.args[0].input.Prefix).toBe('sbom/');
+
+      const getCall = s3Mock.commandCalls(GetObjectCommand)[0];
+      expect(getCall.args[0].input.Key).toBe('sbom/report.json');
+    });
+
+    test('should omit keyPrefix when no prefix is configured', async () => {
+      inspectorMock.on(CreateSbomExportCommand).resolves({
+        reportId: 'report-no-prefix',
+      });
+      inspectorMock.on(GetSbomExportCommand).resolves({
+        status: 'SUCCEEDED',
+        s3Destination: {
+          bucketName: 'test-bucket',
+        },
+      });
+      s3Mock.on(ListObjectsV2Command).resolves({
+        Contents: [{ Key: 'report.json' }],
+      });
+      s3Mock.on(GetObjectCommand).resolves({
+        Body: createMockStream('{}'),
+      });
+
+      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger);
+
+      const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
+      expect(createCall.args[0].input.s3Destination?.keyPrefix).toBeUndefined();
+
+      const listCall = s3Mock.commandCalls(ListObjectsV2Command)[0];
+      expect(listCall.args[0].input.Prefix).toBe('');
+
+      const getCall = s3Mock.commandCalls(GetObjectCommand)[0];
+      expect(getCall.args[0].input.Key).toBe('report.json');
     });
 
     test('should include imageTag in resource filter', async () => {
@@ -112,17 +173,16 @@ describe('sbom-export', () => {
         status: 'SUCCEEDED',
         s3Destination: {
           bucketName: 'test-bucket',
-          keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
       s3Mock.on(ListObjectsV2Command).resolves({
-        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+        Contents: [{ Key: 'report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
       });
 
-      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger);
+      await exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger);
 
       const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
       expect(createCall.args[0].input.resourceFilterCriteria?.ecrImageTags).toEqual([
@@ -138,17 +198,16 @@ describe('sbom-export', () => {
         status: 'SUCCEEDED',
         s3Destination: {
           bucketName: 'test-bucket',
-          keyPrefix: 'sbom-exports/my-repo/report.json',
         },
       });
       s3Mock.on(ListObjectsV2Command).resolves({
-        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+        Contents: [{ Key: 'report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
       });
 
-      await exportSbom('my-repo', 'sha256:abc', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger);
+      await exportSbom('my-repo', 'sha256:abc', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger);
 
       const createCall = inspectorMock.commandCalls(CreateSbomExportCommand)[0];
       expect(createCall.args[0].input.resourceFilterCriteria?.ecrImageTags).toEqual([
@@ -160,7 +219,7 @@ describe('sbom-export', () => {
       inspectorMock.on(CreateSbomExportCommand).resolves({});
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger),
       ).rejects.toThrow('CreateSbomExport did not return a reportId.');
     });
 
@@ -173,7 +232,7 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger),
       ).rejects.toThrow('SBOM export failed.');
     });
 
@@ -186,7 +245,7 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger),
       ).rejects.toThrow('SBOM export was cancelled.');
     });
 
@@ -201,11 +260,10 @@ describe('sbom-export', () => {
           status: 'SUCCEEDED',
           s3Destination: {
             bucketName: 'test-bucket',
-            keyPrefix: 'sbom-exports/my-repo/report.json',
           },
         });
       s3Mock.on(ListObjectsV2Command).resolves({
-        Contents: [{ Key: 'sbom-exports/my-repo/report.json' }],
+        Contents: [{ Key: 'report.json' }],
       });
       s3Mock.on(GetObjectCommand).resolves({
         Body: createMockStream('{}'),
@@ -216,7 +274,8 @@ describe('sbom-export', () => {
         'v1.0',
         'CYCLONEDX_1_4',
         'test-bucket',
-        'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        undefined,
+        kmsKeyArn,
         mockLogger,
       );
 
@@ -239,8 +298,43 @@ describe('sbom-export', () => {
       });
 
       await expect(
-        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'arn:aws:kms:us-east-1:123456789012:key/test-key', mockLogger),
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger),
       ).rejects.toThrow('SBOM export succeeded but S3 destination is missing.');
+    });
+
+    test('should throw when no SBOM file is found under the configured prefix', async () => {
+      inspectorMock.on(CreateSbomExportCommand).resolves({
+        reportId: 'report-empty-prefix',
+      });
+      inspectorMock.on(GetSbomExportCommand).resolves({
+        status: 'SUCCEEDED',
+        s3Destination: {
+          bucketName: 'test-bucket',
+          keyPrefix: 'sbom/',
+        },
+      });
+      s3Mock.on(ListObjectsV2Command).resolves({ Contents: [] });
+
+      await expect(
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', 'sbom/', kmsKeyArn, mockLogger),
+      ).rejects.toThrow('SBOM export succeeded but no file found in S3 under prefix: sbom/');
+    });
+
+    test('should throw when no SBOM file is found and no prefix is configured', async () => {
+      inspectorMock.on(CreateSbomExportCommand).resolves({
+        reportId: 'report-empty-bucket',
+      });
+      inspectorMock.on(GetSbomExportCommand).resolves({
+        status: 'SUCCEEDED',
+        s3Destination: {
+          bucketName: 'test-bucket',
+        },
+      });
+      s3Mock.on(ListObjectsV2Command).resolves({ Contents: [] });
+
+      await expect(
+        exportSbom('my-repo', 'v1.0', 'CYCLONEDX_1_4', 'test-bucket', undefined, kmsKeyArn, mockLogger),
+      ).rejects.toThrow('SBOM export succeeded but no file found in S3 bucket: test-bucket');
     });
   });
 });

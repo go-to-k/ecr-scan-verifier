@@ -44,7 +44,10 @@ export interface SbomOutputProps {
   /**
    * Optional prefix for S3 objects.
    *
-   * @default - no prefix
+   * The value is passed to Amazon Inspector's `CreateSbomExport` API as
+   * `s3Destination.keyPrefix`, so the SBOM is written under it.
+   *
+   * @default - no prefix, and the SBOM is written to the bucket root
    */
   readonly prefix?: string;
 

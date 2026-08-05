@@ -391,6 +391,8 @@ describe('handler', () => {
         sbom: {
           format: 'CYCLONEDX_1_4',
           bucketName: 'sbom-bucket',
+          prefix: 'sbom/',
+          kmsKeyArn: 'arn:aws:kms:us-east-1:123456789012:key/test-key',
         },
         output: {
           type: ScanLogsOutputType.S3,
@@ -406,7 +408,8 @@ describe('handler', () => {
       'v1.0',
       'CYCLONEDX_1_4',
       'sbom-bucket',
-      undefined,
+      'sbom/',
+      'arn:aws:kms:us-east-1:123456789012:key/test-key',
       expect.anything(),
     );
     expect(s3Output.outputScanLogsToS3).toHaveBeenCalledWith(
@@ -415,6 +418,43 @@ describe('handler', () => {
       expect.objectContaining({ type: ScanLogsOutputType.S3 }),
       'my-repo:v1.0',
       { content: '{"bomFormat": "CycloneDX"}', format: 'CYCLONEDX_1_4' },
+      expect.anything(),
+    );
+  });
+
+  test('should pass an undefined prefix to exportSbom when none is configured', async () => {
+    const mockEnhancedScanFindings: ecrScan.ScanFindings = {
+      ...mockScanFindings,
+      scanType: 'ENHANCED',
+    };
+    (ecrScan.startAndWaitForScan as jest.Mock).mockResolvedValue(mockEnhancedScanFindings);
+    (sbomExport.exportSbom as jest.Mock).mockResolvedValue({
+      sbomContent: '{}',
+      format: 'CYCLONEDX_1_4',
+    });
+
+    const event = {
+      ...baseEvent,
+      ResourceProperties: {
+        ...baseEvent.ResourceProperties,
+        scanType: 'ENHANCED',
+        sbom: {
+          format: 'CYCLONEDX_1_4',
+          bucketName: 'sbom-bucket',
+          kmsKeyArn: 'arn:aws:kms:us-east-1:123456789012:key/test-key',
+        },
+      },
+    };
+
+    await handler(event, mockContext, mockCallback);
+
+    expect(sbomExport.exportSbom).toHaveBeenCalledWith(
+      'my-repo',
+      'v1.0',
+      'CYCLONEDX_1_4',
+      'sbom-bucket',
+      undefined,
+      'arn:aws:kms:us-east-1:123456789012:key/test-key',
       expect.anything(),
     );
   });

@@ -227,7 +227,7 @@ exports[`EcrScanVerifier Snapshot - all options 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:e5237a1f458b1477eefb8b28ed72ff815d1a368e5a91bf0105db5d70478b767b",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:05207011d0c4fdbaf49d1b7b46f2b3386074c099fa916d70dfc4526a77c8ae60",
           },
         },
         "LoggingConfig": {
@@ -921,7 +921,7 @@ exports[`EcrScanVerifier Snapshot - minimal options 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:e5237a1f458b1477eefb8b28ed72ff815d1a368e5a91bf0105db5d70478b767b",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:05207011d0c4fdbaf49d1b7b46f2b3386074c099fa916d70dfc4526a77c8ae60",
           },
         },
         "MemorySize": 512,
@@ -1368,7 +1368,7 @@ exports[`EcrScanVerifier Snapshot - signature only 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:e5237a1f458b1477eefb8b28ed72ff815d1a368e5a91bf0105db5d70478b767b",
+            "Fn::Sub": "\${AWS::AccountId}.dkr.ecr.\${AWS::Region}.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-\${AWS::AccountId}-\${AWS::Region}:05207011d0c4fdbaf49d1b7b46f2b3386074c099fa916d70dfc4526a77c8ae60",
           },
         },
         "MemorySize": 512,

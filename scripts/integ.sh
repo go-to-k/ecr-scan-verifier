@@ -11,8 +11,22 @@ set -u
 
 REGIONS=(us-east-1 us-east-2 us-west-2)
 
+# Resolves the caller account id, retrying transient STS failures. A raw
+# `get-caller-identity` returns an empty string on network flakiness, which
+# silently corrupts every repository name derived from it — so validate the
+# value and fail loudly (non-zero) instead of echoing garbage.
 account_id() {
-  aws sts get-caller-identity --query Account --output text
+  local id attempt
+  for attempt in 1 2 3; do
+    id="$(aws sts get-caller-identity --query Account --output text)" || id=""
+    if [ -n "$id" ] && [ "$id" != "None" ]; then
+      echo "$id"
+      return 0
+    fi
+    [ "$attempt" -lt 3 ] && sleep 5
+  done
+  echo "ERROR: account_id: could not resolve account id after 3 attempts" >&2
+  return 1
 }
 
 default_region() {
@@ -71,16 +85,26 @@ wait_inspector_status_all() {
 # --- scan-on-push on the CDK bootstrap asset repo ---------------------------
 
 # Usage: scan_on_push_set true|false
+# Returns non-zero if the account id cannot be resolved or if the call fails
+# in any region, so callers can surface a half-applied toggle instead of
+# assuming it succeeded.
 scan_on_push_set() {
   local enabled="$1"
-  local account
-  account="$(account_id)"
+  local account rc=0
+  account="$(account_id)" || {
+    echo "ERROR: scan_on_push_set ${enabled}: aborting, account id unresolved" >&2
+    return 1
+  }
   for region in "${REGIONS[@]}"; do
     aws ecr put-image-scanning-configuration \
       --repository-name "cdk-hnb659fds-container-assets-${account}-${region}" \
       --image-scanning-configuration "scanOnPush=${enabled}" \
-      --region "$region"
+      --region "$region" || rc=1
   done
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: scan_on_push_set ${enabled}: failed in at least one region" >&2
+  fi
+  return "$rc"
 }
 
 # Ensure old fixture images stay scannable: Inspector only scans images

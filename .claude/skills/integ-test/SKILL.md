@@ -115,7 +115,9 @@ command -v jq       >/dev/null || { echo "jq not installed (needed by cosign sig
 . scripts/integ.sh
 
 # 4. Snapshot original Inspector state per region so we can restore at the end.
-ACCOUNT="$(account_id)"
+#    account_id retries transient STS failures and returns non-zero if the id
+#    stays unresolved — abort instead of continuing with a garbage account.
+ACCOUNT="$(account_id)" || exit 1
 ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 ORIGINAL_STATE_EAST2="$(inspector_status us-east-2)"
 ORIGINAL_STATE_WEST2="$(inspector_status us-west-2)"
@@ -178,11 +180,15 @@ Exit without changing any state.
 ```bash
 inspector_disable_all
 wait_inspector_status_all DISABLED || exit 1
-scan_on_push_set true
+scan_on_push_set true || exit 1
 
-# Run, then ALWAYS restore scan-on-push (use a trap or explicit if/then)
+# Run, then ALWAYS restore scan-on-push (use a trap or explicit if/then).
+# scan_on_push_set returns non-zero when the toggle did not fully apply
+# (unresolved account id or a failed regional call) — treat a failed
+# restore as a run failure, not a footnote, or scan-on-push stays enabled
+# and poisons later basic runs.
 if pnpm integ:basic:update; then status=0; else status=$?; fi
-scan_on_push_set false
+scan_on_push_set false || status=1
 [ "$status" -eq 0 ] || exit "$status"
 ```
 
@@ -419,14 +425,14 @@ State-transition strategy (minimizes Inspector flips, which each cost a ~5 min p
 4. **Flip Inspector to DISABLED** + poll.
 5. **Run `basic`** (proactive scan-on-push enable + unconditional restore).
 6. **Restore Inspector to `ORIGINAL_STATE_*`** — `all` IGNORES `--no-restore` because a both-directions sequence has no obvious "as-found" target.
-7. **Run `cleanup_signature_artifacts`** unconditionally.
-8. **Set the `integ-snapshot-fresh` markgate marker** — ONLY when every entry in `results` is `PASS`. On any FAIL, leave the marker stale so the `gh pr create` / `gh pr merge` hook blocks PRs until the offending mode is re-run cleanly. Partial-mode invocations (`basic`, `enhanced`, `signature`) must NEVER set this marker — only `all` is broad enough to guarantee snapshot freshness.
+7. **Run cleanup unconditionally and record its outcome in `results`.** A failed cleanup step (e.g. `scan_on_push_set false` hitting an STS/ECR error) is a reportable condition, not a silent no-op — it leaves scan-on-push enabled on the bootstrap repos and poisons later `basic` runs.
+8. **Set the `integ-snapshot-fresh` markgate marker** — ONLY when every entry in `results` is `PASS`, including the `cleanup` entry: a run that passed every test but failed to restore state is NOT a clean run. On any FAIL, leave the marker stale so the `gh pr create` / `gh pr merge` hook blocks PRs until the offending mode is re-run cleanly. Partial-mode invocations (`basic`, `enhanced`, `signature`) must NEVER set this marker — only `all` is broad enough to guarantee snapshot freshness.
 
 Pseudocode (insert this AFTER the [Common preamble](#common-preamble-deploy-runs) — `mark_phase` and `mark_status` come from there, and the unattended-run path also relies on them):
 
 ```bash
 . scripts/integ.sh
-ACCOUNT="$(account_id)"
+ACCOUNT="$(account_id)" || exit 1
 ORIGINAL_STATE_EAST1="$(inspector_status us-east-1)"
 ORIGINAL_STATE_EAST2="$(inspector_status us-east-2)"
 ORIGINAL_STATE_WEST2="$(inspector_status us-west-2)"
@@ -475,13 +481,16 @@ mark_phase inspector-disable
 inspector_disable_all
 wait_inspector_status_all DISABLED || exit 1
 mark_phase basic
-scan_on_push_set true
-if pnpm integ:basic:update; then
+# scan_on_push_set fails loudly (non-zero) when the account id is
+# unresolved or any regional call fails — a failed enable means the
+# scan-on-push test cannot pass, and a failed restore is caught by the
+# cleanup step below.
+if scan_on_push_set true && pnpm integ:basic:update; then
   results+=("basic: PASS")
 else
   results+=("basic: FAIL")
 fi
-scan_on_push_set false
+scan_on_push_set false || echo "WARN: scan-on-push restore failed; cleanup step will retry" >&2
 
 # --- 6: restore Inspector (always for `all`) ---
 mark_phase restore
@@ -492,11 +501,17 @@ if [ "$ORIGINAL_STATE_EAST1" = "ENABLED" ] || \
   wait_inspector_status_all ENABLED || exit 1
 fi
 
-# --- 7: cleanup (full) ---
+# --- 7: cleanup (full) — failures are reportable, not ignorable ---
 mark_phase cleanup
-cleanup_signature_artifacts
-ecr_signing_teardown
-scan_on_push_set false
+cleanup_ok=0
+cleanup_signature_artifacts || cleanup_ok=1
+ecr_signing_teardown || cleanup_ok=1
+scan_on_push_set false || cleanup_ok=1
+if [ "$cleanup_ok" -eq 0 ]; then
+  results+=("cleanup: PASS")
+else
+  results+=("cleanup: FAIL")
+fi
 
 # --- 8: markgate (only on full PASS) ---
 if printf '%s\n' "${results[@]}" | grep -q FAIL; then
@@ -549,10 +564,10 @@ What it does NOT touch:
 . scripts/integ.sh
 cleanup_signature_artifacts
 ecr_signing_teardown          # idempotent (|| true on each step)
-scan_on_push_set false
+scan_on_push_set false        # non-zero on failure — surface it, do not swallow
 ```
 
-Report what was actually removed vs what was already absent.
+Report what was actually removed vs what was already absent. If `scan_on_push_set false` returns non-zero (unresolved account id or a failed regional call), report the cleanup as FAILED — scan-on-push is still enabled on at least one bootstrap repo and later `basic` runs will be poisoned until it is reset.
 
 ## Mode: `cleanup-signature`
 
@@ -602,6 +617,7 @@ fi
 - **Poll with a bounded loop** (`wait_inspector_status` from `scripts/integ.sh`) — never use a bare `sleep` for state convergence.
 - **`enhanced` engine lag is long**: status flipping to `ENABLED` is not the same as the scanning engine being ready. On a fresh DISABLED→ENABLED transition, sleep 1200s (20 min) before the first test attempt, then allow up to 3 total attempts with 600s (10 min) gaps. This worst-case ~40 min budget matches observed warmup. If all 3 fail, the cause is not propagation lag — stop waiting and investigate.
 - **Always enable scan-on-push proactively for `basic`** — `pnpm integ:basic:update` runs the `integ.scan-on-push` test in the same suite, so toggling on after a failure is too late.
+- **Never ignore the exit status of `account_id` / `scan_on_push_set`** — both fail loudly (non-zero) on unresolved account id or a failed regional call. A swallowed failure historically left scan-on-push enabled in all three regions while the run reported PASS (issue #29).
 - **Never cancel `EcrScanVerifierTestProfile`** — cancellation is permanent and blocks future runs under the same name.
 - **`cosign generate-key-pair` and `cosign sign` need `COSIGN_PASSWORD=""`** when run unattended — otherwise they hang on a password prompt.
 - **Never commit `cosign.key` / `cosign.pub`** — they're git-ignored, keep it that way.

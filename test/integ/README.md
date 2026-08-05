@@ -25,6 +25,8 @@ pnpm install --frozen-lockfile
 . scripts/integ.sh
 ```
 
+`account_id` and `scan_on_push_set` fail loudly: `account_id` retries transient STS failures and returns non-zero if the account id stays unresolved, and `scan_on_push_set` returns non-zero when the id is unresolved or any regional `put-image-scanning-configuration` call fails. If either prints an `ERROR:` line, do not assume the toggle applied — re-run it and verify before moving on (a silently skipped `scan_on_push_set false` leaves scan-on-push enabled on the bootstrap repos and poisons later `basic/` runs).
+
 ## Important Note
 
 Changing the ECR scanning configuration via `aws inspector2 enable/disable` may take a few minutes to propagate. After enabling or disabling Enhanced scanning, **verify the status has changed in all regions before running tests** (`wait_inspector_status_all` polls with a 5-minute cap).
@@ -79,7 +81,9 @@ inspector_enable_all
 wait_inspector_status_all ENABLED
 inspector_status_all
 
-# Restore scan-on-push to default (if enabled above)
+# Restore scan-on-push to default (if enabled above).
+# Non-zero exit means the restore did not fully apply — re-run until it
+# succeeds, or scan-on-push stays enabled and poisons later basic/ runs.
 scan_on_push_set false
 ```
 

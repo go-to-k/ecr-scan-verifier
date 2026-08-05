@@ -22,6 +22,7 @@ export const exportSbom = async (
   imageTag: string,
   sbomFormat: string,
   s3BucketName: string,
+  s3KeyPrefix: string | undefined,
   kmsKeyArn: string,
   logger: Logger,
 ): Promise<SbomExportResult> => {
@@ -43,7 +44,8 @@ export const exportSbom = async (
       reportFormat,
       s3Destination: {
         bucketName: s3BucketName,
-        keyPrefix: `sbom-exports/${repositoryName}`,
+        // Omitted when no prefix is configured, so Inspector writes to the bucket root.
+        keyPrefix: s3KeyPrefix,
         kmsKeyArn,
       },
       resourceFilterCriteria,
@@ -70,18 +72,23 @@ export const exportSbom = async (
     logger.log(`SBOM export status: ${status} (attempt ${attempt + 1}/${maxRetries})`);
 
     if (status === 'SUCCEEDED') {
-      const s3Key = getResponse.s3Destination?.keyPrefix;
       const bucketName = getResponse.s3Destination?.bucketName;
 
-      if (!bucketName || !s3Key) {
+      if (!bucketName) {
         throw new Error('SBOM export succeeded but S3 destination is missing.');
       }
 
+      // Use the configured prefix instead of the response: the response only
+      // echoes the request back, so keyPrefix is absent when none was configured.
+      const searchPrefix = s3KeyPrefix ?? '';
+
       // Find the actual S3 key under the prefix
-      const actualKey = await findS3Object(bucketName, s3Key);
+      const actualKey = await findS3Object(bucketName, searchPrefix);
       if (!actualKey) {
         throw new Error(
-          `SBOM export succeeded but no file found in S3 under prefix: ${s3Key}`,
+          searchPrefix
+            ? `SBOM export succeeded but no file found in S3 under prefix: ${searchPrefix}`
+            : `SBOM export succeeded but no file found in S3 bucket: ${bucketName}`,
         );
       }
 

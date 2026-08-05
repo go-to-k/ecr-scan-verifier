@@ -151,6 +151,7 @@ export const handler: CdkCustomResourceHandler = async function (event) {
         props.imageTag,
         props.sbom.format,
         props.sbom.bucketName,
+        props.sbom.prefix,
         props.sbom.kmsKeyArn,
         logger,
       );

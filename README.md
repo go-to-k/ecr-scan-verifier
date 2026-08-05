@@ -230,7 +230,7 @@ new EcrScanVerifier(this, 'Scanner', {
   scanConfig: ScanConfig.enhanced({
     sbomOutput: SbomOutput.cycloneDx14({
       bucket: sbomBucket,
-      prefix: 'sbom/', // Optional
+      prefix: 'sbom/', // Optional (default: no prefix, written to the bucket root)
       encryptionKey: sbomEncryptionKey,
     }),
   }),

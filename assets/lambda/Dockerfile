@@ -14,7 +14,7 @@ RUN curl -sLo /tmp/signer.rpm \
     && rpm -ivh /tmp/signer.rpm && rm /tmp/signer.rpm
 
 # Cosign (Sigstore)
-ARG COSIGN_VERSION=3.0.5
+ARG COSIGN_VERSION=3.1.4
 RUN curl -sLo /tmp/cosign \
     "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${TARGETARCH}" \
     && chmod +x /tmp/cosign
